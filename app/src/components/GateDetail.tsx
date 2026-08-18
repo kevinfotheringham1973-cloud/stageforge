@@ -21,6 +21,7 @@ export async function GateDetail({
     include: {
       stage: { include: { project: true } },
       deliverables: {
+        orderBy: { createdAt: "asc" },
         include: {
           evidenceFiles: { orderBy: { uploadedAt: "desc" } },
           bypass: { include: { bypassedBy: true } },
