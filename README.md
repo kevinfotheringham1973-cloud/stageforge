@@ -24,6 +24,7 @@ NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
 | [`ConfigSchema.html`](ConfigSchema.html) | Config schema for Stage/Gate/Deliverable templates and Compliance rule sets. (draft v0.4) |
 | [`design/`](design) | Design canvas source — screens for every role (PM, Sponsor, Compliance Officer, Finance, Resource Manager) as Design Component artboards. |
 | [`app/`](app) | Working Phase 1 MVP scaffold — Next.js, PostgreSQL, Prisma, TypeScript. See [`app/README.md`](app/README.md) for setup and what's actually built vs. stubbed. |
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | CI — typecheck and build `app/` on every push and PR to `main`. |
 
 The HTML documents are self-contained — open any of them directly in a
 browser to read.
@@ -39,6 +40,19 @@ live browser session — see `app/README.md` for how to run it yourself.
 Compliance Module, Resource/Capacity view, and Financial view are
 Phase 2–3 per the PRD roadmap and are designed (in `PRD.html`,
 `DataModel.html`, and the design screens) but not yet built in `app/`.
+
+## Contributing
+
+`main` is protected: every change goes through a pull request, and the
+CI check above must pass before it can merge — no direct pushes, no
+exceptions (applies to admins too).
+
+```bash
+git checkout -b your-branch-name
+# make changes
+git push -u origin your-branch-name
+gh pr create
+```
 
 ## Configuration
 
