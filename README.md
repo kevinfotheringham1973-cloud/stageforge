@@ -1,5 +1,7 @@
 # StageForge
 
+[![CI](https://github.com/kevinfotheringham1973-cloud/stageforge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kevinfotheringham1973-cloud/stageforge/actions/workflows/ci.yml)
+
 A cloud platform giving regulated Hard FM programmes a single system of
 record for stage-gate delivery: every stage carries a deliverables
 checklist, every deliverable needs uploaded evidence, and a gate can't
