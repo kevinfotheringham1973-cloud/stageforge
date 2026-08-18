@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Typecheck & build (app/)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    env:
+      # Every route in app/ is dynamic (cookies()-based session, no
+      # static generation), so `next build` never actually queries the
+      # database — this just needs to be a syntactically valid URL for
+      # the Prisma client to initialise. No Postgres service required.
+      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
