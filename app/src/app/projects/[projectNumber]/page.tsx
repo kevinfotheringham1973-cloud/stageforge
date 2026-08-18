@@ -1,9 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { outstandingDeliverableCount } from "@/lib/permissions";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { reinstateStage } from "@/lib/actions";
+import { GateAccordionRow } from "@/components/GateAccordionRow";
+import { GateDetail } from "@/components/GateDetail";
 
 const STATUS_LABEL: Record<string, string> = {
   NOT_STARTED: "Not started",
@@ -95,29 +96,31 @@ export default async function ProjectGateOverviewPage({
             const gate = stage.gate;
             if (!gate) return null;
             const outstanding = outstandingDeliverableCount(gate.deliverables);
+            const isCurrent = gate.status === "IN_PROGRESS" || gate.status === "AWAITING_SPONSOR";
             return (
-              <Link
+              <GateAccordionRow
                 key={stage.id}
-                href={`/projects/${project.projectNumber}/gates/${gate.id}`}
-                className={`flex items-center gap-5 rounded-lg border bg-surface px-6 py-5 ${
-                  gate.status === "IN_PROGRESS" || gate.status === "AWAITING_SPONSOR"
-                    ? "border-2 border-accent"
-                    : "border-rule"
-                }`}
+                highlight={isCurrent}
+                defaultExpanded={isCurrent}
+                summary={
+                  <>
+                    <div className="flex-1">
+                      <div className="text-base font-semibold">{gate.name}</div>
+                      <div className="mt-1 flex items-center gap-4 text-sm text-inkmuted">
+                        <span>{gate.deliverables.length} deliverable(s)</span>
+                        {outstanding > 0 && <span>{outstanding} outstanding</span>}
+                      </div>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide ${STATUS_CLASS[gate.status]}`}
+                    >
+                      {STATUS_LABEL[gate.status]}
+                    </span>
+                  </>
+                }
               >
-                <div className="flex-1">
-                  <div className="text-base font-semibold">{gate.name}</div>
-                  <div className="mt-1 flex items-center gap-4 text-sm text-inkmuted">
-                    <span>{gate.deliverables.length} deliverable(s)</span>
-                    {outstanding > 0 && <span>{outstanding} outstanding</span>}
-                  </div>
-                </div>
-                <span
-                  className={`rounded-full px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide ${STATUS_CLASS[gate.status]}`}
-                >
-                  {STATUS_LABEL[gate.status]}
-                </span>
-              </Link>
+                <GateDetail projectNumber={project.projectNumber} gateId={gate.id} />
+              </GateAccordionRow>
             );
           })}
 

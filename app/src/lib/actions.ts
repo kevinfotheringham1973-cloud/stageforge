@@ -70,6 +70,7 @@ export async function recordEvidenceStub(
     }),
   ]);
 
+  revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
 }
 
@@ -103,6 +104,7 @@ export async function bypassDeliverable(
     }),
   ]);
 
+  revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
 }
 
