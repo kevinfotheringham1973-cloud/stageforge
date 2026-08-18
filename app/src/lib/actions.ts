@@ -68,6 +68,14 @@ export async function recordEvidenceStub(
         entityId: deliverableId,
       },
     }),
+    // A gate starts NOT_STARTED; the first thing anyone does on one of
+    // its deliverables is what actually starts it. Nothing else in the
+    // model ever makes this transition — without it a gate created
+    // NOT_STARTED (every reinstated stage, every seeded future gate)
+    // could accumulate evidence forever but never reach a Submit button.
+    ...(gate.status === "NOT_STARTED"
+      ? [db.gate.update({ where: { id: gateId }, data: { status: "IN_PROGRESS" as const } })]
+      : []),
   ]);
 
   revalidatePath(`/projects/${projectNumber}`);
@@ -102,6 +110,11 @@ export async function bypassDeliverable(
     db.auditLogEntry.create({
       data: { actorId: userId, action: "deliverable.bypassed", gateId, entityType: "Deliverable", entityId: deliverableId, reason },
     }),
+    // See the same note in recordEvidenceStub — a bypass also starts a
+    // NOT_STARTED gate.
+    ...(gate.status === "NOT_STARTED"
+      ? [db.gate.update({ where: { id: gateId }, data: { status: "IN_PROGRESS" as const } })]
+      : []),
   ]);
 
   revalidatePath(`/projects/${projectNumber}`);
