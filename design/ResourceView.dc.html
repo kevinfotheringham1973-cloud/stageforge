@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .app {
+    width: 1280px;
+    min-height: 900px;
+    background: #EEF0EC;
+    color: #1B2422;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 20px 40px; background: #FFFFFF; border-bottom: 1px solid #CBD1C8; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark { font-family: 'Rockwell', Georgia, serif; font-size: 20px; font-weight: 700; color: #1F5C63; letter-spacing: -0.01em; }
+  .user-chip { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border: 1px solid #CBD1C8; border-radius: 20px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: #1F5C63; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-family: monospace; }
+  .user-chip-text { display: flex; flex-direction: column; line-height: 1.3; }
+  .user-role { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #56635E; font-family: monospace; }
+  .user-name { font-size: 13px; font-weight: 600; }
+
+  .content { padding: 40px; display: flex; flex-direction: column; gap: 26px; }
+  .page-title { font-size: 26px; font-weight: 700; margin: 0 0 6px 0; }
+  .page-sub { font-size: 14px; color: #56635E; }
+
+  .legend { display: flex; align-items: center; gap: 20px; padding: 4px 4px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #56635E; }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+  .roster { display: flex; flex-direction: column; gap: 12px; }
+  .person-row { display: flex; align-items: center; gap: 20px; padding: 18px 24px; background: #FFFFFF; border: 1px solid #CBD1C8; border-radius: 10px; }
+  .person-id { display: flex; align-items: center; gap: 12px; width: 260px; flex: none; }
+  .person-avatar { width: 36px; height: 36px; border-radius: 50%; background: #E4E7E1; color: #56635E; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; font-family: monospace; flex: none; }
+  .person-text { display: flex; flex-direction: column; gap: 2px; }
+  .person-name { font-size: 14px; font-weight: 700; }
+  .person-role { font-size: 11.5px; color: #56635E; font-family: monospace; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  .person-projects { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 340px; flex: none; }
+  .proj-chip { font-size: 11px; padding: 4px 10px; border-radius: 12px; background: #E4E7E1; color: #56635E; }
+
+  .person-capacity { flex: 1; display: flex; align-items: center; gap: 14px; }
+  .capacity-track { flex: 1; height: 10px; border-radius: 5px; background: #E4E7E1; overflow: hidden; position: relative; }
+  .capacity-fill { height: 100%; border-radius: 5px; }
+  .capacity-fill.ok { background: #3F7D5C; }
+  .capacity-fill.warn { background: #B8862B; }
+  .capacity-fill.over { background: #B0473C; }
+  .capacity-pct { font-family: monospace; font-size: 13px; font-weight: 700; width: 48px; text-align: right; flex: none; }
+  .capacity-pct.ok { color: #3F7D5C; }
+  .capacity-pct.warn { color: #B8862B; }
+  .capacity-pct.over { color: #B0473C; }
+
+  a { color: #1F5C63; }
+  a:hover { color: #163f44; }
+</style>
+</helmet>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand"><span class="brand-mark">StageForge</span></div>
+    <div class="user-chip">
+      <div class="avatar">PS</div>
+      <div class="user-chip-text">
+        <span class="user-role">Resource &amp; Portfolio Manager</span>
+        <span class="user-name">Priya Shah</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div>
+      <h1 class="page-title">Resource capacity across live projects</h1>
+      <div class="page-sub">BuildCare FM Ltd &middot; North Region</div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#3F7D5C;"></span>Under 90% allocated</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#B8862B;"></span>90&ndash;100%</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#B0473C;"></span>Over-allocated</div>
+    </div>
+
+    <div class="roster">
+
+      <div class="person-row">
+        <div class="person-id">
+          <div class="person-avatar">DG</div>
+          <div class="person-text">
+            <span class="person-name">Derek Gibb</span>
+            <span class="person-role">Project Manager</span>
+          </div>
+        </div>
+        <div class="person-projects">
+          <span class="proj-chip">Ward 12 HVAC Replacement</span>
+          <span class="proj-chip">Boiler House Decarbonisation</span>
+        </div>
+        <div class="person-capacity">
+          <div class="capacity-track"><div class="capacity-fill ok" style="width: 85%;"></div></div>
+          <span class="capacity-pct ok">85%</span>
+        </div>
+      </div>
+
+      <div class="person-row">
+        <div class="person-id">
+          <div class="person-avatar">DM</div>
+          <div class="person-text">
+            <span class="person-name">Dan Marsh</span>
+            <span class="person-role">Project Manager</span>
+          </div>
+        </div>
+        <div class="person-projects">
+          <span class="proj-chip">Theatre 4 Ventilation Upgrade</span>
+        </div>
+        <div class="person-capacity">
+          <div class="capacity-track"><div class="capacity-fill ok" style="width: 45%;"></div></div>
+          <span class="capacity-pct ok">45%</span>
+        </div>
+      </div>
+
+      <div class="person-row">
+        <div class="person-id">
+          <div class="person-avatar">GG</div>
+          <div class="person-text">
+            <span class="person-name">Gary Grant</span>
+            <span class="person-role">Compliance Officer</span>
+          </div>
+        </div>
+        <div class="person-projects">
+          <span class="proj-chip">Ward 12 HVAC Replacement</span>
+          <span class="proj-chip">Theatre 4 Ventilation Upgrade</span>
+          <span class="proj-chip">Boiler House Decarbonisation</span>
+        </div>
+        <div class="person-capacity">
+          <div class="capacity-track"><div class="capacity-fill over" style="width: 100%;"></div></div>
+          <span class="capacity-pct over">110%</span>
+        </div>
+      </div>
+
+      <div class="person-row">
+        <div class="person-id">
+          <div class="person-avatar">JW</div>
+          <div class="person-text">
+            <span class="person-name">Josh Whitfield</span>
+            <span class="person-role">Site Supervisor</span>
+          </div>
+        </div>
+        <div class="person-projects">
+          <span class="proj-chip">Ward 12 HVAC Replacement</span>
+        </div>
+        <div class="person-capacity">
+          <div class="capacity-track"><div class="capacity-fill warn" style="width: 95%;"></div></div>
+          <span class="capacity-pct warn">95%</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1280, "h": 900, "title": "PM — Gate Overview" },
+    { "file": "PMGateDetail.dc.html", "x": 1360, "y": 0, "w": 1280, "h": 900, "title": "PM — Gate Detail" },
+    { "file": "SponsorQueue.dc.html", "x": 0, "y": 980, "w": 1280, "h": 900, "title": "Sponsor — Approval Queue" },
+    { "file": "SponsorReview.dc.html", "x": 1360, "y": 980, "w": 1280, "h": 900, "title": "Sponsor — Gate Review" },
+    { "file": "ComplianceQueue.dc.html", "x": 2720, "y": 0, "w": 1280, "h": 900, "title": "Compliance Officer — Queue" },
+    { "file": "ComplianceRuleEditor.dc.html", "x": 2720, "y": 980, "w": 1280, "h": 1020, "title": "Compliance Officer — Rule Set Editor" },
+    { "file": "FinanceView.dc.html", "x": 4080, "y": 0, "w": 1280, "h": 900, "title": "Finance — Portfolio Spend" },
+    { "file": "ResourceView.dc.html", "x": 4080, "y": 980, "w": 1280, "h": 900, "title": "Resource Manager — Capacity" }
+  ],
+  "annotations": [
+    { "id": "pm-flow-note", "x": 0, "y": -70, "w": 420, "text": "PM flow: scope a project's stages, work a gate's checklist, submit for approval." },
+    { "id": "sponsor-flow-note", "x": 0, "y": 910, "w": 420, "text": "Sponsor flow: review what's queued across every project they sponsor, then approve or reject." },
+    { "id": "compliance-flow-note", "x": 2720, "y": -70, "w": 460, "text": "Compliance Officer flow: clear outstanding compliance items and legally-significant bypasses across projects, and author the rule sets that generate them." },
+    { "id": "assumption-note", "x": 1360, "y": 1890, "w": 460, "text": "Confirmed in the PRD: rejecting a gate requires a written reason and returns it to the PM." },
+    { "id": "finance-resource-note", "x": 4080, "y": -70, "w": 500, "text": "Finance and Resource views are the PRD's lowest-confidence scope items — the original note gave each about one sentence. Built here as a reasonable first sketch, not a confirmed spec." }
+  ],
+  "launch": { "view": "canvas" }
+}

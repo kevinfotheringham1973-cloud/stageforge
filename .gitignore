@@ -1,0 +1,8 @@
+# Local tooling
+.claude/settings.local.json
+.DS_Store
+
+# Generated design canvas output (2MB+ minified editor payload,
+# regenerated from design/*.dc.html + design/canvas.json via
+# seed-canvas.mjs — not worth tracking or diffing).
+design/stageforge-pm-sponsor-screens.html

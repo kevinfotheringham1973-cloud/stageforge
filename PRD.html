@@ -1,0 +1,617 @@
+<title>StageForge PRD</title>
+<style>
+  :root{
+    --bg:#EEF0EC;
+    --surface:#FFFFFF;
+    --surface-2:#E4E7E1;
+    --ink:#1B2422;
+    --ink-muted:#56635E;
+    --accent:#1F5C63;
+    --accent-soft:#DCE7E6;
+    --flag:#A66A1E;
+    --rule:#CBD1C8;
+    --ok:#3F7D5C;
+    --warn:#B8862B;
+    --risk:#B0473C;
+
+    --font-display:'Rockwell','Roboto Slab',Georgia,serif;
+    --font-body:'Charter','Iowan Old Style',Georgia,'Times New Roman',serif;
+    --font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14191A;
+      --surface:#1B2222;
+      --surface-2:#212928;
+      --ink:#E7E9E2;
+      --ink-muted:#9BA6A0;
+      --accent:#5FB0AE;
+      --accent-soft:#1E3B3A;
+      --flag:#E0A94C;
+      --rule:#33403C;
+      --ok:#5FAE81;
+      --warn:#D9A441;
+      --risk:#D46A57;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14191A;
+    --surface:#1B2222;
+    --surface-2:#212928;
+    --ink:#E7E9E2;
+    --ink-muted:#9BA6A0;
+    --accent:#5FB0AE;
+    --accent-soft:#1E3B3A;
+    --flag:#E0A94C;
+    --rule:#33403C;
+    --ok:#5FAE81;
+    --warn:#D9A441;
+    --risk:#D46A57;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    max-width:44rem;
+    margin:0 auto;
+    padding:3.5rem 1.5rem 6rem;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .page{ animation: rise .5s ease-out; }
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  header.doc-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1.5rem;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:1.75rem;
+    margin-bottom:2.25rem;
+  }
+  .doc-head h1{
+    font-family:var(--font-display);
+    font-size:clamp(1.9rem, 1.55rem + 1.4vw, 2.5rem);
+    line-height:1.1;
+    margin:0 0 .6rem;
+    text-wrap:balance;
+    letter-spacing:-0.01em;
+  }
+  .doc-meta{
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--ink-muted);
+    line-height:1.9;
+  }
+  .stamp{
+    flex:none;
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    border:2px solid var(--flag);
+    border-radius:3px;
+    padding:.35rem .7rem;
+    transform:rotate(-3deg);
+    white-space:nowrap;
+    margin-top:.3rem;
+  }
+
+  h2{
+    font-family:var(--font-display);
+    font-size:1.5rem;
+    letter-spacing:-.005em;
+    color:var(--ink);
+    border-top:1px solid var(--rule);
+    padding-top:.5rem;
+    margin:3.25rem 0 1rem;
+    text-wrap:balance;
+  }
+  h2 .num{
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    color:var(--accent);
+    letter-spacing:.05em;
+    display:block;
+    margin-bottom:.35rem;
+  }
+  h3{
+    font-family:var(--font-mono);
+    font-size:.82rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--accent);
+    margin:2rem 0 .6rem;
+  }
+  p{ margin:0 0 1rem; max-width:38rem; }
+  ul, ol{ margin:0 0 1rem; padding-left:1.3rem; }
+  li{ margin-bottom:.4rem; max-width:36rem; }
+  strong{ color:var(--ink); }
+
+  .lede{
+    font-size:1.05rem;
+    color:var(--ink-muted);
+    max-width:36rem;
+  }
+
+  .flag{
+    border-left:3px solid var(--flag);
+    background:var(--accent-soft);
+    padding:.7rem 1rem;
+    margin:1rem 0 1.4rem;
+    font-size:.92rem;
+    max-width:36rem;
+    border-radius:0 3px 3px 0;
+  }
+  .flag-label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.3rem;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:.5rem 0 1.5rem;
+    font-size:.92rem;
+  }
+  .table-wrap{ overflow-x:auto; }
+  th{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+    text-align:left;
+    padding:.5rem .8rem;
+    border-bottom:1px solid var(--rule);
+    background:var(--surface-2);
+  }
+  td{
+    padding:.65rem .8rem;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+    font-variant-numeric:tabular-nums;
+  }
+  tr:last-child td{ border-bottom:none; }
+
+  .phase{
+    display:flex;
+    gap:1rem;
+    margin-bottom:1.5rem;
+    align-items:baseline;
+  }
+  .phase-num{
+    font-family:var(--font-mono);
+    font-size:.85rem;
+    color:var(--accent);
+    flex:none;
+    width:4.5rem;
+  }
+  .phase-body h4{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:1rem;
+    margin:0 0 .25rem;
+  }
+  .phase-body p{ margin:0; color:var(--ink-muted); font-size:.94rem; }
+
+  .oq{ list-style:none; padding-left:0; counter-reset:oq; }
+  .oq li{
+    counter-increment:oq;
+    position:relative;
+    padding-left:2.1rem;
+    margin-bottom:.85rem;
+    max-width:36rem;
+  }
+  .oq li::before{
+    content:counter(oq);
+    position:absolute;
+    left:0;
+    top:.05rem;
+    font-family:var(--font-mono);
+    font-size:.75rem;
+    color:var(--ink-muted);
+    border:1px solid var(--rule);
+    border-radius:50%;
+    width:1.4rem;
+    height:1.4rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .tag{
+    font-family:var(--font-mono);
+    font-size:.65rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding:.1rem .4rem;
+    border-radius:3px;
+    margin-left:.4rem;
+    white-space:nowrap;
+  }
+  .tag.assumption{ background:var(--accent-soft); color:var(--accent); }
+  .tag.question{ background:transparent; color:var(--flag); border:1px solid var(--flag); }
+  .tag.decided{ background:transparent; color:var(--ok); border:1px solid var(--ok); }
+
+  .flag.decided{ border-left-color:var(--ok); background:transparent; }
+  .flag.decided .flag-label{ color:var(--ok); }
+
+  .compare{ margin:.5rem 0 1.5rem; }
+  .compare-col{
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:1rem 1.1rem;
+    margin-bottom:1rem;
+  }
+  .compare-col h5{
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin:0 0 .6rem;
+    color:var(--ink);
+  }
+  .compare-col ul{ margin:0; padding-left:1.1rem; }
+  .compare-col li{ margin-bottom:.3rem; font-size:.92rem; }
+  .rec{
+    background:var(--accent-soft);
+    border-radius:4px;
+    padding:.9rem 1.1rem;
+    margin:1rem 0 1.5rem;
+    font-size:.94rem;
+  }
+  .rec .flag-label{ color:var(--accent); }
+
+  .example{
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:1.1rem 1.3rem;
+    margin:1rem 0 1.5rem;
+  }
+  .example-label{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.6rem;
+    display:block;
+  }
+  .example p{ font-size:.94rem; }
+  .example ul{ margin-bottom:.9rem; }
+  .example li{ font-size:.92rem; }
+  .who-list{ list-style:none; padding-left:0; margin:.8rem 0; }
+  .who-list li{
+    padding-left:1.4rem;
+    position:relative;
+    margin-bottom:.5rem;
+    font-size:.92rem;
+  }
+  .who-list li::before{
+    content:"→";
+    position:absolute;
+    left:0;
+    color:var(--accent);
+  }
+  .finding{
+    border-top:1px solid var(--rule);
+    margin-top:1rem;
+    padding-top:.9rem;
+  }
+  .finding ol{ padding-left:1.2rem; }
+  .finding li{ font-size:.92rem; margin-bottom:.6rem; }
+
+  footer{
+    margin-top:4rem;
+    padding-top:1.5rem;
+    border-top:1px solid var(--rule);
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+  }
+
+  a{ color:var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="doc-head">
+    <div>
+      <h1>StageForge</h1>
+      <div class="doc-meta">
+        Product Requirements Document — Draft v0.8<br>
+        Owner: Kevin Fotheringham · 18 Aug 2026<br>
+        Source: Overview.docx + Kevin's decisions, 18 Aug 2026
+      </div>
+    </div>
+    <div class="stamp">Draft — not signed off</div>
+  </header>
+
+  <p class="lede">This expands the original one-page concept note into a working requirements document: what's stated, what's assumed, and what still needs a decision before design or build work starts. Every claim below traces back to Overview.docx unless flagged otherwise.</p>
+
+  <h2><span class="num">01</span>Vision</h2>
+  <p>StageForge is a cloud platform that gives capital and Hard FM programmes a single system of record for stage-gate delivery: every stage carries a deliverables checklist, every deliverable needs uploaded evidence, and a gate cannot close until a project sponsor signs off against that evidence.</p>
+  <p>The initial target is <strong>Hospital Hard FM</strong>. The same engine is meant to re-skin for other regulated Hard FM sectors — prisons, schools, defence, transport — under sector-specific names, e.g. "StageForth – Defence."</p>
+  <div class="flag">
+    <span class="flag-label">Assumption</span>
+    "Re-skin" is read here as one shared backend with sector-specific templates and branding, not separate codebases per sector — later confirmed by the multi-tenancy decision (see Sector / Brand Variants &amp; Tenancy, §06).
+  </div>
+  <p>The note also raises hosting StageForge as a sub-domain of <strong>pmopassport.co.uk</strong>.</p>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: pmopassport.co.uk is a domain he owns personally, currently used by his GasNet project. StageForge would sit as a sibling subdomain under the same domain, not a shared company or product with GasNet.
+  </div>
+  <div class="flag">
+    <span class="flag-label">Open question</span>
+    Does StageForge share any actual infrastructure or login with GasNet under that domain, or does it just coexist as an unrelated subdomain? Minor, low-stakes detail — doesn't block anything else in this doc.
+  </div>
+
+  <h2><span class="num">02</span>Problem it solves</h2>
+  <p>Not stated directly in the source note, so this is inferred rather than confirmed: stage-gate sign-off on Hard FM programmes today likely runs on spreadsheets, email evidence trails, and spend tracked separately from delivery status. Without one record tying deliverable evidence, compliance status, resourcing, and actual spend to a single project number, a sponsor signs a gate off without a reliable single view of whether the project is actually ready. StageForge's job is to make "ready to sign off" a verifiable state rather than a judgement call.</p>
+  <div class="flag decided">
+    <span class="flag-label">Context, from Kevin</span>
+    Part of why this matters concretely for Health specifically: an NHS Trust doesn't always commission a Hard FM programme on its own discretionary timeline — sometimes it's driven by the Trust's own compliance obligations, or by a non-compliance finding that's been issued with a mandated closure date. In that setting, weak stage-gate governance isn't just messy paperwork, it's the difference between hitting or missing a deadline the Trust doesn't control. Kevin confirmed this stays narrative context for now, not a modelled feature (e.g. no <code>Project.compliance_deadline</code> field) — but it's the kind of scenario the platform should hold up under.
+  </div>
+
+  <h2><span class="num">03</span>Competitive landscape</h2>
+  <p>Five named comparators, spanning two different categories:</p>
+  <ul>
+    <li><strong>Stage-Gate Navigator</strong> and <strong>Sopheon Accolade</strong> — the origin of the Stage-Gate methodology itself. Enterprise-grade, deeply configurable, built for new-product-development portfolios. Heavy to implement and priced for large innovation functions, not a single Hard FM contractor.</li>
+    <li><strong>GenSight</strong> — enterprise portfolio management for NPD and IT PPM, custom-configured per client, cloud or on-premise. Same weight class as Sopheon: strong governance, long implementation, generic across industries.</li>
+    <li><strong>Cerri Project</strong> — the closest existing shape to StageForge: configurable Stage-Gate criteria, Go/Kill/Hold/Recycle decisions, resourcing, and financial tracking in one platform. Still industry-agnostic, not built around a sector-specific compliance layer.</li>
+    <li><strong>Smartsheet</strong> and <strong>Monday.com</strong> — generic work-management tools. Teams bend them into an approximation of a stage-gate checklist with automations, but neither has a native concept of a gate that structurally cannot close without evidence and a sponsor's sign-off, and neither ships a compliance layer.</li>
+  </ul>
+  <div class="rec">
+    <span class="flag-label">Positioning</span>
+    None of the five are built for a specific regulated Hard FM sector with compliance treated as a first-class, concurrently-gating module alongside delivery. The Sopheon/GenSight/Cerri tier is powerful but generic-industry and enterprise-heavy to adopt; Smartsheet/Monday.com are flexible but have no structural gate enforcement at all. StageForge's opening is a purpose-built tool for Hard FM maintenance in hospitals first, where "gate closes only with evidence + sponsor sign-off + sector compliance satisfied" is the product, not a workaround built on top of a generic board.
+  </div>
+
+  <h2><span class="num">04</span>Who uses it</h2>
+  <p><span class="tag decided">Decided</span> Confirmed by Kevin: the initial target user and buyer is <strong>Hard FM maintenance in hospitals</strong>. Four roles apply, and — importantly — none of them are fixed globally: who holds each role is set per project/programme in configuration, not hardcoded to a person or company.</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Role</th><th>Needs from the platform</th></tr>
+    <tr><td>Project Manager</td><td>Builds the deliverable checklist per gate, uploads evidence, tracks resourcing. Can bypass an ordinary deliverable — but not one flagged legally significant.</td></tr>
+    <tr><td>Project Sponsor</td><td>Reviews evidence per gate. Only role that can approve a gate as ready and pass it under normal conditions.</td></tr>
+    <tr><td>Senior Responsible Owner (SRO)</td><td>Sits above the Sponsor. Can override an outstanding compliance block, and can bypass a legally significant deliverable, always with a written reason.</td></tr>
+    <tr><td>FM Contractor</td><td>Delivers the works under the programme; the org most likely uploading deliverable evidence day-to-day.</td></tr>
+    <tr><td>Client Authority</td><td>The hospital/trust commissioning the programme; oversight view across their own projects.</td></tr>
+    <tr><td>Compliance Officer</td><td>Owns the sector-specific rule set; defines which regulations apply at which stage. Can also bypass a legally significant deliverable, with a written reason.</td></tr>
+    <tr><td>Resource / Portfolio Manager</td><td>Views resource allocation and capacity across live projects.</td></tr>
+    <tr><td>Finance</td><td>Reconciles invoice-level actual spend against the central project number.</td></tr>
+  </table>
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Roles and permissions are defined once at the platform level, then <em>assigned</em> to people/organisations per project or programme during setup — e.g. one hospital trust programme might have Company A as FM Contractor and a named individual as Sponsor; the next programme assigns those same roles to different parties entirely.
+  </div>
+
+  <h2><span class="num">05</span>Core concepts</h2>
+  <ul>
+    <li><strong>Project</strong> — the top-level unit; carries one central project number that all evidence, resourcing, and spend attach to.</li>
+    <li><strong>Stage</strong> — a phase in the delivery lifecycle.</li>
+    <li><strong>Gate</strong> — the checkpoint at the end of a stage; closes only once every deliverable on its checklist has evidence, every compliance requirement for that stage is satisfied, and the sponsor signs off — unless a bypass or override has been exercised and recorded.</li>
+    <li><strong>Deliverable</strong> — a required checklist item at a gate; needs an uploaded file as evidence.</li>
+    <li><strong>Delivery Module</strong> — the configurable stage/gate/deliverable template for a given programme type.</li>
+    <li><strong>Compliance Module</strong> — the regulatory requirements that run concurrently with a stage, specific to sector and jurisdiction.</li>
+    <li><strong>Sector Variant</strong> — a rebranded, re-templated instance of the same engine for a different Hard FM vertical.</li>
+  </ul>
+  <p>Delivery and compliance as two distinct, concurrently-running module types is explicit in the source note — it's the one piece of architecture Kevin has already specified.</p>
+
+  <h2><span class="num">06</span>Functional requirements</h2>
+
+  <h3>Stage-Gate Engine</h3>
+  <ul>
+    <li>Configurable library of stage/gate templates per project type — not hardcoded to one programme shape.</li>
+    <li>Each gate has an editable deliverables checklist.</li>
+    <li>Gate status: Not started → In progress → Awaiting sign-off → Signed off (or Rejected — returns to In progress, with the Sponsor's written reason attached for the PM).</li>
+    <li>A gate cannot reach "Signed off" until every deliverable on its checklist has an uploaded file, <em>or</em> has been explicitly bypassed.</li>
+    <li>A gate cannot reach "Signed off" while a blocking compliance requirement is outstanding, <em>or</em> that block has been explicitly overridden.</li>
+    <li>Only the <strong>Project Sponsor</strong> can approve a gate as ready and pass it under normal conditions. No other role can.</li>
+    <li>Only the <strong>Project Manager</strong> can bypass an ordinary deliverable — skip its evidence requirement for that gate, with a mandatory written reason.</li>
+    <li>A deliverable can be flagged <strong>legally significant</strong>. A PM cannot bypass one of these — only the <strong>Compliance Officer</strong> or the <strong>SRO</strong> can, with a mandatory written reason.</li>
+    <li>Only a <strong>higher-tier authority above the Sponsor</strong> (the SRO) can override an outstanding compliance block and pass the gate anyway.</li>
+  </ul>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: PM-bypass and Sponsor-approval are hard, role-locked actions — not configurable to other roles.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: compliance blocks gate pass-through by default, for governance — the same hard-stop treatment as missing delivery evidence, not advisory. See the Compliance Module section below for the override mechanic that sits alongside it.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a PM cannot bypass a deliverable that carries legal weight. That escalates to Compliance Officer or SRO instead — bypass authority isn't uniformly PM-level, it depends on what the deliverable actually is. Every bypass, at any authority level, requires a written reason (also confirmed — see Deliverable &amp; Evidence Management below).</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: rejecting a gate requires a written reason and returns it to the PM — the same mandatory-reason pattern as every bypass and override in the model.</div>
+
+  <h3>Deliverable &amp; Evidence Management</h3>
+  <ul>
+    <li>PM uploads one or more files against each deliverable.</li>
+    <li>Every upload, bypass, and sign-off records who acted and when — a full audit trail.</li>
+    <li>Version history when a file is replaced before sign-off.</li>
+    <li>Every deliverable is either ordinary (PM can bypass, with reason) or flagged <strong>legally significant</strong> (only Compliance Officer or SRO can bypass, with reason) — set when the deliverable template is authored.</li>
+  </ul>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: audit trail and version control are required, not optional — this is now a firm requirement rather than an inferred one. Bypass reason is mandatory at every authority level.</div>
+
+  <h3>Compliance Module — architecture options</h3>
+  <p>Kevin asked for an assessment of two ways to build this: a config-driven rules engine versus pluggable, code-level workflow modules per sector/regulation.</p>
+  <div class="compare">
+    <div class="compare-col">
+      <h5>Config-driven rules engine</h5>
+      <ul>
+        <li>A compliance requirement is data: "at Stage X, in Sector Y, this evidence/attestation is required, blocks gate: yes/no."</li>
+        <li>Compliance Officer maintains rule sets through the same checklist/evidence primitives already built for the Stage-Gate Engine — one engine serves both.</li>
+        <li>New sector or new regulation = new config, no deploy.</li>
+        <li>Limited to what the rule schema can express — struggles with genuinely procedural logic (multi-step external verification, conditional branching unique to one regulator).</li>
+      </ul>
+    </div>
+    <div class="compare-col">
+      <h5>Pluggable workflow modules</h5>
+      <ul>
+        <li>Each regulation/sector is code behind a common interface — unlimited expressiveness, can call external systems, run arbitrary validation.</li>
+        <li>New sector or regulation needs a developer to build and ship a plugin — works against the "compliance officer self-serves" goal and slows the white-label sector-expansion model.</li>
+        <li>More surface area for bugs in logic that directly gates sign-off — higher-stakes code to maintain.</li>
+        <li>Inconsistent UX across plugins unless disciplined from the start.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="rec">
+    <span class="flag-label">Recommendation</span>
+    Start config-driven. What's described — required evidence per stage, scoped to a sector/jurisdiction, optionally gating — is structurally the same shape as the Delivery Module's checklist, so one generic checklist-plus-evidence-plus-gating engine can serve both delivery and compliance rather than building two subsystems. That directly serves the "compliance officer adds a rule set without a code change" goal and the multi-sector reuse model. Reserve a pluggable/code path only for the rare case that genuinely needs external logic (e.g. a live check against a regulator's API) — model that later as a special "external check" deliverable type inside the same config schema, rather than standing up a separate plugin architecture. This should be pressure-tested against one real compliance example (e.g. a specific fire-safety or HTM certification requirement) before it's locked in.
+  </div>
+  <ul>
+    <li>Compliance rules attach to a stage and run concurrently with delivery deliverables.</li>
+    <li>Rule sets are sector-specific — different content for Health vs. Defence vs. Justice.</li>
+    <li>Incomplete compliance status blocks gate sign-off by default, on par with missing delivery evidence.</li>
+    <li>A higher-tier authority above the Sponsor — provisionally a <strong>Senior Responsible Owner (SRO)</strong>, the standard term for the accountable individual above a project sponsor in UK public-sector capital governance — can override that block and pass the gate anyway.</li>
+  </ul>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: for true governance and control, compliance blocks gate pass-through by default. A super-level authority can still approve through it — an exception path for accepted risk, not a routine approval.</div>
+  <div class="rec">
+    <span class="flag-label">Note</span>
+    The escalation ladder turns out to be risk-based, not simply delivery-vs-compliance: a PM can bypass an <em>ordinary</em> deliverable without escalation — a procedural gap, lower stakes. Anything with legal weight — whether it's a delivery deliverable flagged legally significant, or a compliance requirement — escalates to Compliance Officer or SRO, because it means knowingly accepting regulatory or legal risk rather than skipping paperwork. Every level of override carries the same audit rigor — logged reason, timestamp, visible in the gate's history as an override, never rendered the same as an ordinary pass.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: the SRO role is assigned per project, like every other role — not held by a small fixed set of senior people across the tenant. This actually matches how SRO works in UK public-sector practice: each major programme has its own named SRO, not one central figure across an organisation, so the per-project model is the realistic one.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: an SRO override requires a written reason, captured at the point of override, and needs a single sign-off — not a multi-person approval chain. The written reason plus the SRO's identity and timestamp form the audit record for that gate.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: "Senior Responsible Owner (SRO)" stays as the title. The compliance-override mechanic is now fully specified end to end.
+  </div>
+
+  <h3>Roles &amp; Permissions</h3>
+  <ul>
+    <li>Roles (PM, Sponsor, SRO, FM Contractor, Client Authority, Compliance Officer, Resource/Portfolio Manager, Finance) are global definitions; <em>who</em> holds each role is assigned per project/programme.</li>
+    <li>Bypassing an ordinary deliverable is locked to Project Manager only.</li>
+    <li>Bypassing a legally significant deliverable is locked to Compliance Officer or SRO only — not the PM.</li>
+    <li>Gate approval under normal conditions is locked to Project Sponsor only.</li>
+    <li>Overriding a blocked compliance requirement is locked to the SRO role only — a tier above the Sponsor, not an alternate route to the same permission.</li>
+    <li>Every bypass and every override requires a written reason and a single sign-off — no multi-person approval chain at any level.</li>
+  </ul>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: role assignment happens at project/programme configuration, and permissions are required from the outset, not a later hardening pass.</div>
+
+  <h3>Resource &amp; Capacity View</h3>
+  <p>Shows resource allocation and capacity, presumably per project or portfolio.</p>
+  <div class="flag"><span class="flag-label">Assumption</span>This is a single sentence in the source note ("potentially a resource view") — lowest-confidence scope item, treated as Phase 2+, not MVP.</div>
+
+  <h3>Financial View</h3>
+  <ul>
+    <li>Shows actual spend — all invoices — rolled up against the central project number.</li>
+    <li>Longer-term ambition to connect that project number back to SAP or D365.</li>
+  </ul>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: SAP/D365 integration is not near-term. Financial view should ship with manual/invoice-level actuals only; ERP reconciliation stays a later-phase ambition.</div>
+
+  <h3>Sector / Brand Variants &amp; Tenancy</h3>
+  <p>Same underlying engine, different template libraries and branding per sector. Health is the reference implementation.</p>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: <strong>multi-tenancy</strong> is the right model — many projects and different company/programme departments will use the same platform. This resolves the earlier open question and implies a shared backend with per-sector template libraries and branding, not separate codebases per sector.
+  </div>
+  <div class="example">
+    <span class="example-label">Open question — worked example</span>
+    <p><strong>What is the actual tenant boundary?</strong> A client company, or a department/programme within one? Take a realistic case:</p>
+    <p><strong>BuildCare FM Ltd</strong>, an FM contractor, holds Hard FM contracts with six NHS Trusts, including <strong>St Aldwyn NHS Foundation Trust</strong>. Within St Aldwyn, two departments run separate capital programmes with different budget holders and different Sponsors — <em>Estates &amp; Facilities</em> and <em>Digital Transformation</em>. BuildCare delivers to St Aldwyn through its <em>North region</em> team, organisationally separate from the <em>South region</em> team servicing a different Trust.</p>
+    <p>One live project: <em>"Ward 12 HVAC Replacement,"</em> owned by St Aldwyn Estates, delivered by BuildCare North.</p>
+    <p>Who should see it:</p>
+    <ul class="who-list">
+      <li>BuildCare North's PM sees it — must <strong>not</strong> see BuildCare South's work for a different Trust, or St Aldwyn Digital Transformation's programme.</li>
+      <li>St Aldwyn Estates' Sponsor sees it — must <strong>not</strong> see BuildCare's contracts with other Trusts, or St Aldwyn Digital Transformation's programme.</li>
+      <li>St Aldwyn Digital Transformation and BuildCare South see none of it.</li>
+    </ul>
+    <div class="finding">
+      <ol>
+        <li>Isolation has to nest at least two levels on <strong>both</strong> sides — Company → Department/Business-unit. "St Aldwyn" alone isn't tight enough (Estates and Digital Transformation must be walled off from each other); "BuildCare" alone isn't either (North and South must be).</li>
+        <li>A single project is inherently shared across two different top-level companies at once — the FM Contractor and the Client Authority both need live access to the same gates, evidence, and sign-off. So "tenant" can't mean "the company that owns the data," the way it would in an ordinary single-company SaaS product — each project has its own small set of participating organisations, and visibility is really <strong>project-scoped</strong>, sitting underneath company/department as the unit of branding, admin, and billing.</li>
+      </ol>
+    </div>
+    <p style="margin-bottom:0;">The real decision isn't "which level is the tenant" — it's whether StageForge needs a <strong>two-tier tenancy model</strong> (Company → Department, for admin/branding/billing) with a <strong>separate project-level access-control layer</strong> underneath that grants specific companies/departments/people visibility into specific shared projects. That's a bigger data-model decision than picking a level, worth confirming before any schema work starts.</p>
+  </div>
+
+  <h2><span class="num">07</span>Non-functional requirements</h2>
+  <p>None are stated in the source note. These are inferred from the domain; audit trail, versioning, and permissions are now confirmed requirements (see above) rather than inferred ones.</p>
+  <ul>
+    <li><strong>Data sensitivity</strong> — hospital capital-works data (and defence/justice variants later) implies access control, encryption at rest and in transit, and likely UK data residency.</li>
+    <li><strong>Auditability</strong> — sign-off is a governance action; every gate decision, bypass, and upload needs an immutable audit trail of who, what evidence, and when. <span class="tag decided">Decided</span></li>
+    <li><strong>Extensibility</strong> — a compliance officer should be able to add a new sector's rule set through configuration, not a code change.</li>
+    <li><strong>Multi-tenancy</strong> — data must be isolated per tenant (and possibly per department within a tenant — see open question above). <span class="tag decided">Decided</span></li>
+  </ul>
+
+  <h2><span class="num">08</span>Integrations</h2>
+  <ul>
+    <li><strong>SAP / D365</strong> — for spend reconciliation. Confirmed not near-term; keep out of MVP and early phases entirely.</li>
+    <li><strong>pmopassport.co.uk</strong> — Kevin's own domain, also used by his GasNet project. StageForge sits as a sibling subdomain, not a shared product. Whether it shares infrastructure or login with GasNet is still open.</li>
+  </ul>
+
+  <h2><span class="num">09</span>Proposed phased roadmap</h2>
+
+  <div class="phase">
+    <div class="phase-num">Phase 0</div>
+    <div class="phase-body">
+      <h4>Discovery &amp; validation</h4>
+      <p>Validate the stage-gate problem against 2–3 real Hard FM hospital programmes; pressure-test the config-driven compliance model against one real regulatory requirement; nail down the tenant boundary (company vs. department).</p>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="phase-num">Phase 1</div>
+    <div class="phase-body">
+      <h4>MVP — Hospital Hard FM, multi-tenant</h4>
+      <p>Stage-Gate Engine + Deliverable/Evidence upload + role-locked sign-off (PM/Compliance Officer/SRO bypass depending on legal significance, Sponsor approve) + audit trail/versioning + role assignment per project. One template, Health only, multi-tenant from day one. No compliance module, no resource or finance views yet.</p>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="phase-num">Phase 2</div>
+    <div class="phase-body">
+      <h4>Compliance + Resourcing</h4>
+      <p>Add the config-driven Compliance Module and the Resource/Capacity view, still Health-only.</p>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="phase-num">Phase 3</div>
+    <div class="phase-body">
+      <h4>Finance view + second sector</h4>
+      <p>Financial view (manual/invoice actuals, no ERP yet); begin templating a second sector to prove the white-label model actually holds. SAP/D365 integration deferred beyond this.</p>
+    </div>
+  </div>
+
+  <h2><span class="num">10</span>Open questions</h2>
+  <p>Every question from the original concept note is now resolved. One minor, non-blocking detail remains:</p>
+  <ol class="oq">
+    <li>Does StageForge share any infrastructure or login with Kevin's GasNet project under pmopassport.co.uk, or does it just coexist as a sibling subdomain?</li>
+  </ol>
+  <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round: pmopassport.co.uk is Kevin's own domain, also used by GasNet — StageForge sits as a sibling subdomain; SRO stays as the title; gate rejection requires a written reason and returns to the PM; sector priority after Health stays fully open — no committed second sector — with NHS compliance-deadline pressure noted as narrative context, not a modelled feature. Resolved in earlier rounds and reflected here: target user/buyer, role set, role-assignment model, bypass/approval permissions, audit trail &amp; versioning, tenancy model, compliance architecture direction, ERP timing, compliance-blocks-by-default with SRO override, SRO assigned per-project, SRO override requires written reason + single sign-off, PM bypass requires written reason, tenant boundary resolved via project-scoped access, legally significant deliverables escalate bypass authority to Compliance Officer/SRO.</p>
+
+  <h2><span class="num">11</span>Out of scope, for now</h2>
+  <ul>
+    <li>Sectors beyond the Health reference implementation.</li>
+    <li>ERP integration.</li>
+    <li>Native mobile app.</li>
+    <li>Resource/capacity forecasting beyond a simple current-state view.</li>
+  </ul>
+
+  <h2><span class="num">12</span>Proposed success metrics</h2>
+  <p>Not in the source note — proposed here for Kevin to validate or replace.</p>
+  <ul>
+    <li>Share of gates signed off with 100% of deliverable evidence attached (target: 100%, since the platform enforces it structurally).</li>
+    <li>Time elapsed from "all evidence uploaded" to sponsor sign-off.</li>
+    <li>Reduction in manual spend-reconciliation effort versus the current process — needs a baseline from Kevin.</li>
+  </ul>
+
+  <footer>StageForge · PRD draft v0.8 · expanded from Overview.docx + Kevin's decisions, 18 Aug 2026</footer>
+
+</div>

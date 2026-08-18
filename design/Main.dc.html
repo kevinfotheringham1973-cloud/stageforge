@@ -1,0 +1,280 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .app {
+    width: 1280px;
+    min-height: 900px;
+    background: #EEF0EC;
+    color: #1B2422;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #CBD1C8;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    font-family: 'Rockwell', Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1F5C63;
+    letter-spacing: -0.01em;
+  }
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px 6px 6px;
+    border: 1px solid #CBD1C8;
+    border-radius: 20px;
+  }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #1F5C63;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: monospace;
+  }
+  .user-chip-text { display: flex; flex-direction: column; line-height: 1.3; }
+  .user-role { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #56635E; font-family: monospace; }
+  .user-name { font-size: 13px; font-weight: 600; }
+
+  .context-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 40px;
+    background: #E4E7E1;
+    border-bottom: 1px solid #CBD1C8;
+    flex-wrap: wrap;
+  }
+  .org-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    background: #FFFFFF;
+    border: 1px solid #CBD1C8;
+    border-radius: 8px;
+  }
+  .org-pill-label { font-family: monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #56635E; }
+  .org-pill-name { font-size: 13px; font-weight: 600; }
+  .context-sep { color: #56635E; font-size: 13px; }
+
+  .content { padding: 40px; display: flex; flex-direction: column; gap: 32px; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+  .page-title { font-size: 26px; font-weight: 700; margin: 0 0 6px 0; letter-spacing: -0.01em; }
+  .page-meta { font-family: monospace; font-size: 12px; color: #56635E; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .gate-list { display: flex; flex-direction: column; gap: 12px; }
+  .gate-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 24px;
+    background: #FFFFFF;
+    border: 1px solid #CBD1C8;
+    border-radius: 10px;
+  }
+  .gate-card.current { border: 2px solid #1F5C63; }
+  .gate-card.excluded { background: transparent; border-style: dashed; opacity: 0.7; }
+  .gate-index {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+    font-size: 13px;
+    font-weight: 700;
+    flex: none;
+  }
+  .gate-index.done { background: #3F7D5C; color: #fff; }
+  .gate-index.current { background: #1F5C63; color: #fff; }
+  .gate-index.pending { background: #E4E7E1; color: #56635E; }
+  .gate-index.excluded { background: transparent; border: 1px dashed #CBD1C8; color: #56635E; }
+
+  .gate-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .gate-name { font-size: 16px; font-weight: 600; }
+  .gate-sub { font-size: 13px; color: #56635E; display: flex; align-items: center; gap: 16px; }
+  .gate-sub-item { display: flex; align-items: center; gap: 6px; }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-family: monospace;
+    flex: none;
+  }
+  .status-pill.done { background: #DCE7E6; color: #3F7D5C; }
+  .status-pill.current { background: #1F5C63; color: #fff; }
+  .status-pill.pending { background: #E4E7E1; color: #56635E; }
+  .status-pill.excluded { background: transparent; border: 1px solid #CBD1C8; color: #56635E; }
+
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    min-height: 40px;
+  }
+  .btn-primary { background: #1F5C63; color: #fff; }
+  .btn-ghost { background: transparent; color: #56635E; border: 1px solid #CBD1C8; }
+
+  a { color: #1F5C63; }
+  a:hover { color: #163f44; }
+</style>
+</helmet>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark">StageForge</span>
+    </div>
+    <div class="user-chip">
+      <div class="avatar">DG</div>
+      <div class="user-chip-text">
+        <span class="user-role">Project Manager</span>
+        <span class="user-name">Derek Gibb</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="context-bar">
+    <div class="org-pill">
+      <div class="org-pill-label">FM Contractor</div>
+      <div class="org-pill-name">BuildCare FM Ltd &middot; North Region</div>
+    </div>
+    <span class="context-sep">&rarr;</span>
+    <div class="org-pill">
+      <div class="org-pill-label">Client Authority</div>
+      <div class="org-pill-name">St Aldwyn NHS Trust &middot; Estates &amp; Facilities</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">Ward 12 HVAC Replacement</h1>
+        <div class="page-meta">Project No. 20456 &middot; Health &middot; Ward Refurbishment</div>
+      </div>
+      <button class="btn btn-ghost">Edit stage scope</button>
+    </div>
+
+    <div class="gate-list">
+
+      <div class="gate-card">
+        <div class="gate-index done">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="gate-body">
+          <div class="gate-name">Gate 0 &mdash; Strategic Assessment</div>
+          <div class="gate-sub">
+            <span class="gate-sub-item">4/4 deliverables</span>
+            <span class="gate-sub-item">Signed off by D. Mackay, 03 Mar 2026</span>
+          </div>
+        </div>
+        <span class="status-pill done">Signed off</span>
+      </div>
+
+      <div class="gate-card">
+        <div class="gate-index done">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="gate-body">
+          <div class="gate-name">Gate 1 &mdash; Business Justification</div>
+          <div class="gate-sub">
+            <span class="gate-sub-item">3/3 deliverables</span>
+            <span class="gate-sub-item">Signed off by D. Mackay, 22 Apr 2026</span>
+          </div>
+        </div>
+        <span class="status-pill done">Signed off</span>
+      </div>
+
+      <div class="gate-card current">
+        <div class="gate-index current">2</div>
+        <div class="gate-body">
+          <div class="gate-name">Gate 2 &mdash; Delivery Strategy</div>
+          <div class="gate-sub">
+            <span class="gate-sub-item">2/3 delivery clear</span>
+            <span class="gate-sub-item">1/1 compliance clear</span>
+            <span class="gate-sub-item">1 item outstanding</span>
+          </div>
+        </div>
+        <button class="btn btn-primary">Open gate</button>
+      </div>
+
+      <div class="gate-card">
+        <div class="gate-index pending">3</div>
+        <div class="gate-body">
+          <div class="gate-name">Gate 3 &mdash; Investment Decision</div>
+          <div class="gate-sub"><span class="gate-sub-item">Not started</span></div>
+        </div>
+        <span class="status-pill pending">Not started</span>
+      </div>
+
+      <div class="gate-card">
+        <div class="gate-index pending">4</div>
+        <div class="gate-body">
+          <div class="gate-name">Gate 4 &mdash; Readiness for Service</div>
+          <div class="gate-sub"><span class="gate-sub-item">Not started</span></div>
+        </div>
+        <span class="status-pill pending">Not started</span>
+      </div>
+
+      <div class="gate-card excluded">
+        <div class="gate-index excluded">5</div>
+        <div class="gate-body">
+          <div class="gate-name">Gate 5 &mdash; Operations Review</div>
+          <div class="gate-sub"><span class="gate-sub-item">Excluded from this project's scope</span></div>
+        </div>
+        <button class="btn btn-ghost">+ Reinstate</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

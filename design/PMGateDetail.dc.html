@@ -1,0 +1,240 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .app {
+    width: 1280px;
+    min-height: 900px;
+    background: #EEF0EC;
+    color: #1B2422;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #CBD1C8;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark { font-family: 'Rockwell', Georgia, serif; font-size: 20px; font-weight: 700; color: #1F5C63; letter-spacing: -0.01em; }
+  .user-chip { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; border: 1px solid #CBD1C8; border-radius: 20px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: #1F5C63; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-family: monospace; }
+  .user-chip-text { display: flex; flex-direction: column; line-height: 1.3; }
+  .user-role { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #56635E; font-family: monospace; }
+  .user-name { font-size: 13px; font-weight: 600; }
+
+  .subbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 40px;
+    border-bottom: 1px solid #CBD1C8;
+    background: #E4E7E1;
+  }
+  .back-link { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1F5C63; text-decoration: none; }
+  .crumb-sep { color: #56635E; }
+  .crumb-text { font-size: 13px; color: #56635E; }
+
+  .content { padding: 40px; display: flex; flex-direction: column; gap: 28px; max-width: 1200px; }
+  .page-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .page-title { font-size: 24px; font-weight: 700; margin: 0 0 6px 0; display: flex; align-items: center; gap: 12px; }
+  .page-meta { font-family: monospace; font-size: 12px; color: #56635E; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-family: monospace; }
+  .status-pill.pending { background: #E4E7E1; color: #56635E; }
+
+  .section { display: flex; flex-direction: column; gap: 14px; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; }
+  .section-title { font-family: monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #1F5C63; font-weight: 700; }
+  .section-count { font-size: 13px; color: #56635E; }
+
+  .item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 22px;
+    background: #FFFFFF;
+    border: 1px solid #CBD1C8;
+    border-radius: 10px;
+  }
+  .item.legal { border-color: #A66A1E; border-style: dashed; }
+  .item-icon { flex: none; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+  .item-icon.ok { background: #DCE7E6; color: #3F7D5C; }
+  .item-icon.warn { background: #F2E5D3; color: #A66A1E; }
+  .item-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .item-label-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .item-label { font-size: 15px; font-weight: 600; }
+  .badge { font-family: monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 8px; border-radius: 4px; }
+  .badge.legal { background: #F2E5D3; color: #A66A1E; }
+  .badge.rule { background: #E4E7E1; color: #56635E; }
+  .item-note { font-size: 13px; color: #56635E; }
+  .file-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #E4E7E1; border-radius: 6px; font-size: 12px; font-family: monospace; width: fit-content; }
+  .item-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+
+  .btn { font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 7px; border: none; cursor: pointer; min-height: 40px; }
+  .btn-primary { background: #1F5C63; color: #fff; }
+  .btn-ghost { background: transparent; color: #1F5C63; border: 1px solid #CBD1C8; }
+  .btn-disabled { background: #E4E7E1; color: #9AA39F; cursor: not-allowed; }
+  .btn-disabled:hover { background: #E4E7E1; }
+
+  .reason-box {
+    margin-top: 6px;
+    padding: 12px 14px;
+    background: #E4E7E1;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .reason-label { font-family: monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: #56635E; }
+  .reason-input { padding: 10px 12px; background: #fff; border: 1px solid #CBD1C8; border-radius: 6px; font-size: 13px; color: #56635E; font-family: inherit; }
+
+  .footer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: #FFFFFF;
+    border: 1px solid #CBD1C8;
+    border-radius: 10px;
+  }
+  .footer-note { font-size: 13px; color: #56635E; }
+
+  a { color: #1F5C63; }
+  a:hover { color: #163f44; }
+</style>
+</helmet>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand"><span class="brand-mark">StageForge</span></div>
+    <div class="user-chip">
+      <div class="avatar">DG</div>
+      <div class="user-chip-text">
+        <span class="user-role">Project Manager</span>
+        <span class="user-name">Derek Gibb</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="subbar">
+    <a class="back-link" href="#">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Ward 12 HVAC Replacement
+    </a>
+    <span class="crumb-sep">/</span>
+    <span class="crumb-text">Project No. 20456</span>
+  </div>
+
+  <div class="content">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">Gate 2 &mdash; Delivery Strategy</h1>
+        <div class="page-meta">Stage: Design &amp; Planning</div>
+      </div>
+      <span class="status-pill pending">In progress</span>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Delivery checklist</span>
+        <span class="section-count">2 of 3 clear</span>
+      </div>
+
+      <div class="item">
+        <div class="item-icon ok">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="item-body">
+          <div class="item-label-row"><span class="item-label">Detailed design pack signed off by Client Authority</span></div>
+          <div class="file-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2"/></svg>
+            design-pack-v3.pdf &middot; uploaded by D. Gibb, 09 Aug 2026
+          </div>
+        </div>
+      </div>
+
+      <div class="item">
+        <div class="item-icon ok">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="item-body">
+          <div class="item-label-row"><span class="item-label">Cost plan updated to RIBA Stage 3 estimate</span></div>
+          <div class="file-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2"/></svg>
+            cost-plan-stage3.xlsx &middot; uploaded by D. Gibb, 11 Aug 2026
+          </div>
+        </div>
+      </div>
+
+      <div class="item legal">
+        <div class="item-icon warn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="item-body">
+          <div class="item-label-row">
+            <span class="item-label">Asbestos survey completed before any intrusive works</span>
+            <span class="badge legal">Legally significant</span>
+          </div>
+          <div class="item-note">Statutory duty under CAR 2012. Outstanding &mdash; no file uploaded.</div>
+          <div class="item-actions">
+            <button class="btn btn-primary">Upload evidence</button>
+            <button class="btn btn-disabled" disabled="disabled">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px; margin-right:4px;"><rect x="5" y="11" width="14" height="9" rx="1.5" stroke="currentColor" stroke-width="2"/><path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2"/></svg>
+              Bypass &mdash; requires Compliance Officer or SRO
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span class="section-title">Compliance requirements</span>
+        <span class="section-count">1 of 1 clear &middot; view only</span>
+      </div>
+
+      <div class="item">
+        <div class="item-icon ok">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="item-body">
+          <div class="item-label-row">
+            <span class="item-label">Fire risk assessment current and on file</span>
+            <span class="badge rule">HTM 05-03</span>
+          </div>
+          <div class="file-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="2"/></svg>
+            fire-risk-assessment.pdf &middot; uploaded by G. Grant (Compliance Officer)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <span class="footer-note">1 item outstanding &mdash; every delivery and compliance item must be clear, bypassed, or overridden before this gate can go to the Sponsor.</span>
+      <button class="btn btn-disabled" disabled="disabled">Submit for Sponsor approval</button>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

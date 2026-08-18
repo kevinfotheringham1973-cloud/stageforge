@@ -1,0 +1,478 @@
+<title>StageForge Config Schema</title>
+<style>
+  :root{
+    --bg:#EEF0EC;
+    --surface:#FFFFFF;
+    --surface-2:#E4E7E1;
+    --ink:#1B2422;
+    --ink-muted:#56635E;
+    --accent:#1F5C63;
+    --accent-soft:#DCE7E6;
+    --flag:#A66A1E;
+    --rule:#CBD1C8;
+    --ok:#3F7D5C;
+    --warn:#B8862B;
+    --risk:#B0473C;
+
+    --font-display:'Rockwell','Roboto Slab',Georgia,serif;
+    --font-body:'Charter','Iowan Old Style',Georgia,'Times New Roman',serif;
+    --font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14191A;
+      --surface:#1B2222;
+      --surface-2:#212928;
+      --ink:#E7E9E2;
+      --ink-muted:#9BA6A0;
+      --accent:#5FB0AE;
+      --accent-soft:#1E3B3A;
+      --flag:#E0A94C;
+      --rule:#33403C;
+      --ok:#5FAE81;
+      --warn:#D9A441;
+      --risk:#D46A57;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14191A;
+    --surface:#1B2222;
+    --surface-2:#212928;
+    --ink:#E7E9E2;
+    --ink-muted:#9BA6A0;
+    --accent:#5FB0AE;
+    --accent-soft:#1E3B3A;
+    --flag:#E0A94C;
+    --rule:#33403C;
+    --ok:#5FAE81;
+    --warn:#D9A441;
+    --risk:#D46A57;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    max-width:44rem;
+    margin:0 auto;
+    padding:3.5rem 1.5rem 6rem;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .page{ animation: rise .5s ease-out; }
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  header.doc-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1.5rem;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:1.75rem;
+    margin-bottom:2.25rem;
+  }
+  .doc-head h1{
+    font-family:var(--font-display);
+    font-size:clamp(1.6rem, 1.3rem + 1.2vw, 2.2rem);
+    line-height:1.1;
+    margin:0 0 .6rem;
+    text-wrap:balance;
+    letter-spacing:-0.01em;
+  }
+  .doc-meta{
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--ink-muted);
+    line-height:1.9;
+  }
+  .stamp{
+    flex:none;
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    border:2px solid var(--flag);
+    border-radius:3px;
+    padding:.35rem .7rem;
+    transform:rotate(-3deg);
+    white-space:nowrap;
+    margin-top:.3rem;
+  }
+
+  h2{
+    font-family:var(--font-display);
+    font-size:1.45rem;
+    letter-spacing:-.005em;
+    color:var(--ink);
+    border-top:1px solid var(--rule);
+    padding-top:.5rem;
+    margin:3.25rem 0 1rem;
+    text-wrap:balance;
+  }
+  h2 .num{
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    color:var(--accent);
+    letter-spacing:.05em;
+    display:block;
+    margin-bottom:.35rem;
+  }
+  h3{
+    font-family:var(--font-mono);
+    font-size:.82rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--accent);
+    margin:2rem 0 .6rem;
+  }
+  p{ margin:0 0 1rem; max-width:38rem; }
+  ul, ol{ margin:0 0 1rem; padding-left:1.3rem; }
+  li{ margin-bottom:.4rem; max-width:36rem; }
+  strong{ color:var(--ink); }
+  code{
+    font-family:var(--font-mono);
+    font-size:.88em;
+    background:var(--surface-2);
+    padding:.1em .35em;
+    border-radius:3px;
+  }
+
+  .lede{
+    font-size:1.05rem;
+    color:var(--ink-muted);
+    max-width:36rem;
+  }
+
+  .flag{
+    border-left:3px solid var(--flag);
+    background:var(--accent-soft);
+    padding:.7rem 1rem;
+    margin:1rem 0 1.4rem;
+    font-size:.92rem;
+    max-width:36rem;
+    border-radius:0 3px 3px 0;
+  }
+  .flag-label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.3rem;
+  }
+  .flag.decided{ border-left-color:var(--ok); background:transparent; }
+  .flag.decided .flag-label{ color:var(--ok); }
+  .rec{
+    background:var(--accent-soft);
+    border-radius:4px;
+    padding:.9rem 1.1rem;
+    margin:1rem 0 1.5rem;
+    font-size:.94rem;
+  }
+  .rec .flag-label{ color:var(--accent); }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:.5rem 0 1.5rem;
+    font-size:.88rem;
+  }
+  .table-wrap{ overflow-x:auto; }
+  th{
+    font-family:var(--font-mono);
+    font-size:.64rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+    text-align:left;
+    padding:.5rem .65rem;
+    border-bottom:1px solid var(--rule);
+    background:var(--surface-2);
+  }
+  td{
+    padding:.55rem .65rem;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+  }
+  td.field{ font-family:var(--font-mono); font-size:.8rem; color:var(--accent); white-space:nowrap; }
+  tr:last-child td{ border-bottom:none; }
+
+  .code-block{
+    background:var(--surface-2);
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:1rem 1.2rem;
+    overflow-x:auto;
+    margin:.75rem 0 1.5rem;
+  }
+  .code-block pre{
+    margin:0;
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    line-height:1.55;
+    color:var(--ink);
+    white-space:pre;
+  }
+  .code-label{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+    margin-bottom:.5rem;
+    display:block;
+  }
+
+  .fig{ margin:1.25rem 0 2rem; }
+  .fig svg{ width:100%; height:auto; display:block; color:var(--ink); }
+  figcaption{
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-muted);
+    margin-top:.7rem;
+    line-height:1.6;
+  }
+
+  .oq{ list-style:none; padding-left:0; counter-reset:oq; }
+  .oq li{
+    counter-increment:oq;
+    position:relative;
+    padding-left:2.1rem;
+    margin-bottom:.85rem;
+    max-width:36rem;
+  }
+  .oq li::before{
+    content:counter(oq);
+    position:absolute;
+    left:0;
+    top:.05rem;
+    font-family:var(--font-mono);
+    font-size:.75rem;
+    color:var(--ink-muted);
+    border:1px solid var(--rule);
+    border-radius:50%;
+    width:1.4rem;
+    height:1.4rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  footer{
+    margin-top:4rem;
+    padding-top:1.5rem;
+    border-top:1px solid var(--rule);
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+  }
+
+  a{ color:var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="doc-head">
+    <div>
+      <h1>StageForge — Config Schema</h1>
+      <div class="doc-meta">
+        Draft v0.4 — companion to PRD v0.8 &amp; Data Model v0.5<br>
+        Owner: Kevin Fotheringham · 18 Aug 2026
+      </div>
+    </div>
+    <div class="stamp">Draft — schema not final</div>
+  </header>
+
+  <p class="lede">The config schema for Stage/Gate/Deliverable templates and Compliance rule sets — the two libraries the PRD's compliance-architecture recommendation asked to be built on one shared primitive, rather than as two separate subsystems.</p>
+
+  <h2><span class="num">01</span>One primitive, two libraries</h2>
+  <p>Every checklist item on a gate — whether it's a delivery deliverable or a compliance requirement — is the same shape: a label, an evidence requirement, and a flag for whether it blocks the gate. What differs is who maintains it and who can clear it without evidence:</p>
+  <ul>
+    <li><strong>Delivery checklist items</strong> live inside a <code>StageTemplate</code>, maintained per programme type. Cleared normally with evidence, or bypassed — by a PM for an ordinary item, or by Compliance Officer/SRO for one flagged legally significant.</li>
+    <li><strong>Compliance checklist items</strong> live inside a <code>ComplianceRuleSet</code>, maintained per sector/jurisdiction, independently of any one programme template. Cleared normally with evidence, or overridden by an SRO.</li>
+  </ul>
+  <p>They share one schema — <code>ChecklistItemTemplate</code> — so a Compliance Officer editing a rule set is filling in the same fields a PM would when building a delivery checklist, not learning a second system.</p>
+
+  <h2><span class="num">02</span>The shared primitive</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+    <tr><td class="field">key</td><td>string</td><td>Stable identifier. Never changes once a live Project has instantiated it.</td></tr>
+    <tr><td class="field">kind</td><td>"delivery" | "compliance"</td><td>Determines the default escape hatch: bypass for delivery, override for compliance.</td></tr>
+    <tr><td class="field">label</td><td>string</td><td>Shown to the PM and Sponsor on the checklist.</td></tr>
+    <tr><td class="field">description</td><td>string, optional</td><td>Instructions or context for whoever has to satisfy it.</td></tr>
+    <tr><td class="field">rule_ref</td><td>string, optional</td><td>Compliance items only — citation of the regulation or standard, e.g. <code>"HTM 05-03"</code>. Free text, for traceability.</td></tr>
+    <tr><td class="field">evidence_type</td><td>"file_upload" | "attestation" | "external_check"</td><td><code>file_upload</code> is the default. <code>attestation</code> is a signed statement with no file. <code>external_check</code> is reserved for the rare case the PRD flagged as needing real logic — a live call to an external system — rather than pure config.</td></tr>
+    <tr><td class="field">min_files</td><td>integer</td><td>Default 1. Only meaningful when <code>evidence_type</code> is <code>file_upload</code>.</td></tr>
+    <tr><td class="field">blocks_gate</td><td>boolean</td><td>Default true for both kinds — matches the PRD decision that compliance blocks on par with delivery evidence.</td></tr>
+    <tr><td class="field">bypass_authority</td><td>"pm" | "compliance_officer" | "sro" — delivery only</td><td>Who's allowed to bypass this specific item. Default <code>"pm"</code>. Set to <code>"compliance_officer"</code> or <code>"sro"</code> when the deliverable is legally significant — a PM cannot bypass those, by design.</td></tr>
+    <tr><td class="field">applies_if_tags</td><td>string[], optional</td><td>Project must carry at least one matching tag for this item to be included ("any match" — see §04). Empty or absent = always applies.</td></tr>
+  </table>
+  </div>
+
+  <h2><span class="num">03</span>Stage / Gate templates</h2>
+  <p>Grounded in real UK public-sector capital governance terminology, since that's the domain: stages and gates modelled on the OGC Gateway Review structure already familiar to NHS capital programmes.</p>
+  <div class="code-block">
+    <span class="code-label">stage_template — health sector, "Ward Refurbishment" programme type</span>
+    <pre>{
+  "key": "stage.design_planning",
+  "sector_variant": "health",
+  "name": "Design &amp; Planning",
+  "order": 2,
+  "gate": {
+    "key": "gate.g2_delivery_strategy",
+    "name": "Gate 2 — Delivery Strategy",
+    "checklist": [
+      {
+        "key": "del.detailed_design_pack",
+        "kind": "delivery",
+        "label": "Detailed design pack signed off by Client Authority",
+        "evidence_type": "file_upload",
+        "min_files": 1,
+        "blocks_gate": true,
+        "bypass_authority": "pm"
+      },
+      {
+        "key": "del.cost_plan_updated",
+        "kind": "delivery",
+        "label": "Cost plan updated to RIBA Stage 3 estimate",
+        "evidence_type": "file_upload",
+        "min_files": 1,
+        "blocks_gate": true,
+        "bypass_authority": "pm"
+      },
+      {
+        "key": "del.asbestos_survey",
+        "kind": "delivery",
+        "label": "Asbestos survey completed before any intrusive works",
+        "description": "Statutory duty under CAR 2012 — cannot be bypassed at PM level.",
+        "evidence_type": "file_upload",
+        "min_files": 1,
+        "blocks_gate": true,
+        "bypass_authority": "sro"
+      }
+    ]
+  }
+}</pre>
+  </div>
+  <p>Note what's <em>not</em> here: no compliance items. A Compliance Officer never edits a <code>StageTemplate</code> to add a regulatory requirement — that would put regulatory content back under programme-template ownership, the exact coupling the config-driven recommendation was meant to avoid.</p>
+
+  <h2><span class="num">04</span>Compliance rule sets</h2>
+  <p>A rule set is maintained independently and attaches to stages by key, not by nesting — so the same rule can apply across every programme type that includes that stage, without being copy-pasted into each template.</p>
+  <div class="code-block">
+    <span class="code-label">compliance_rule_set — health sector, fire safety</span>
+    <pre>{
+  "key": "compliance.health.fire_safety",
+  "sector_variant": "health",
+  "name": "Fire Safety &amp; HTM 05 Compliance",
+  "rules": [
+    {
+      "key": "comp.htm05_fire_risk_assessment",
+      "kind": "compliance",
+      "label": "Fire risk assessment current and on file",
+      "description": "Required wherever works affect a compartment boundary or means of escape.",
+      "rule_ref": "HTM 05-03",
+      "evidence_type": "file_upload",
+      "blocks_gate": true,
+      "applies_to_stage": ["stage.design_planning", "stage.construction"],
+      "applies_if_tags": ["acute_hospital"]
+    }
+  ]
+}</pre>
+  </div>
+  <p><code>applies_to_stage</code> and <code>applies_if_tags</code> only exist on compliance items, not delivery ones — delivery items are already stage-scoped by where they're nested in the <code>StageTemplate</code>. Compliance items need it explicitly because one rule set is meant to be reused across many stage templates and programme types at once.</p>
+
+  <h3>How tags work</h3>
+  <p><code>applies_if_tags</code> is deliberately simple: a Project carries a set of tags (e.g. <code>acute_hospital</code>, <code>listed_building</code>, <code>occupied_during_works</code>), and a rule applies if at least one of its tags matches. This is the whole extensibility mechanism the PRD asked for — a Compliance Officer adds a new rule with a new tag combination, no code, no deploy.</p>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: "any match" is sufficient for the sectors currently in scope — no AND/OR/NOT logic for now. Worth revisiting only if a future sector's rules genuinely need combined conditions rather than a single qualifying tag.</div>
+
+  <h2><span class="num">05</span>How the two merge into a live Gate</h2>
+  <p>At the moment a Stage is instantiated on a Project, its Gate's checklist is assembled once from both sources — the <code>StageTemplate</code>'s delivery items, plus every rule in the Project's sector <code>ComplianceRuleSet</code>(s) whose <code>applies_to_stage</code> and <code>applies_if_tags</code> match. The result is copied into real <code>Deliverable</code> and <code>ComplianceRequirement</code> rows for that Gate.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 260" role="img" aria-label="A StageTemplate's delivery checklist and a ComplianceRuleSet's matching rules merge at Stage instantiation into one live Gate checklist, copied as Deliverable and ComplianceRequirement rows.">
+      <defs>
+        <marker id="arrowC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <rect x="30" y="30" width="260" height="60" fill="none" stroke="currentColor" stroke-width="1.5" rx="4"/>
+      <text x="160" y="52" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.4" fill="var(--ink-muted)">STAGE TEMPLATE</text>
+      <text x="160" y="70" text-anchor="middle" font-size="13">Delivery checklist</text>
+
+      <rect x="610" y="30" width="260" height="60" fill="none" stroke="currentColor" stroke-width="1.5" rx="4"/>
+      <text x="740" y="52" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.4" fill="var(--ink-muted)">COMPLIANCE RULE SET</text>
+      <text x="740" y="70" text-anchor="middle" font-size="13">Matching rules</text>
+
+      <line x1="200" y1="90" x2="400" y2="150" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrowC)"/>
+      <line x1="700" y1="90" x2="500" y2="150" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrowC)"/>
+      <text x="740" y="115" text-anchor="middle" font-size="10.5" fill="var(--ink-muted)">stage + tag match</text>
+
+      <rect x="325" y="152" width="250" height="56" fill="none" stroke="var(--accent)" stroke-width="1.8" rx="4"/>
+      <text x="450" y="174" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.4" fill="var(--accent)">GATE (live)</text>
+      <text x="450" y="192" text-anchor="middle" font-size="13">Deliverable + ComplianceRequirement rows</text>
+
+      <line x1="450" y1="208" x2="450" y2="240" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrowC)"/>
+      <text x="465" y="230" font-size="10.5" fill="var(--ink-muted)">copied once, at instantiation</text>
+    </svg>
+    <figcaption>The two config libraries stay independently editable; a Project's live Gate is a frozen copy, not a live join.</figcaption>
+  </figure>
+
+  <div class="rec">
+    <span class="flag-label">Recommendation</span>
+    Copy at instantiation rather than resolving templates live on every read. If a Gate's checklist were computed fresh from the templates each time, editing a <code>ComplianceRuleSet</code> could silently change the requirements on gates that are already in progress or even signed off — which breaks the audit trail's claim that a sign-off reflects what was actually reviewed at the time. Freezing a copy at instantiation means template edits only affect <em>future</em> stages, never rewrite history on live ones. This wasn't explicitly asked for but follows directly from the audit-trail requirement already locked into the PRD.
+  </div>
+
+  <h2><span class="num">06</span>Authoring &amp; project scoping</h2>
+  <p>Two different permissions, easy to conflate: who can edit the shared template content, and who can decide how much of it a given project actually uses.</p>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: authoring live edits to a <code>StageTemplate</code> or <code>ComplianceRuleSet</code> is restricted to <strong>Platform Admin</strong> and <strong>Compliance Officer</strong>. A PM never edits template content directly — consistent with a PM not being able to unilaterally change what's legally required of a project.
+  </div>
+  <p>But not every project needs every stage a template defines — a small works order might not go through stages a full capital scheme does. Kevin flagged the PM needs some control here, just not over the template itself.</p>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: a PM can select which subset of a <code>StageTemplate</code>'s stages apply to their specific Project — scoping, not authoring. Modelled as <code>Project.included_stage_keys</code>, chosen at project setup. Absent, or containing every key in the template, means the full template applies unchanged.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: <code>included_stage_keys</code> is editable, not write-once — a PM can reinstate a previously-excluded stage later if scope grows mid-programme. Reinstating one instantiates its Stage and Gate at that point, using whatever the template and matching compliance rules look like at that moment — same "copy at instantiation" behaviour as any other stage, just triggered later.
+  </div>
+  <div class="code-block">
+    <span class="code-label">excerpt — a Project scoped to a subset of its StageTemplate</span>
+    <pre>{
+  "project_number": "20456",
+  "stage_template_key": "template.health.ward_refurbishment",
+  "included_stage_keys": [
+    "stage.business_case",
+    "stage.design_planning",
+    "stage.construction"
+  ]
+}</pre>
+  </div>
+  <p>This project simply never instantiates whatever other stages the template defines — e.g. a "Post-Occupancy Review" stage a larger scheme would carry. Compliance items still attach by <code>applies_to_stage</code> as normal; a rule scoped to an excluded stage never gets instantiated for this project either, the same as any other stage that isn't part of it.</p>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a reinstated stage appends after the project's current point, rather than inserting back into its original template position. Simpler and safer — reinstating a stage never reshuffles or reopens stages that are already underway or complete.</div>
+
+  <h2><span class="num">07</span>Open questions</h2>
+  <p>None outstanding for this schema. Everything raised while sketching it has been resolved.</p>
+  <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round: reinstated stages append after the current point, never reordering stages already underway. Resolved earlier and reflected here: bypass authority is per-item and tiered (PM / Compliance Officer / SRO) by legal significance; tag matching is "any match," no boolean logic for now; template authoring is Platform Admin + Compliance Officer only; PM can scope a project to a subset of its template's stages, and that selection is editable — stages can be reinstated later, not just excluded once.</p>
+
+  <footer>StageForge · Config Schema draft v0.4 · companion to PRD v0.8 &amp; Data Model v0.5</footer>
+
+</div>

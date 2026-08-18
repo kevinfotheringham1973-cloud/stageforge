@@ -1,0 +1,475 @@
+<title>StageForge Data Model</title>
+<style>
+  :root{
+    --bg:#EEF0EC;
+    --surface:#FFFFFF;
+    --surface-2:#E4E7E1;
+    --ink:#1B2422;
+    --ink-muted:#56635E;
+    --accent:#1F5C63;
+    --accent-soft:#DCE7E6;
+    --flag:#A66A1E;
+    --rule:#CBD1C8;
+    --ok:#3F7D5C;
+    --warn:#B8862B;
+    --risk:#B0473C;
+
+    --font-display:'Rockwell','Roboto Slab',Georgia,serif;
+    --font-body:'Charter','Iowan Old Style',Georgia,'Times New Roman',serif;
+    --font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14191A;
+      --surface:#1B2222;
+      --surface-2:#212928;
+      --ink:#E7E9E2;
+      --ink-muted:#9BA6A0;
+      --accent:#5FB0AE;
+      --accent-soft:#1E3B3A;
+      --flag:#E0A94C;
+      --rule:#33403C;
+      --ok:#5FAE81;
+      --warn:#D9A441;
+      --risk:#D46A57;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14191A;
+    --surface:#1B2222;
+    --surface-2:#212928;
+    --ink:#E7E9E2;
+    --ink-muted:#9BA6A0;
+    --accent:#5FB0AE;
+    --accent-soft:#1E3B3A;
+    --flag:#E0A94C;
+    --rule:#33403C;
+    --ok:#5FAE81;
+    --warn:#D9A441;
+    --risk:#D46A57;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    max-width:44rem;
+    margin:0 auto;
+    padding:3.5rem 1.5rem 6rem;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .page{ animation: rise .5s ease-out; }
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  header.doc-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1.5rem;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:1.75rem;
+    margin-bottom:2.25rem;
+  }
+  .doc-head h1{
+    font-family:var(--font-display);
+    font-size:clamp(1.7rem, 1.4rem + 1.2vw, 2.3rem);
+    line-height:1.1;
+    margin:0 0 .6rem;
+    text-wrap:balance;
+    letter-spacing:-0.01em;
+  }
+  .doc-meta{
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--ink-muted);
+    line-height:1.9;
+  }
+  .doc-meta a{ color:var(--ink-muted); }
+  .stamp{
+    flex:none;
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    border:2px solid var(--flag);
+    border-radius:3px;
+    padding:.35rem .7rem;
+    transform:rotate(-3deg);
+    white-space:nowrap;
+    margin-top:.3rem;
+  }
+
+  h2{
+    font-family:var(--font-display);
+    font-size:1.5rem;
+    letter-spacing:-.005em;
+    color:var(--ink);
+    border-top:1px solid var(--rule);
+    padding-top:.5rem;
+    margin:3.25rem 0 1rem;
+    text-wrap:balance;
+  }
+  h2 .num{
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    color:var(--accent);
+    letter-spacing:.05em;
+    display:block;
+    margin-bottom:.35rem;
+  }
+  h3{
+    font-family:var(--font-mono);
+    font-size:.82rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--accent);
+    margin:2rem 0 .6rem;
+  }
+  p{ margin:0 0 1rem; max-width:38rem; }
+  ul, ol{ margin:0 0 1rem; padding-left:1.3rem; }
+  li{ margin-bottom:.4rem; max-width:36rem; }
+  strong{ color:var(--ink); }
+  code{
+    font-family:var(--font-mono);
+    font-size:.88em;
+    background:var(--surface-2);
+    padding:.1em .35em;
+    border-radius:3px;
+  }
+
+  .lede{
+    font-size:1.05rem;
+    color:var(--ink-muted);
+    max-width:36rem;
+  }
+
+  .flag{
+    border-left:3px solid var(--flag);
+    background:var(--accent-soft);
+    padding:.7rem 1rem;
+    margin:1rem 0 1.4rem;
+    font-size:.92rem;
+    max-width:36rem;
+    border-radius:0 3px 3px 0;
+  }
+  .flag-label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.3rem;
+  }
+  .flag.decided{ border-left-color:var(--ok); background:transparent; }
+  .flag.decided .flag-label{ color:var(--ok); }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:.5rem 0 1.5rem;
+    font-size:.9rem;
+  }
+  .table-wrap{ overflow-x:auto; }
+  th{
+    font-family:var(--font-mono);
+    font-size:.66rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+    text-align:left;
+    padding:.5rem .7rem;
+    border-bottom:1px solid var(--rule);
+    background:var(--surface-2);
+  }
+  td{
+    padding:.6rem .7rem;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+  }
+  td.field{ font-family:var(--font-mono); font-size:.82rem; color:var(--accent); white-space:nowrap; }
+  tr:last-child td{ border-bottom:none; }
+
+  .fig{ margin:1.25rem 0 2rem; }
+  .fig svg{ width:100%; height:auto; display:block; color:var(--ink); }
+  figcaption{
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--ink-muted);
+    margin-top:.7rem;
+    line-height:1.6;
+  }
+
+  .oq{ list-style:none; padding-left:0; counter-reset:oq; }
+  .oq li{
+    counter-increment:oq;
+    position:relative;
+    padding-left:2.1rem;
+    margin-bottom:.85rem;
+    max-width:36rem;
+  }
+  .oq li::before{
+    content:counter(oq);
+    position:absolute;
+    left:0;
+    top:.05rem;
+    font-family:var(--font-mono);
+    font-size:.75rem;
+    color:var(--ink-muted);
+    border:1px solid var(--rule);
+    border-radius:50%;
+    width:1.4rem;
+    height:1.4rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  footer{
+    margin-top:4rem;
+    padding-top:1.5rem;
+    border-top:1px solid var(--rule);
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+  }
+
+  a{ color:var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="doc-head">
+    <div>
+      <h1>StageForge — Data Model</h1>
+      <div class="doc-meta">
+        Draft v0.5 — companion to PRD v0.8<br>
+        Owner: Kevin Fotheringham · 18 Aug 2026
+      </div>
+    </div>
+    <div class="stamp">Draft — schema not final</div>
+  </header>
+
+  <p class="lede">A first entity model built directly on the decisions locked into the PRD: multi-tenancy resolved as company → department with project-scoped access underneath it, and the gate-closure mechanism with its two governed escape hatches — PM bypass and SRO override.</p>
+
+  <h2><span class="num">01</span>Scope</h2>
+  <p>This covers the Phase 1 MVP core (tenancy, stage-gate, deliverables, evidence) plus the Compliance/SRO mechanism in full, since that's now fully specified even though it lands in Phase 2. Resourcing and Finance entities are sketched only, at the bottom, since they're Phase 2–3 and thin on detail in the PRD.</p>
+
+  <h2><span class="num">02</span>Tenancy &amp; access</h2>
+  <p>The PRD's worked example showed that "tenant" can't mean "the company that owns the project" — a project is inherently shared live across at least the FM Contractor and the Client Authority. The schema resolves this by never linking a Company or Department directly to a Project. Access is granted through a join record, scoped per project, per department, per role.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 380" role="img" aria-label="BuildCare's North Region and St Aldwyn's Estates department each hold a scoped role assignment into the Ward 12 project; BuildCare South and St Aldwyn Digital Transformation have no link into it.">
+      <defs>
+        <marker id="arrowA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- Company A: BuildCare -->
+      <rect x="30" y="20" width="230" height="46" fill="none" stroke="currentColor" stroke-width="1.5" rx="3"/>
+      <text x="145" y="40" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.5" fill="var(--ink-muted)">COMPANY</text>
+      <text x="145" y="56" text-anchor="middle" font-size="13">BuildCare FM Ltd</text>
+
+      <!-- Departments under A -->
+      <rect x="30" y="120" width="230" height="46" fill="none" stroke="var(--ok)" stroke-width="1.5" rx="3"/>
+      <text x="145" y="140" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.5" fill="var(--ink-muted)">DEPARTMENT</text>
+      <text x="145" y="156" text-anchor="middle" font-size="13">North Region</text>
+
+      <rect x="30" y="200" width="230" height="46" fill="none" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 3" rx="3"/>
+      <text x="145" y="220" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.5" fill="var(--ink-muted)">DEPARTMENT</text>
+      <text x="145" y="236" text-anchor="middle" font-size="13" fill="var(--ink-muted)">South Region</text>
+
+      <line x1="145" y1="66" x2="145" y2="118" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="145" y1="166" x2="145" y2="198" stroke="var(--rule)" stroke-width="1.2"/>
+
+      <!-- Company B: St Aldwyn -->
+      <rect x="640" y="20" width="230" height="46" fill="none" stroke="currentColor" stroke-width="1.5" rx="3"/>
+      <text x="755" y="40" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.5" fill="var(--ink-muted)">COMPANY</text>
+      <text x="755" y="56" text-anchor="middle" font-size="13">St Aldwyn NHS Trust</text>
+
+      <rect x="640" y="120" width="230" height="46" fill="none" stroke="var(--ok)" stroke-width="1.5" rx="3"/>
+      <text x="755" y="140" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.5" fill="var(--ink-muted)">DEPARTMENT</text>
+      <text x="755" y="156" text-anchor="middle" font-size="13">Estates &amp; Facilities</text>
+
+      <rect x="640" y="200" width="230" height="46" fill="none" stroke="var(--rule)" stroke-width="1.5" stroke-dasharray="3 3" rx="3"/>
+      <text x="755" y="220" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.5" fill="var(--ink-muted)">DEPARTMENT</text>
+      <text x="755" y="236" text-anchor="middle" font-size="13" fill="var(--ink-muted)">Digital Transformation</text>
+
+      <line x1="755" y1="66" x2="755" y2="118" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="755" y1="166" x2="755" y2="198" stroke="var(--rule)" stroke-width="1.2"/>
+
+      <!-- Project, center -->
+      <rect x="330" y="150" width="240" height="60" fill="none" stroke="var(--accent)" stroke-width="1.8" rx="4"/>
+      <text x="450" y="172" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.5" fill="var(--accent)">PROJECT</text>
+      <text x="450" y="189" text-anchor="middle" font-size="13">Ward 12 HVAC Replacement</text>
+      <text x="450" y="203" text-anchor="middle" font-size="10" font-family="SFMono-Regular,Consolas,monospace" fill="var(--ink-muted)">no. 20456</text>
+
+      <!-- Active assignment arrows -->
+      <path d="M260,143 L328,175" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arrowA)"/>
+      <text x="270" y="120" font-size="10.5" font-family="SFMono-Regular,Consolas,monospace" fill="var(--accent)">PROJECT_ROLE_ASSIGNMENT</text>
+      <text x="270" y="133" font-size="10.5" fill="var(--ink-muted)">role: FM Contractor</text>
+
+      <path d="M640,143 L572,175" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arrowA)"/>
+      <text x="560" y="120" text-anchor="end" font-size="10.5" font-family="SFMono-Regular,Consolas,monospace" fill="var(--accent)">PROJECT_ROLE_ASSIGNMENT</text>
+      <text x="560" y="133" text-anchor="end" font-size="10.5" fill="var(--ink-muted)">role: Client Authority</text>
+
+      <!-- No-access indicators -->
+      <line x1="260" y1="223" x2="326" y2="200" stroke="var(--rule)" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="255" y="255" text-anchor="end" font-size="10.5" fill="var(--ink-muted)">no PROJECT_ROLE_ASSIGNMENT</text>
+
+      <line x1="640" y1="223" x2="574" y2="200" stroke="var(--rule)" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="645" y="255" font-size="10.5" fill="var(--ink-muted)">no PROJECT_ROLE_ASSIGNMENT</text>
+    </svg>
+    <figcaption>Company and Department never link directly to Project. Each side's active department reaches the project only through its own scoped role-assignment record; the inactive department on each side has none, so it has no visibility at all.</figcaption>
+  </figure>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th>Entity</th><th>Purpose</th><th>Key fields</th></tr>
+    <tr><td><strong>Company</strong></td><td>Top-tier tenant — an FM Contractor or Client Authority organisation.</td><td class="field">id, name, type</td></tr>
+    <tr><td><strong>Department</strong></td><td>Second-tier tenant nested under a Company — a business unit, region, or department with its own budget/Sponsor.</td><td class="field">id, company_id, name</td></tr>
+    <tr><td><strong>User</strong></td><td>An individual person; belongs to a home Department but can be granted roles on any project they're assigned to.</td><td class="field">id, name, email, home_department_id</td></tr>
+    <tr><td><strong>Role</strong></td><td>Permission definition. The seven core roles (PM, Sponsor, SRO, FM Contractor, Client Authority, Compliance Officer, Resource/Portfolio Manager, Finance) are global; a SectorVariant can also define its own additional roles.</td><td class="field">id, name, permissions, sector_variant_id (nullable)</td></tr>
+    <tr><td><strong>ProjectRoleAssignment</strong></td><td>The access join. Grants one User (from one Department) one Role on one Project. This is the entity that actually resolves the tenancy question.</td><td class="field">id, project_id, department_id, user_id, role_id</td></tr>
+  </table>
+  </div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a sector variant can introduce its own role beyond the core seven. Modelled with a nullable <code>sector_variant_id</code> on <code>Role</code> — null means the role is global and available to every sector; set means it's specific to that sector and only assignable on projects within it.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: template authoring (<code>StageTemplate</code>, <code>ComplianceRuleSet</code>) is restricted to <strong>Platform Admin</strong> and Compliance Officer. Platform Admin is a genuinely different shape of role from the other eight — it isn't assigned per <code>ProjectRoleAssignment</code> at all, since template content isn't project-scoped. It's a tenant- or platform-level permission, sitting outside this table.</div>
+
+  <h2><span class="num">03</span>Gate closure mechanism</h2>
+  <p>The PRD's governance decisions add up to an AND condition: a gate can only move to Sponsor approval once <em>both</em> the delivery checklist and the compliance checklist are clear — where "clear" means either genuinely satisfied, or satisfied through one of the two governed escape hatches, each locked to a specific role and each leaving a reason on the record.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 400" role="img" aria-label="A gate reaches Signed Off only once both its deliverables and its compliance requirements are clear, then the Sponsor approves. Deliverable 3 is cleared via PM bypass and Requirement B is cleared via SRO override, shown as dashed boxes; both feed the same AND condition as normally-cleared items.">
+      <defs>
+        <marker id="arrowB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- Delivery items -->
+      <rect x="20" y="20" width="130" height="42" fill="none" stroke="var(--ok)" stroke-width="1.4" rx="3"/>
+      <text x="85" y="38" text-anchor="middle" font-size="10.5">Deliverable 1</text>
+      <text x="85" y="52" text-anchor="middle" font-size="10" fill="var(--ok)">evidence ✓</text>
+
+      <rect x="160" y="20" width="130" height="42" fill="none" stroke="var(--ok)" stroke-width="1.4" rx="3"/>
+      <text x="225" y="38" text-anchor="middle" font-size="10.5">Deliverable 2</text>
+      <text x="225" y="52" text-anchor="middle" font-size="10" fill="var(--ok)">evidence ✓</text>
+
+      <rect x="300" y="20" width="130" height="42" fill="none" stroke="var(--flag)" stroke-width="1.4" stroke-dasharray="4 3" rx="3"/>
+      <text x="365" y="38" text-anchor="middle" font-size="10.5">Deliverable 3</text>
+      <text x="365" y="52" text-anchor="middle" font-size="10" fill="var(--flag)">PM bypass</text>
+
+      <line x1="85" y1="62" x2="220" y2="108" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowB)"/>
+      <line x1="225" y1="62" x2="222" y2="108" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowB)"/>
+      <line x1="365" y1="62" x2="228" y2="108" stroke="var(--flag)" stroke-width="1.2" marker-end="url(#arrowB)"/>
+
+      <rect x="120" y="110" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.6" rx="3"/>
+      <text x="225" y="128" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.4" fill="var(--ink-muted)">DELIVERY</text>
+      <text x="225" y="144" text-anchor="middle" font-size="13">Clear</text>
+
+      <!-- Compliance items -->
+      <rect x="470" y="20" width="170" height="42" fill="none" stroke="var(--ok)" stroke-width="1.4" rx="3"/>
+      <text x="555" y="38" text-anchor="middle" font-size="10.5">Requirement A</text>
+      <text x="555" y="52" text-anchor="middle" font-size="10" fill="var(--ok)">satisfied ✓</text>
+
+      <rect x="660" y="20" width="210" height="42" fill="none" stroke="var(--flag)" stroke-width="1.4" stroke-dasharray="4 3" rx="3"/>
+      <text x="765" y="38" text-anchor="middle" font-size="10.5">Requirement B</text>
+      <text x="765" y="52" text-anchor="middle" font-size="10" fill="var(--flag)">SRO override</text>
+
+      <line x1="555" y1="62" x2="668" y2="108" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowB)"/>
+      <line x1="765" y1="62" x2="675" y2="108" stroke="var(--flag)" stroke-width="1.2" marker-end="url(#arrowB)"/>
+
+      <rect x="560" y="110" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.6" rx="3"/>
+      <text x="665" y="128" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.4" fill="var(--ink-muted)">COMPLIANCE</text>
+      <text x="665" y="144" text-anchor="middle" font-size="13">Clear</text>
+
+      <!-- Merge into AND -->
+      <line x1="225" y1="154" x2="440" y2="216" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrowB)"/>
+      <line x1="665" y1="154" x2="460" y2="216" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrowB)"/>
+
+      <rect x="335" y="218" width="230" height="46" fill="none" stroke="var(--accent)" stroke-width="1.8" rx="4"/>
+      <text x="450" y="238" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.4" fill="var(--accent)">GATE</text>
+      <text x="450" y="255" text-anchor="middle" font-size="13">Awaiting Sponsor</text>
+
+      <line x1="450" y1="264" x2="450" y2="308" stroke="currentColor" stroke-width="1.6" marker-end="url(#arrowB)"/>
+      <text x="465" y="290" font-size="11" fill="var(--ink-muted)">Sponsor approves</text>
+
+      <rect x="330" y="310" width="240" height="50" fill="none" stroke="var(--ok)" stroke-width="2" rx="4"/>
+      <text x="450" y="331" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10" letter-spacing="0.4" fill="var(--ok)">GATE</text>
+      <text x="450" y="349" text-anchor="middle" font-size="14">Signed Off</text>
+    </svg>
+    <figcaption>Solid border = requirement met normally. Dashed border = met through a governed escape hatch — PM, Compliance Officer, or SRO bypass on delivery depending on legal significance; SRO override on compliance — each requiring a role-locked action and a written reason. Both paths feed the same AND condition before the Sponsor can act.</figcaption>
+  </figure>
+
+  <h3>Delivery</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Entity</th><th>Purpose</th><th>Key fields</th></tr>
+    <tr><td><strong>SectorVariant</strong></td><td>Health, Defence, Justice, etc. — determines which template libraries and branding apply.</td><td class="field">id, name, brand_name</td></tr>
+    <tr><td><strong>StageTemplate</strong></td><td>Configurable library entry: an ordered set of gates and deliverables for a programme type, scoped to a sector. Authored by Platform Admin or Compliance Officer only.</td><td class="field">id, sector_variant_id, name</td></tr>
+    <tr><td><strong>Project</strong></td><td>The central unit. Carries the central project number everything else attaches to. A PM may scope it to a subset of its StageTemplate's stages, and edit that selection later — e.g. reinstating a stage if scope grows mid-programme.</td><td class="field">id, project_number, sector_variant_id, stage_template_id, included_stage_keys, name</td></tr>
+    <tr><td><strong>Stage</strong></td><td>An instance of a StageTemplate applied to a Project, in sequence. Only instantiated for stages in Project.included_stage_keys.</td><td class="field">id, project_id, template_id, order</td></tr>
+    <tr><td><strong>Gate</strong></td><td>The checkpoint ending a Stage.</td><td class="field">id, stage_id, status</td></tr>
+    <tr><td><strong>Deliverable</strong></td><td>A checklist item instance at a Gate. Carries whether it's legally significant, from its template.</td><td class="field">id, gate_id, status, legally_significant</td></tr>
+    <tr><td><strong>EvidenceFile</strong></td><td>An uploaded file against a Deliverable, versioned.</td><td class="field">id, deliverable_id, version, uploaded_by, uploaded_at</td></tr>
+    <tr><td><strong>DeliverableBypass</strong></td><td>Record of bypassing a deliverable's evidence requirement. <code>bypassed_by</code> must hold PM, Compliance Officer, or SRO — PM only if the deliverable isn't legally significant.</td><td class="field">id, deliverable_id, bypassed_by, reason (required), timestamp</td></tr>
+    <tr><td><strong>GateSignOff</strong></td><td>Record of the Sponsor's approval.</td><td class="field">id, gate_id, signed_off_by, timestamp</td></tr>
+  </table>
+  </div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a deliverable bypass requires a reason, for traceability — mandatory, not optional. Every override/bypass in this model now carries the same requirement.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a PM cannot bypass a deliverable that carries legal weight — that escalates to Compliance Officer or SRO instead. Bypass authority is set per deliverable (via its template's <code>legally_significant</code> flag), not uniformly PM-level.</div>
+
+  <h3>Compliance &amp; governance</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Entity</th><th>Purpose</th><th>Key fields</th></tr>
+    <tr><td><strong>ComplianceRuleSet</strong></td><td>Config-driven rule library, scoped to a SectorVariant and jurisdiction.</td><td class="field">id, sector_variant_id, name</td></tr>
+    <tr><td><strong>ComplianceRequirement</strong></td><td>An instance of a rule attached to a Stage — the compliance equivalent of a Deliverable.</td><td class="field">id, stage_id, status, blocks_gate</td></tr>
+    <tr><td><strong>ComplianceOverride</strong></td><td>Record of an SRO overriding <em>every</em> outstanding compliance requirement on a Gate, in one action.</td><td class="field">id, gate_id, overridden_by, reason (required), covered_requirement_ids, timestamp</td></tr>
+    <tr><td><strong>AuditLogEntry</strong></td><td>Append-only trail. One row per upload, bypass, override, sign-off, and rejection, across every entity above.</td><td class="field">id, actor_id, action, entity_type, entity_id, timestamp</td></tr>
+  </table>
+  </div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: an SRO override clears everything outstanding on the Gate in one action — not a per-requirement record. <code>covered_requirement_ids</code> snapshots which specific requirements were outstanding at the moment of override, so the audit trail shows exactly what the SRO accepted, even if new requirements are added to the stage later.</div>
+
+  <h2><span class="num">04</span>Later-phase entities (sketch only)</h2>
+  <p>Thin on purpose — the PRD treats these as Phase 2–3 and doesn't yet have enough detail to model properly.</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Entity</th><th>Purpose</th><th>Phase</th></tr>
+    <tr><td><strong>ResourceAllocation</strong></td><td>Resource/capacity assigned against a Project.</td><td>2</td></tr>
+    <tr><td><strong>SpendRecord</strong></td><td>An invoice-level actual, tied to a Project via its project_number; ERP reconciliation (SAP/D365) deferred beyond this.</td><td>3</td></tr>
+  </table>
+  </div>
+
+  <h2><span class="num">05</span>Resolved this round</h2>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    <code>Programme</code> is not a real entity for now — confirmed by Kevin. But he flagged it could become one as project scope grows, so <code>Project</code> is deliberately left without a <code>programme_id</code> today rather than a real one being added and left unused — the field should be added only once there's an actual grouping need, as a nullable FK, so it's a non-breaking addition when that day comes.
+  </div>
+  <p>Also resolved: sector-specific roles, mandatory bypass reasons, and single-action SRO overrides — folded into the tables above rather than repeated here.</p>
+
+  <h2><span class="num">06</span>Open questions this model raises</h2>
+  <ol class="oq">
+    <li>Now that <code>Role</code> can be sector-specific, should <code>ProjectRoleAssignment</code> validate that the assigned role is either global or matches the Project's own <code>sector_variant_id</code>? Implementation-level, but worth deciding before build.</li>
+  </ol>
+
+  <footer>StageForge · Data Model draft v0.5 · companion to PRD v0.8</footer>
+
+</div>

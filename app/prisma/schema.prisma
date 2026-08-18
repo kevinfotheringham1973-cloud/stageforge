@@ -1,0 +1,299 @@
+// StageForge — Phase 1 MVP schema.
+// Direct translation of DataModel.html (v0.5) and ConfigSchema.html (v0.4),
+// scoped to Phase 1: Stage-Gate Engine, Deliverable/Evidence, tiered bypass
+// authority, Sponsor sign-off, audit trail, multi-tenancy.
+//
+// Deliberately NOT in this schema (Phase 2+, per the PRD roadmap):
+// ComplianceRuleSet, ComplianceRequirement, ComplianceOverride,
+// ResourceAllocation, SpendRecord.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Tenancy & access ────────────────────────────────────────────────
+// Company/Department never link directly to Project — access is granted
+// through ProjectRoleAssignment, scoped per project. See DataModel.html §02.
+
+enum CompanyType {
+  FM_CONTRACTOR
+  CLIENT_AUTHORITY
+}
+
+model Company {
+  id          String       @id @default(cuid())
+  name        String
+  type        CompanyType
+  departments Department[]
+  createdAt   DateTime     @default(now())
+}
+
+model Department {
+  id                 String               @id @default(cuid())
+  companyId          String
+  company            Company              @relation(fields: [companyId], references: [id])
+  name               String
+  users              User[]
+  roleAssignments    ProjectRoleAssignment[]
+  createdAt          DateTime             @default(now())
+}
+
+model User {
+  id                 String                  @id @default(cuid())
+  name               String
+  email              String                  @unique
+  homeDepartmentId   String?
+  homeDepartment     Department?             @relation(fields: [homeDepartmentId], references: [id])
+  isPlatformAdmin    Boolean                 @default(false)
+  roleAssignments    ProjectRoleAssignment[]
+  evidenceUploads    EvidenceFile[]
+  bypasses           DeliverableBypass[]
+  signOffs           GateSignOff[]
+  auditEntries       AuditLogEntry[]
+  createdAt          DateTime                @default(now())
+}
+
+// Global role definitions. A Role can optionally be scoped to a
+// SectorVariant (nullable sectorVariantId) — see DataModel.html §02
+// decided note on sector-specific roles. Phase 1 only seeds the core
+// eight, all global.
+model Role {
+  id              String                  @id @default(cuid())
+  key             String                  @unique // e.g. "PM", "SPONSOR", "SRO"
+  name            String
+  sectorVariantId String?
+  sectorVariant   SectorVariant?          @relation(fields: [sectorVariantId], references: [id])
+  assignments     ProjectRoleAssignment[]
+}
+
+// The access join — resolves the tenancy question. Grants one User
+// (from one Department) one Role on one Project.
+model ProjectRoleAssignment {
+  id           String     @id @default(cuid())
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id])
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([projectId, userId, roleId])
+}
+
+// ── Delivery ─────────────────────────────────────────────────────────
+
+model SectorVariant {
+  id        String     @id @default(cuid())
+  key       String     @unique // e.g. "health"
+  name      String
+  brandName String
+  templates Template[]
+  roles     Role[]
+}
+
+// The named template a Project is built from, e.g.
+// "template.health.ward_refurbishment". Authoring (create/edit) is
+// Platform Admin + Compliance Officer only — not built in Phase 1,
+// which ships with one seeded template.
+model Template {
+  id              String          @id @default(cuid())
+  key             String          @unique
+  name            String
+  sectorVariantId String
+  sectorVariant   SectorVariant   @relation(fields: [sectorVariantId], references: [id])
+  stageTemplates  StageTemplate[]
+  projects        Project[]
+}
+
+model StageTemplate {
+  id            String         @id @default(cuid())
+  templateId    String
+  template      Template       @relation(fields: [templateId], references: [id])
+  key           String // e.g. "stage.design_planning"
+  name          String
+  order         Int
+  gateTemplate  GateTemplate?
+  stages        Stage[]
+
+  @@unique([templateId, key])
+}
+
+model GateTemplate {
+  id                  String               @id @default(cuid())
+  stageTemplateId     String               @unique
+  stageTemplate       StageTemplate        @relation(fields: [stageTemplateId], references: [id])
+  key                 String
+  name                String
+  deliverableTemplates DeliverableTemplate[]
+}
+
+enum BypassAuthority {
+  PM
+  COMPLIANCE_OFFICER
+  SRO
+}
+
+// The shared checklist-item primitive (ConfigSchema.html §02), scoped
+// to delivery for Phase 1 — compliance's use of this same shape is
+// Phase 2. bypassAuthority carries what DataModel.html called
+// "legally significant": PM means ordinary, anything else means a PM
+// cannot bypass it.
+model DeliverableTemplate {
+  id              String           @id @default(cuid())
+  gateTemplateId  String
+  gateTemplate    GateTemplate     @relation(fields: [gateTemplateId], references: [id])
+  key             String
+  label           String
+  description     String?
+  minFiles        Int              @default(1)
+  blocksGate      Boolean          @default(true)
+  bypassAuthority BypassAuthority  @default(PM)
+  deliverables    Deliverable[]
+
+  @@unique([gateTemplateId, key])
+}
+
+model Project {
+  id                 String                  @id @default(cuid())
+  projectNumber      String                  @unique
+  name               String
+  templateId         String
+  template           Template                @relation(fields: [templateId], references: [id])
+  // Stage scoping (ConfigSchema.html §06): which of the template's
+  // stage keys this project actually uses. Editable — a PM can
+  // reinstate a skipped stage later; it appends after the project's
+  // current point rather than reinserting into template order.
+  includedStageKeys  String[]
+  roleAssignments    ProjectRoleAssignment[]
+  stages             Stage[]
+  createdAt          DateTime                @default(now())
+}
+
+// No REJECTED status here on purpose: per the PRD, rejecting a gate
+// returns it to IN_PROGRESS with the Sponsor's reason attached — the
+// rejection itself is recorded as a GateSignOff row (decision:
+// REJECTED), not a lingering gate state.
+enum GateStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  AWAITING_SPONSOR
+  SIGNED_OFF
+}
+
+model Stage {
+  id                    String         @id @default(cuid())
+  projectId             String
+  project               Project        @relation(fields: [projectId], references: [id])
+  // Informational only — content is copied at instantiation, never
+  // re-resolved live. See ConfigSchema.html §05 recommendation.
+  sourceStageTemplateId String?
+  sourceStageTemplate   StageTemplate? @relation(fields: [sourceStageTemplateId], references: [id])
+  key                   String
+  name                  String
+  order                 Int
+  gate                  Gate?
+  createdAt             DateTime       @default(now())
+}
+
+model Gate {
+  id           String        @id @default(cuid())
+  stageId      String        @unique
+  stage        Stage         @relation(fields: [stageId], references: [id])
+  key          String
+  name         String
+  status       GateStatus    @default(NOT_STARTED)
+  deliverables Deliverable[]
+  signOffs     GateSignOff[]
+  auditEntries AuditLogEntry[]
+  createdAt    DateTime      @default(now())
+}
+
+enum DeliverableStatus {
+  PENDING
+  EVIDENCED
+  BYPASSED
+}
+
+model Deliverable {
+  id              String               @id @default(cuid())
+  gateId          String
+  gate            Gate                 @relation(fields: [gateId], references: [id])
+  templateId      String?
+  template        DeliverableTemplate? @relation(fields: [templateId], references: [id])
+  key             String
+  label           String
+  description     String?
+  minFiles        Int                  @default(1)
+  blocksGate      Boolean              @default(true)
+  bypassAuthority BypassAuthority      @default(PM)
+  status          DeliverableStatus    @default(PENDING)
+  evidenceFiles   EvidenceFile[]
+  bypass          DeliverableBypass?
+  createdAt       DateTime             @default(now())
+}
+
+model EvidenceFile {
+  id            String      @id @default(cuid())
+  deliverableId String
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id])
+  fileName      String
+  fileRef       String // storage path/URL — local disk in dev, object storage later
+  version       Int         @default(1)
+  uploadedById  String
+  uploadedBy    User        @relation(fields: [uploadedById], references: [id])
+  uploadedAt    DateTime    @default(now())
+}
+
+// Reason is mandatory — confirmed by Kevin, for traceability. Whoever
+// bypasses must hold the role named by the deliverable's
+// bypassAuthority; enforced in application code (lib/permissions.ts),
+// not the schema.
+model DeliverableBypass {
+  id            String      @id @default(cuid())
+  deliverableId String      @unique
+  deliverable   Deliverable @relation(fields: [deliverableId], references: [id])
+  bypassedById  String
+  bypassedBy    User        @relation(fields: [bypassedById], references: [id])
+  reason        String
+  createdAt     DateTime    @default(now())
+}
+
+enum SignOffDecision {
+  APPROVED
+  REJECTED
+}
+
+// Reject requires a reason too (confirmed by Kevin) — same
+// mandatory-reason pattern as every bypass/override in the model.
+model GateSignOff {
+  id           String          @id @default(cuid())
+  gateId       String
+  gate         Gate            @relation(fields: [gateId], references: [id])
+  decision     SignOffDecision
+  signedOffById String
+  signedOffBy  User            @relation(fields: [signedOffById], references: [id])
+  reason       String?
+  createdAt    DateTime        @default(now())
+}
+
+// Append-only. One row per upload, bypass, sign-off, and rejection.
+model AuditLogEntry {
+  id         String   @id @default(cuid())
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id])
+  action     String // e.g. "evidence.uploaded", "deliverable.bypassed", "gate.signed_off"
+  gateId     String?
+  gate       Gate?    @relation(fields: [gateId], references: [id])
+  entityType String
+  entityId   String
+  reason     String?
+  createdAt  DateTime @default(now())
+}
