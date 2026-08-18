@@ -38,6 +38,13 @@ Compliance Module, Resource/Capacity view, and Financial view are
 Phase 2–3 per the PRD roadmap and are designed (in `PRD.html`,
 `DataModel.html`, and the design screens) but not yet built in `app/`.
 
+## Configuration
+
+The scaffold needs a `DATABASE_URL`. Copy [`app/.env.example`](app/.env.example)
+to `app/.env` and point it at your own PostgreSQL instance — `.env` is
+gitignored and never committed. Full setup steps are in
+[`app/README.md`](app/README.md).
+
 ## License
 
 Proprietary — see [`LICENSE`](LICENSE).
