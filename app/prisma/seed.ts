@@ -13,6 +13,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "../src/lib/compliance";
+import { instantiateStage } from "../src/lib/instantiation";
 
 const db = new PrismaClient();
 
@@ -596,6 +597,58 @@ async function main() {
         })),
       });
     }
+  }
+
+  // ── Second demo project: Water Systems Replacement, created live via
+  // AI-assisted provisioning (ProvisioningModel.html) on 19 Aug 2026 and
+  // kept as a permanent second example — the real Claude Opus 5 match,
+  // reasoning, and tags from that run, replayed here so the demo is
+  // reproducible without an API key. Instantiation goes through the same
+  // instantiateStage helper approveProvisioning uses, not hand-rolled.
+  const waterProject = await db.project.create({
+    data: {
+      projectNumber: "20777",
+      name: "Ward 6-8 Calorifier Replacement",
+      templateId: waterTemplate.id,
+      includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8
+      tags: ["occupied_during_works", "water_systems_affected"],
+      status: "ACTIVE",
+      createdById: derek.id,
+      provisioningBrief:
+        "Replace ageing calorifiers and hot water distribution pipework serving wards 6, 7 and 8, phased over consecutive weekends to avoid disrupting clinical services at this live acute hospital. Legionella risk needs careful management during and after the works.",
+      provisioningMatchReasoning:
+        "Project is calorifier and hot water pipework replacement with Legionella management — matches Water Systems Replacement. Site is a live acute hospital with phased weekend works around clinical services (occupied during works), and the works directly affect water systems. No mention of a National Treatment Centre.",
+    },
+  });
+
+  await db.projectRoleAssignment.createMany({
+    data: [
+      { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.PM.id },
+      { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },
+      { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.SPONSOR.id },
+      { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
+      { projectId: waterProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
+      { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
+    ],
+  });
+
+  await db.provisioningReview.create({
+    data: { projectId: waterProject.id, decision: "APPROVED", reviewedById: gary.id },
+  });
+
+  const waterStageTemplatesFull = await db.stageTemplate.findMany({
+    where: { templateId: waterTemplate.id },
+    orderBy: { order: "asc" },
+    include: { gateTemplate: { include: { deliverableTemplates: true } } },
+  });
+  for (let i = 0; i < waterStageTemplatesFull.length; i++) {
+    await instantiateStage(db, {
+      projectId: waterProject.id,
+      projectTags: waterProject.tags,
+      sectorVariantId: health.id,
+      order: i,
+      stageTemplate: waterStageTemplatesFull[i]!,
+    });
   }
 
   console.log("Seed complete.");
