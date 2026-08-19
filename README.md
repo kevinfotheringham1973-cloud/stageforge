@@ -23,7 +23,8 @@ NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
 | [`DataModel.html`](DataModel.html) | Entity model — tenancy/access resolution, the gate-closure mechanism, tiered bypass/override authority. (draft v0.5) |
 | [`ConfigSchema.html`](ConfigSchema.html) | Config schema for Stage/Gate/Deliverable templates and Compliance rule sets. (draft v0.4) |
 | [`ProvisioningModel.html`](ProvisioningModel.html) | Design for AI-assisted project provisioning — template-library matching, the draft/review/activate flow, and the LLM call itself (structured-output enforcement, model/prompt-caching design). (draft v0.3 — built in `app/`, see Status below) |
-| [`ResourceCapacityModel.html`](ResourceCapacityModel.html) | Scoping for the Resource/Capacity view — % FTE allocation per delivery-facing role holder, current-state only, no forecasting. (draft v0.1, not built) |
+| [`ResourceCapacityModel.html`](ResourceCapacityModel.html) | Design for the Resource/Capacity view — % FTE allocation per delivery-facing role holder, current-state only, no forecasting. (draft v0.1 — built in `app/`, see Status below) |
+| [`FinancialModel.html`](FinancialModel.html) | Scoping for the Financial View — invoice-level spend against a project, classified into three Hard FM approval buckets, with a Sponsor/SRO approval step. (draft v0.1, not built) |
 | [`Complaince and Regulations.docx`](Complaince%20and%20Regulations.docx), [`Maintenance schedule - SHTM.docx`](Maintenance%20schedule%20-%20SHTM.docx), [`Example_Overview_Plan.docx`](Example_Overview_Plan.docx) | Domain reference material for Scottish NHS Hard FM — the compliance/regulatory stack, an SHTM-mapped PPM schedule by plant category, and a full worked example (Forth Valley Royal Hospital UPS replacement) the current seed data is built from. |
 | [`design/`](design) | Design canvas source — screens for every role (PM, Sponsor, Compliance Officer, Finance, Resource Manager) as Design Component artboards. |
 | [`app/`](app) | Working Phase 1 MVP scaffold — Next.js, PostgreSQL, Prisma, TypeScript. See [`app/README.md`](app/README.md) for setup and what's actually built vs. stubbed. |
@@ -44,12 +45,13 @@ end-to-end against a real database and a live browser session.
 AI-assisted project provisioning (`ProvisioningModel.html`) is also
 built and verified live: a free-text project description matched via
 Claude Opus 5 against the Template library, reviewed and approved by
-a Compliance Officer, instantiating a real project — see
-`app/README.md` for how to run any of this yourself.
+a Compliance Officer, instantiating a real project. The Resource/Capacity
+view (`ResourceCapacityModel.html`) is built too — % FTE allocation per
+delivery-facing role holder, with a portfolio-wide over-allocation view
+— see `app/README.md` for how to run any of this yourself.
 
-Resource/Capacity view and Financial view remain Phase 2–3 per the PRD
-roadmap, designed (in `PRD.html`, `DataModel.html`, and the design
-screens) but not yet built in `app/`.
+Financial View (`FinancialModel.html`) remains Phase 3 per the PRD
+roadmap — scoped, but not yet built in `app/`.
 
 ## Contributing
 
