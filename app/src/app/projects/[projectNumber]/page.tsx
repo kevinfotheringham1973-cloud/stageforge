@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { outstandingComplianceCount, outstandingDeliverableCount } from "@/lib/permissions";
+import { DELIVERY_FACING_ROLE_KEYS, outstandingComplianceCount, outstandingDeliverableCount } from "@/lib/permissions";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
-import { reinstateStage } from "@/lib/actions";
+import { reinstateStage, setResourceAllocation } from "@/lib/actions";
 import { GateAccordionRow } from "@/components/GateAccordionRow";
 import { GateDetail } from "@/components/GateDetail";
 
@@ -35,7 +35,8 @@ export default async function ProjectGateOverviewPage({
         orderBy: { order: "asc" },
         include: { gate: { include: { deliverables: true, complianceRequirements: true, signOffs: true } } },
       },
-      roleAssignments: { include: { role: true, department: { include: { company: true } } } },
+      roleAssignments: { include: { role: true, department: { include: { company: true } }, user: true } },
+      resourceAllocations: true,
     },
   });
   if (!project) notFound();
@@ -45,6 +46,25 @@ export default async function ProjectGateOverviewPage({
 
   const contractorAssignment = project.roleAssignments.find((a) => a.role.key === "FM_CONTRACTOR");
   const authorityAssignment = project.roleAssignments.find((a) => a.role.key === "CLIENT_AUTHORITY");
+
+  // Resource/Capacity view (ResourceCapacityModel.html §05) — one row per
+  // delivery-facing person, deduped in case someone holds two such roles
+  // on this project (their allocation is one number, not one per hat).
+  const allocationByUserId = new Map(project.resourceAllocations.map((a) => [a.userId, a.allocationPercent]));
+  const seenTeamUserIds = new Set<string>();
+  const teamRows = project.roleAssignments
+    .filter((a) => DELIVERY_FACING_ROLE_KEYS.includes(a.role.key))
+    .filter((a) => {
+      if (seenTeamUserIds.has(a.userId)) return false;
+      seenTeamUserIds.add(a.userId);
+      return true;
+    })
+    .map((a) => ({
+      userId: a.userId,
+      name: a.user.name,
+      roleName: a.role.name,
+      allocationPercent: allocationByUserId.get(a.userId) ?? null,
+    }));
 
   const instantiatedKeys = new Set(project.stages.map((s) => s.key));
   const excludedTemplateStages = project.template.stageTemplates.filter(
@@ -89,6 +109,51 @@ export default async function ProjectGateOverviewPage({
             Project No. {project.projectNumber} &middot; {project.template.name}
           </div>
         </div>
+
+        {teamRows.length > 0 && (
+          <div className="rounded-lg border border-rule bg-surface p-5">
+            <div className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              Team &amp; capacity
+            </div>
+            <div className="flex flex-col gap-2">
+              {teamRows.map((row) => (
+                <div key={row.userId} className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm">
+                    <span className="font-semibold">{row.name}</span>{" "}
+                    <span className="text-inkmuted">&middot; {row.roleName}</span>
+                  </div>
+                  {isPM ? (
+                    <form
+                      action={setResourceAllocation.bind(null, project.id, row.userId, project.projectNumber)}
+                      className="flex items-center gap-1.5"
+                    >
+                      <input
+                        name="allocationPercent"
+                        type="number"
+                        min={0}
+                        max={100}
+                        defaultValue={row.allocationPercent ?? ""}
+                        placeholder="%"
+                        className="w-16 rounded border border-rule bg-bg px-2 py-1 text-right text-sm"
+                      />
+                      <span className="text-xs text-inkmuted">%</span>
+                      <button
+                        type="submit"
+                        className="rounded border border-rule px-2 py-1 text-xs font-semibold text-accent hover:bg-surface2"
+                      >
+                        Set
+                      </button>
+                    </form>
+                  ) : (
+                    <span className="font-mono text-sm text-inkmuted">
+                      {row.allocationPercent !== null ? `${row.allocationPercent}%` : "Not set"}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-col gap-3">
           {project.stages.map((stage) => {

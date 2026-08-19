@@ -47,22 +47,24 @@ model Department {
 }
 
 model User {
-  id                  String                   @id @default(cuid())
-  name                String
-  email               String                   @unique
-  homeDepartmentId    String?
-  homeDepartment      Department?              @relation(fields: [homeDepartmentId], references: [id])
-  isPlatformAdmin     Boolean                  @default(false)
-  roleAssignments     ProjectRoleAssignment[]
-  evidenceUploads     EvidenceFile[]
-  bypasses            DeliverableBypass[]
-  signOffs            GateSignOff[]
-  auditEntries        AuditLogEntry[]
-  complianceUploads   ComplianceEvidenceFile[]
-  complianceOverrides ComplianceOverride[]
-  createdProjects     Project[]                @relation("ProjectCreatedBy")
-  provisioningReviews ProvisioningReview[]
-  createdAt           DateTime                 @default(now())
+  id                         String                   @id @default(cuid())
+  name                       String
+  email                      String                   @unique
+  homeDepartmentId           String?
+  homeDepartment             Department?              @relation(fields: [homeDepartmentId], references: [id])
+  isPlatformAdmin            Boolean                  @default(false)
+  roleAssignments            ProjectRoleAssignment[]
+  evidenceUploads            EvidenceFile[]
+  bypasses                   DeliverableBypass[]
+  signOffs                   GateSignOff[]
+  auditEntries               AuditLogEntry[]
+  complianceUploads          ComplianceEvidenceFile[]
+  complianceOverrides        ComplianceOverride[]
+  createdProjects            Project[]                @relation("ProjectCreatedBy")
+  provisioningReviews        ProvisioningReview[]
+  resourceAllocations        ResourceAllocation[]
+  resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
+  createdAt                  DateTime                 @default(now())
 }
 
 // Global role definitions. A Role can optionally be scoped to a
@@ -320,8 +322,30 @@ model Project {
   provisioningMatchReasoning String?
   provisioningReviews        ProvisioningReview[]
   roleAssignments            ProjectRoleAssignment[]
+  resourceAllocations        ResourceAllocation[]
   stages                     Stage[]
   createdAt                  DateTime                @default(now())
+}
+
+// Resource/Capacity View (ResourceCapacityModel.html). Keyed by (User,
+// Project) rather than ProjectRoleAssignment — someone holding two
+// delivery-facing roles on the same project still has one allocation
+// number, not one per role. Current-state only, no time period: a
+// straight overwrite, matching the "no forecasting" boundary
+// (PRD.html §11) — see AuditLogEntry for the change history instead.
+model ResourceAllocation {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  projectId         String
+  project           Project  @relation(fields: [projectId], references: [id])
+  allocationPercent Int
+  updatedById       String
+  updatedBy         User     @relation("ResourceAllocationUpdatedBy", fields: [updatedById], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, projectId])
 }
 
 enum ProvisioningReviewDecision {
