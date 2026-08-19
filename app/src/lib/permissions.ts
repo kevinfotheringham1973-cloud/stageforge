@@ -2,7 +2,7 @@
 // DataModel.html's gate-closure diagram, made real. Deliberately has
 // no DB dependency so it stays trivially testable.
 
-import type { BypassAuthority, DeliverableStatus } from "@prisma/client";
+import type { BypassAuthority, ComplianceRequirementStatus, DeliverableStatus } from "@prisma/client";
 
 // Authority ladder: SRO can do anything Compliance Officer or PM can
 // do (bypass-wise); Compliance Officer can do anything PM can do;
@@ -54,16 +54,47 @@ export function canDecideGate(actorRoleKeys: string[]): boolean {
 
 /**
  * The gate-closure AND condition: every blocking deliverable must be
- * either evidenced or bypassed before the gate can move to Sponsor
- * decision. (Compliance's equivalent condition is Phase 2 — not
- * modelled here yet.)
+ * either evidenced or bypassed, AND every blocking compliance
+ * requirement must be either evidenced or overridden, before the gate
+ * can move to Sponsor decision. Delivery and compliance are distinct,
+ * concurrently-running checks (PRD.html §05) — both must clear, neither
+ * substitutes for the other.
  */
 export function isGateReadyForSponsor(
-  deliverables: { status: DeliverableStatus; blocksGate: boolean }[]
+  deliverables: { status: DeliverableStatus; blocksGate: boolean }[],
+  complianceRequirements: { status: ComplianceRequirementStatus; blocksGate: boolean }[] = []
 ): boolean {
-  return deliverables.every(
+  const deliveryReady = deliverables.every(
     (d) => !d.blocksGate || d.status === "EVIDENCED" || d.status === "BYPASSED"
   );
+  const complianceReady = complianceRequirements.every(
+    (c) => !c.blocksGate || c.status === "EVIDENCED" || c.status === "OVERRIDDEN"
+  );
+  return deliveryReady && complianceReady;
+}
+
+/**
+ * Who can supply evidence against a compliance requirement — reads the
+ * same as canUploadEvidence's delivery reasoning: the PM does the
+ * day-to-day work, the Compliance Officer owns the rule set it came
+ * from, and the SRO can act at every tier below it too.
+ */
+export function canUploadComplianceEvidence(actorRoleKeys: string[]): boolean {
+  return (
+    actorRoleKeys.includes("PM") ||
+    actorRoleKeys.includes("COMPLIANCE_OFFICER") ||
+    actorRoleKeys.includes("SRO")
+  );
+}
+
+/**
+ * Overriding a blocked compliance requirement is locked to the SRO
+ * role only (PRD.html §06) — unlike a deliverable bypass, there's no
+ * Compliance Officer tier for this action, since the Compliance
+ * Officer authored the rule being overridden.
+ */
+export function canOverrideCompliance(actorRoleKeys: string[]): boolean {
+  return actorRoleKeys.includes("SRO");
 }
 
 /**
@@ -85,4 +116,10 @@ export function outstandingDeliverableCount(
   deliverables: { status: DeliverableStatus; blocksGate: boolean }[]
 ): number {
   return deliverables.filter((d) => d.blocksGate && d.status === "PENDING").length;
+}
+
+export function outstandingComplianceCount(
+  complianceRequirements: { status: ComplianceRequirementStatus; blocksGate: boolean }[]
+): number {
+  return complianceRequirements.filter((c) => c.blocksGate && c.status === "PENDING").length;
 }

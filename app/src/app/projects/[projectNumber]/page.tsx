@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { outstandingDeliverableCount } from "@/lib/permissions";
+import { outstandingComplianceCount, outstandingDeliverableCount } from "@/lib/permissions";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { reinstateStage } from "@/lib/actions";
 import { GateAccordionRow } from "@/components/GateAccordionRow";
@@ -33,7 +33,7 @@ export default async function ProjectGateOverviewPage({
       template: { include: { stageTemplates: { orderBy: { order: "asc" } } } },
       stages: {
         orderBy: { order: "asc" },
-        include: { gate: { include: { deliverables: true, signOffs: true } } },
+        include: { gate: { include: { deliverables: true, complianceRequirements: true, signOffs: true } } },
       },
       roleAssignments: { include: { role: true, department: { include: { company: true } } } },
     },
@@ -61,8 +61,7 @@ export default async function ProjectGateOverviewPage({
                 FM Contractor
               </div>
               <div className="text-sm font-semibold">
-                {contractorAssignment.department.company.name} &middot;{" "}
-                {contractorAssignment.department.name}
+                {contractorAssignment.department.company.name}
               </div>
             </div>
           )}
@@ -75,7 +74,7 @@ export default async function ProjectGateOverviewPage({
                 Client Authority
               </div>
               <div className="text-sm font-semibold">
-                {authorityAssignment.department.company.name} &middot;{" "}
+                {authorityAssignment.department.company.name} -{" "}
                 {authorityAssignment.department.name}
               </div>
             </div>
@@ -96,6 +95,7 @@ export default async function ProjectGateOverviewPage({
             const gate = stage.gate;
             if (!gate) return null;
             const outstanding = outstandingDeliverableCount(gate.deliverables);
+            const outstandingCompliance = outstandingComplianceCount(gate.complianceRequirements);
             const isCurrent = gate.status === "IN_PROGRESS" || gate.status === "AWAITING_SPONSOR";
             return (
               <GateAccordionRow
@@ -108,7 +108,11 @@ export default async function ProjectGateOverviewPage({
                       <div className="text-base font-semibold">{gate.name}</div>
                       <div className="mt-1 flex items-center gap-4 text-sm text-inkmuted">
                         <span>{gate.deliverables.length} deliverable(s)</span>
-                        {outstanding > 0 && <span>{outstanding} outstanding</span>}
+                        {outstanding > 0 && <span>{outstanding} delivery outstanding</span>}
+                        {gate.complianceRequirements.length > 0 && (
+                          <span>{gate.complianceRequirements.length} compliance requirement(s)</span>
+                        )}
+                        {outstandingCompliance > 0 && <span>{outstandingCompliance} compliance outstanding</span>}
                       </div>
                     </div>
                     <span

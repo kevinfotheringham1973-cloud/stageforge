@@ -1,7 +1,22 @@
 import { db } from "@/lib/db";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
-import { canBypassDeliverable, canDecideGate, canUploadEvidence, isGateReadyForSponsor } from "@/lib/permissions";
-import { approveGate, bypassDeliverable, recordEvidenceStub, rejectGate, submitForApproval } from "@/lib/actions";
+import {
+  canBypassDeliverable,
+  canDecideGate,
+  canOverrideCompliance,
+  canUploadComplianceEvidence,
+  canUploadEvidence,
+  isGateReadyForSponsor,
+} from "@/lib/permissions";
+import {
+  approveGate,
+  bypassDeliverable,
+  overrideCompliance,
+  recordComplianceEvidenceStub,
+  recordEvidenceStub,
+  rejectGate,
+  submitForApproval,
+} from "@/lib/actions";
 import { notFound } from "next/navigation";
 
 /**
@@ -27,6 +42,13 @@ export async function GateDetail({
           bypass: { include: { bypassedBy: true } },
         },
       },
+      complianceRequirements: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          evidenceFiles: { orderBy: { uploadedAt: "desc" } },
+        },
+      },
+      complianceOverrides: { orderBy: { createdAt: "desc" }, include: { overriddenBy: true } },
       signOffs: { orderBy: { createdAt: "desc" }, include: { signedOffBy: true } },
       auditEntries: { orderBy: { createdAt: "desc" }, include: { actor: true } },
     },
@@ -34,8 +56,12 @@ export async function GateDetail({
   if (!gate || gate.stage.project.projectNumber !== projectNumber) notFound();
 
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
-  const ready = isGateReadyForSponsor(gate.deliverables);
+  const ready = isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements);
   const outstanding = gate.deliverables.filter((d) => d.blocksGate && d.status === "PENDING").length;
+  const outstandingCompliance = gate.complianceRequirements.filter(
+    (c) => c.blocksGate && c.status === "PENDING"
+  ).length;
+  const canOverride = canOverrideCompliance(roleKeys);
 
   return (
     <div>
@@ -152,6 +178,121 @@ export async function GateDetail({
         </>
       )}
 
+      {gate.complianceRequirements.length > 0 && (
+        <>
+          <div className="mb-4 mt-6 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+            Compliance &middot; {gate.complianceRequirements.length - outstandingCompliance} of{" "}
+            {gate.complianceRequirements.length} clear
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {gate.complianceRequirements.map((c) => {
+              const canUpload = c.status === "PENDING" && canUploadComplianceEvidence(roleKeys);
+              const canReplaceEvidence = gate.status !== "SIGNED_OFF" && canUploadComplianceEvidence(roleKeys);
+              const coveringOverride = gate.complianceOverrides.find((o) =>
+                o.coveredRequirementIds.includes(c.id)
+              );
+
+              return (
+                <div key={c.id} className="rounded-lg border border-dashed border-flag bg-surface p-5">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="font-semibold">{c.label}</span>
+                    <span className="rounded bg-accentsoft px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-flag">
+                      Compliance
+                    </span>
+                  </div>
+                  {c.description && <p className="mb-1 text-sm text-inkmuted">{c.description}</p>}
+                  {c.ruleRef && <p className="mb-2 font-mono text-xs text-inkmuted">{c.ruleRef}</p>}
+
+                  {c.status === "EVIDENCED" && (
+                    <div className="flex flex-col gap-1">
+                      {c.evidenceFiles.map((f, i) => (
+                        <div key={f.id} className="font-mono text-xs text-inkmuted">
+                          {i === 0 ? (
+                            <span className="font-bold text-ok">current</span>
+                          ) : (
+                            <span className="text-inkmuted">v{f.version}, superseded</span>
+                          )}{" "}
+                          {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
+                        </div>
+                      ))}
+                      {canReplaceEvidence && (
+                        <form
+                          action={recordComplianceEvidenceStub.bind(null, c.id, projectNumber, gateId)}
+                          className="mt-2 flex items-center gap-2"
+                        >
+                          <input
+                            name="fileName"
+                            placeholder="replacement-filename.pdf"
+                            required
+                            className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                          />
+                          <button className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent" type="submit">
+                            Replace evidence
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  )}
+
+                  {c.status === "OVERRIDDEN" && coveringOverride && (
+                    <div className="mt-2 rounded-md border border-dashed border-flag bg-accentsoft/40 p-3 text-sm">
+                      <div className="font-mono text-[10px] uppercase tracking-wide text-flag">
+                        Overridden by {coveringOverride.overriddenBy.name}
+                      </div>
+                      <div className="text-inkmuted">{coveringOverride.reason}</div>
+                    </div>
+                  )}
+
+                  {c.status === "PENDING" && (
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      {canUpload ? (
+                        <form
+                          action={recordComplianceEvidenceStub.bind(null, c.id, projectNumber, gateId)}
+                          className="flex items-center gap-2"
+                        >
+                          <input
+                            name="fileName"
+                            placeholder="filename.pdf"
+                            required
+                            className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                          />
+                          <button className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white" type="submit">
+                            Upload evidence
+                          </button>
+                        </form>
+                      ) : (
+                        <span className="text-xs text-inkmuted">Outstanding &mdash; no evidence uploaded.</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {outstandingCompliance > 0 && canOverride && (
+            <div className="mt-3 rounded-lg border border-dashed border-flag bg-accentsoft/30 p-4">
+              <div className="mb-2 text-sm text-inkmuted">
+                {outstandingCompliance} compliance requirement(s) still outstanding on this gate — an SRO
+                override clears every outstanding one at once, not item by item.
+              </div>
+              <form action={overrideCompliance.bind(null, gateId, projectNumber)} className="flex items-center gap-2">
+                <input
+                  name="reason"
+                  placeholder="Reason for overriding all outstanding compliance requirements (required)"
+                  required
+                  className="w-96 rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                />
+                <button className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag" type="submit">
+                  Override all outstanding
+                </button>
+              </form>
+            </div>
+          )}
+        </>
+      )}
+
       <div className="mt-6 flex items-center justify-between rounded-lg border border-rule bg-surface px-6 py-5">
         {gate.status === "NOT_STARTED" && (
           <span className="text-sm text-inkmuted">
@@ -163,8 +304,13 @@ export async function GateDetail({
           <>
             <span className="text-sm text-inkmuted">
               {ready
-                ? "Every deliverable is clear — ready to submit."
-                : `${outstanding} item(s) outstanding — every deliverable must be evidenced or bypassed first.`}
+                ? "Every deliverable and compliance requirement is clear — ready to submit."
+                : [
+                    outstanding > 0 ? `${outstanding} delivery item(s)` : null,
+                    outstandingCompliance > 0 ? `${outstandingCompliance} compliance item(s)` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" and ") + " outstanding."}
             </span>
             {roleKeys.includes("PM") ? (
               <form action={submitForApproval.bind(null, gateId, projectNumber)}>

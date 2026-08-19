@@ -1,10 +1,13 @@
-// StageForge — Phase 1 MVP schema.
-// Direct translation of DataModel.html (v0.5) and ConfigSchema.html (v0.4),
-// scoped to Phase 1: Stage-Gate Engine, Deliverable/Evidence, tiered bypass
+// StageForge schema.
+// Direct translation of DataModel.html (v0.5) and ConfigSchema.html (v0.4).
+// Phase 1: Stage-Gate Engine, Deliverable/Evidence, tiered bypass
 // authority, Sponsor sign-off, audit trail, multi-tenancy.
+// Phase 2 (added 19 Aug 2026): the Compliance corpus — ComplianceRuleSet,
+// ComplianceRuleTemplate, ComplianceRequirement, ComplianceOverride —
+// schema only so far; not yet wired into gate-closure logic
+// (permissions.ts), actions, or the UI. See §06 of PRD.html.
 //
-// Deliberately NOT in this schema (Phase 2+, per the PRD roadmap):
-// ComplianceRuleSet, ComplianceRequirement, ComplianceOverride,
+// Deliberately NOT in this schema (Phase 2–3+, per the PRD roadmap):
 // ResourceAllocation, SpendRecord.
 
 generator client {
@@ -34,28 +37,30 @@ model Company {
 }
 
 model Department {
-  id                 String               @id @default(cuid())
-  companyId          String
-  company            Company              @relation(fields: [companyId], references: [id])
-  name               String
-  users              User[]
-  roleAssignments    ProjectRoleAssignment[]
-  createdAt          DateTime             @default(now())
+  id              String                  @id @default(cuid())
+  companyId       String
+  company         Company                 @relation(fields: [companyId], references: [id])
+  name            String
+  users           User[]
+  roleAssignments ProjectRoleAssignment[]
+  createdAt       DateTime                @default(now())
 }
 
 model User {
-  id                 String                  @id @default(cuid())
-  name               String
-  email              String                  @unique
-  homeDepartmentId   String?
-  homeDepartment     Department?             @relation(fields: [homeDepartmentId], references: [id])
-  isPlatformAdmin    Boolean                 @default(false)
-  roleAssignments    ProjectRoleAssignment[]
-  evidenceUploads    EvidenceFile[]
-  bypasses           DeliverableBypass[]
-  signOffs           GateSignOff[]
-  auditEntries       AuditLogEntry[]
-  createdAt          DateTime                @default(now())
+  id                  String                   @id @default(cuid())
+  name                String
+  email               String                   @unique
+  homeDepartmentId    String?
+  homeDepartment      Department?              @relation(fields: [homeDepartmentId], references: [id])
+  isPlatformAdmin     Boolean                  @default(false)
+  roleAssignments     ProjectRoleAssignment[]
+  evidenceUploads     EvidenceFile[]
+  bypasses            DeliverableBypass[]
+  signOffs            GateSignOff[]
+  auditEntries        AuditLogEntry[]
+  complianceUploads   ComplianceEvidenceFile[]
+  complianceOverrides ComplianceOverride[]
+  createdAt           DateTime                 @default(now())
 }
 
 // Global role definitions. A Role can optionally be scoped to a
@@ -91,12 +96,13 @@ model ProjectRoleAssignment {
 // ── Delivery ─────────────────────────────────────────────────────────
 
 model SectorVariant {
-  id        String     @id @default(cuid())
-  key       String     @unique // e.g. "health"
-  name      String
-  brandName String
-  templates Template[]
-  roles     Role[]
+  id                 String              @id @default(cuid())
+  key                String              @unique // e.g. "health"
+  name               String
+  brandName          String
+  templates          Template[]
+  roles              Role[]
+  complianceRuleSets ComplianceRuleSet[]
 }
 
 // The named template a Project is built from, e.g.
@@ -114,24 +120,24 @@ model Template {
 }
 
 model StageTemplate {
-  id            String         @id @default(cuid())
-  templateId    String
-  template      Template       @relation(fields: [templateId], references: [id])
-  key           String // e.g. "stage.design_planning"
-  name          String
-  order         Int
-  gateTemplate  GateTemplate?
-  stages        Stage[]
+  id           String        @id @default(cuid())
+  templateId   String
+  template     Template      @relation(fields: [templateId], references: [id])
+  key          String // e.g. "stage.design_planning"
+  name         String
+  order        Int
+  gateTemplate GateTemplate?
+  stages       Stage[]
 
   @@unique([templateId, key])
 }
 
 model GateTemplate {
-  id                  String               @id @default(cuid())
-  stageTemplateId     String               @unique
-  stageTemplate       StageTemplate        @relation(fields: [stageTemplateId], references: [id])
-  key                 String
-  name                String
+  id                   String                @id @default(cuid())
+  stageTemplateId      String                @unique
+  stageTemplate        StageTemplate         @relation(fields: [stageTemplateId], references: [id])
+  key                  String
+  name                 String
   deliverableTemplates DeliverableTemplate[]
 }
 
@@ -147,34 +153,150 @@ enum BypassAuthority {
 // "legally significant": PM means ordinary, anything else means a PM
 // cannot bypass it.
 model DeliverableTemplate {
-  id              String           @id @default(cuid())
+  id              String          @id @default(cuid())
   gateTemplateId  String
-  gateTemplate    GateTemplate     @relation(fields: [gateTemplateId], references: [id])
+  gateTemplate    GateTemplate    @relation(fields: [gateTemplateId], references: [id])
   key             String
   label           String
   description     String?
-  minFiles        Int              @default(1)
-  blocksGate      Boolean          @default(true)
-  bypassAuthority BypassAuthority  @default(PM)
+  minFiles        Int             @default(1)
+  blocksGate      Boolean         @default(true)
+  bypassAuthority BypassAuthority @default(PM)
   deliverables    Deliverable[]
 
   @@unique([gateTemplateId, key])
 }
 
-model Project {
+// ── Compliance corpus ────────────────────────────────────────────────
+// The second of the "one primitive, two libraries" pair (ConfigSchema.html
+// §01): delivery checklist items live inside a StageTemplate, maintained
+// per programme type; compliance checklist items live inside a
+// ComplianceRuleSet, maintained per sector/jurisdiction, independently of
+// any one programme template. A ComplianceRuleSet is largely static —
+// it reflects standing regulation (SHTM series, Building (Scotland) Act,
+// HAI-SCRIBE, etc.), not something authored per project. Authoring is
+// Platform Admin + Compliance Officer only, same as StageTemplate.
+
+enum ComplianceEvidenceType {
+  FILE_UPLOAD
+  ATTESTATION
+  EXTERNAL_CHECK
+}
+
+model ComplianceRuleSet {
+  id              String                   @id @default(cuid())
+  key             String                   @unique // e.g. "compliance.health.fire_safety"
+  name            String
+  sectorVariantId String
+  sectorVariant   SectorVariant            @relation(fields: [sectorVariantId], references: [id])
+  rules           ComplianceRuleTemplate[]
+  createdAt       DateTime                 @default(now())
+}
+
+// A rule attaches to stages by key (appliesToStageKeys), not by nesting —
+// so the same rule can apply across every programme type that includes
+// that stage, without being copy-pasted into each StageTemplate
+// (ConfigSchema.html §04). appliesIfTags is the "any match" extensibility
+// mechanism: a Project carrying at least one matching tag pulls this rule
+// in; empty/absent means it always applies.
+model ComplianceRuleTemplate {
   id                 String                  @id @default(cuid())
-  projectNumber      String                  @unique
-  name               String
-  templateId         String
-  template           Template                @relation(fields: [templateId], references: [id])
+  ruleSetId          String
+  ruleSet            ComplianceRuleSet       @relation(fields: [ruleSetId], references: [id])
+  key                String
+  label              String
+  description        String?
+  ruleRef            String? // citation, e.g. "HTM 05-03", "SHTM 06-01"
+  evidenceType       ComplianceEvidenceType  @default(FILE_UPLOAD)
+  minFiles           Int                     @default(1)
+  blocksGate         Boolean                 @default(true)
+  appliesToStageKeys String[] // StageTemplate keys this rule can attach to
+  appliesIfTags      String[] // Project.tags to match, "any match"; empty = always applies
+  requirements       ComplianceRequirement[]
+
+  @@unique([ruleSetId, key])
+}
+
+enum ComplianceRequirementStatus {
+  PENDING
+  EVIDENCED
+  OVERRIDDEN
+}
+
+// The compliance equivalent of Deliverable. At Stage instantiation, one
+// row is copied here for every ComplianceRuleTemplate whose
+// appliesToStageKeys and appliesIfTags match the Project — frozen at that
+// point, never a live join back to the template (ConfigSchema.html §05),
+// for the same audit-trail reason Deliverable is frozen. Attaches to
+// Gate rather than Stage directly: Gate is 1:1 with Stage, and this
+// keeps it symmetric with Deliverable and with ComplianceOverride below,
+// both of which act at gate level.
+model ComplianceRequirement {
+  id            String                      @id @default(cuid())
+  gateId        String
+  gate          Gate                        @relation(fields: [gateId], references: [id])
+  templateId    String?
+  template      ComplianceRuleTemplate?     @relation(fields: [templateId], references: [id])
+  key           String
+  label         String
+  description   String?
+  ruleRef       String?
+  evidenceType  ComplianceEvidenceType      @default(FILE_UPLOAD)
+  minFiles      Int                         @default(1)
+  blocksGate    Boolean                     @default(true)
+  status        ComplianceRequirementStatus @default(PENDING)
+  evidenceFiles ComplianceEvidenceFile[]
+  createdAt     DateTime                    @default(now())
+}
+
+model ComplianceEvidenceFile {
+  id                      String                @id @default(cuid())
+  complianceRequirementId String
+  complianceRequirement   ComplianceRequirement @relation(fields: [complianceRequirementId], references: [id])
+  fileName                String
+  fileRef                 String
+  version                 Int                   @default(1)
+  uploadedById            String
+  uploadedBy              User                  @relation(fields: [uploadedById], references: [id])
+  uploadedAt              DateTime              @default(now())
+}
+
+// One SRO action clears every outstanding ComplianceRequirement on a
+// Gate at once — not a per-requirement bypass like DeliverableBypass
+// (DataModel.html §03 decided note). coveredRequirementIds snapshots
+// exactly which requirements were outstanding at the moment of
+// override, so the audit trail shows what was actually accepted even
+// if new requirements are added to the stage later.
+model ComplianceOverride {
+  id                    String   @id @default(cuid())
+  gateId                String
+  gate                  Gate     @relation(fields: [gateId], references: [id])
+  overriddenById        String
+  overriddenBy          User     @relation(fields: [overriddenById], references: [id])
+  reason                String
+  coveredRequirementIds String[]
+  createdAt             DateTime @default(now())
+}
+
+model Project {
+  id                String                  @id @default(cuid())
+  projectNumber     String                  @unique
+  name              String
+  templateId        String
+  template          Template                @relation(fields: [templateId], references: [id])
   // Stage scoping (ConfigSchema.html §06): which of the template's
   // stage keys this project actually uses. Editable — a PM can
   // reinstate a skipped stage later; it appends after the project's
   // current point rather than reinserting into template order.
-  includedStageKeys  String[]
-  roleAssignments    ProjectRoleAssignment[]
-  stages             Stage[]
-  createdAt          DateTime                @default(now())
+  includedStageKeys String[]
+  // Compliance rule matching (ConfigSchema.html §04): a
+  // ComplianceRuleTemplate with a non-empty appliesIfTags applies if at
+  // least one tag here matches ("any match", no AND/OR/NOT). e.g.
+  // "acute_hospital", "listed_building", "occupied_during_works".
+  tags              String[]                @default([])
+  roleAssignments   ProjectRoleAssignment[]
+  stages            Stage[]
+  createdAt         DateTime                @default(now())
 }
 
 // No REJECTED status here on purpose: per the PRD, rejecting a gate
@@ -204,16 +326,18 @@ model Stage {
 }
 
 model Gate {
-  id           String        @id @default(cuid())
-  stageId      String        @unique
-  stage        Stage         @relation(fields: [stageId], references: [id])
-  key          String
-  name         String
-  status       GateStatus    @default(NOT_STARTED)
-  deliverables Deliverable[]
-  signOffs     GateSignOff[]
-  auditEntries AuditLogEntry[]
-  createdAt    DateTime      @default(now())
+  id                     String                  @id @default(cuid())
+  stageId                String                  @unique
+  stage                  Stage                   @relation(fields: [stageId], references: [id])
+  key                    String
+  name                   String
+  status                 GateStatus              @default(NOT_STARTED)
+  deliverables           Deliverable[]
+  complianceRequirements ComplianceRequirement[]
+  complianceOverrides    ComplianceOverride[]
+  signOffs               GateSignOff[]
+  auditEntries           AuditLogEntry[]
+  createdAt              DateTime                @default(now())
 }
 
 enum DeliverableStatus {
@@ -274,14 +398,14 @@ enum SignOffDecision {
 // Reject requires a reason too (confirmed by Kevin) — same
 // mandatory-reason pattern as every bypass/override in the model.
 model GateSignOff {
-  id           String          @id @default(cuid())
-  gateId       String
-  gate         Gate            @relation(fields: [gateId], references: [id])
-  decision     SignOffDecision
+  id            String          @id @default(cuid())
+  gateId        String
+  gate          Gate            @relation(fields: [gateId], references: [id])
+  decision      SignOffDecision
   signedOffById String
-  signedOffBy  User            @relation(fields: [signedOffById], references: [id])
-  reason       String?
-  createdAt    DateTime        @default(now())
+  signedOffBy   User            @relation(fields: [signedOffById], references: [id])
+  reason        String?
+  createdAt     DateTime        @default(now())
 }
 
 // Append-only. One row per upload, bypass, sign-off, and rejection.
