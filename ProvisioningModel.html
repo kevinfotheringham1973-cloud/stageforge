@@ -1,0 +1,475 @@
+<title>StageForge Provisioning Model</title>
+<style>
+  :root{
+    --bg:#EEF0EC;
+    --surface:#FFFFFF;
+    --surface-2:#E4E7E1;
+    --ink:#1B2422;
+    --ink-muted:#56635E;
+    --accent:#1F5C63;
+    --accent-soft:#DCE7E6;
+    --flag:#A66A1E;
+    --rule:#CBD1C8;
+    --ok:#3F7D5C;
+    --warn:#B8862B;
+    --risk:#B0473C;
+
+    --font-display:'Rockwell','Roboto Slab',Georgia,serif;
+    --font-body:'Charter','Iowan Old Style',Georgia,'Times New Roman',serif;
+    --font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14191A;
+      --surface:#1B2222;
+      --surface-2:#212928;
+      --ink:#E7E9E2;
+      --ink-muted:#9BA6A0;
+      --accent:#5FB0AE;
+      --accent-soft:#1E3B3A;
+      --flag:#E0A94C;
+      --rule:#33403C;
+      --ok:#5FAE81;
+      --warn:#D9A441;
+      --risk:#D46A57;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14191A;
+    --surface:#1B2222;
+    --surface-2:#212928;
+    --ink:#E7E9E2;
+    --ink-muted:#9BA6A0;
+    --accent:#5FB0AE;
+    --accent-soft:#1E3B3A;
+    --flag:#E0A94C;
+    --rule:#33403C;
+    --ok:#5FAE81;
+    --warn:#D9A441;
+    --risk:#D46A57;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    max-width:44rem;
+    margin:0 auto;
+    padding:3.5rem 1.5rem 6rem;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .page{ animation: rise .5s ease-out; }
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  header.doc-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1.5rem;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:1.75rem;
+    margin-bottom:2.25rem;
+  }
+  .doc-head h1{
+    font-family:var(--font-display);
+    font-size:clamp(1.9rem, 1.55rem + 1.4vw, 2.5rem);
+    line-height:1.1;
+    margin:0 0 .6rem;
+    text-wrap:balance;
+    letter-spacing:-0.01em;
+  }
+  .doc-meta{
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--ink-muted);
+    line-height:1.9;
+  }
+  .stamp{
+    flex:none;
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    border:2px solid var(--flag);
+    border-radius:3px;
+    padding:.35rem .7rem;
+    transform:rotate(-3deg);
+    white-space:nowrap;
+    margin-top:.3rem;
+  }
+
+  h2{
+    font-family:var(--font-display);
+    font-size:1.5rem;
+    letter-spacing:-.005em;
+    color:var(--ink);
+    border-top:1px solid var(--rule);
+    padding-top:.5rem;
+    margin:3.25rem 0 1rem;
+    text-wrap:balance;
+  }
+  h2 .num{
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    color:var(--accent);
+    letter-spacing:.05em;
+    display:block;
+    margin-bottom:.35rem;
+  }
+  h3{
+    font-family:var(--font-mono);
+    font-size:.82rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--accent);
+    margin:2rem 0 .6rem;
+  }
+  p{ margin:0 0 1rem; max-width:38rem; }
+  ul, ol{ margin:0 0 1rem; padding-left:1.3rem; }
+  li{ margin-bottom:.4rem; max-width:36rem; }
+  strong{ color:var(--ink); }
+
+  .lede{
+    font-size:1.05rem;
+    color:var(--ink-muted);
+    max-width:36rem;
+  }
+
+  .flag{
+    border-left:3px solid var(--flag);
+    background:var(--accent-soft);
+    padding:.7rem 1rem;
+    margin:1rem 0 1.4rem;
+    font-size:.92rem;
+    max-width:36rem;
+    border-radius:0 3px 3px 0;
+  }
+  .flag-label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.3rem;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:.5rem 0 1.5rem;
+    font-size:.92rem;
+  }
+  .table-wrap{ overflow-x:auto; }
+  th{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+    text-align:left;
+    padding:.5rem .8rem;
+    border-bottom:1px solid var(--rule);
+    background:var(--surface-2);
+  }
+  td{
+    padding:.65rem .8rem;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+    font-variant-numeric:tabular-nums;
+  }
+  tr:last-child td{ border-bottom:none; }
+
+  .phase{
+    display:flex;
+    gap:1rem;
+    margin-bottom:1.5rem;
+    align-items:baseline;
+  }
+  .phase-num{
+    font-family:var(--font-mono);
+    font-size:.85rem;
+    color:var(--accent);
+    flex:none;
+    width:4.5rem;
+  }
+  .phase-body h4{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:1rem;
+    margin:0 0 .25rem;
+  }
+  .phase-body p{ margin:0; color:var(--ink-muted); font-size:.94rem; }
+
+  .oq{ list-style:none; padding-left:0; counter-reset:oq; }
+  .oq li{
+    counter-increment:oq;
+    position:relative;
+    padding-left:2.1rem;
+    margin-bottom:.85rem;
+    max-width:36rem;
+  }
+  .oq li::before{
+    content:counter(oq);
+    position:absolute;
+    left:0;
+    top:.05rem;
+    font-family:var(--font-mono);
+    font-size:.75rem;
+    color:var(--ink-muted);
+    border:1px solid var(--rule);
+    border-radius:50%;
+    width:1.4rem;
+    height:1.4rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .tag{
+    font-family:var(--font-mono);
+    font-size:.65rem;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding:.1rem .4rem;
+    border-radius:3px;
+    margin-left:.4rem;
+    white-space:nowrap;
+  }
+  .tag.assumption{ background:var(--accent-soft); color:var(--accent); }
+  .tag.question{ background:transparent; color:var(--flag); border:1px solid var(--flag); }
+  .tag.decided{ background:transparent; color:var(--ok); border:1px solid var(--ok); }
+
+  .flag.decided{ border-left-color:var(--ok); background:transparent; }
+  .flag.decided .flag-label{ color:var(--ok); }
+
+  .compare{ margin:.5rem 0 1.5rem; }
+  .compare-col{
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:1rem 1.1rem;
+    margin-bottom:1rem;
+  }
+  .compare-col h5{
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin:0 0 .6rem;
+    color:var(--ink);
+  }
+  .compare-col ul{ margin:0; padding-left:1.1rem; }
+  .compare-col li{ margin-bottom:.3rem; font-size:.92rem; }
+  .rec{
+    background:var(--accent-soft);
+    border-radius:4px;
+    padding:.9rem 1.1rem;
+    margin:1rem 0 1.5rem;
+    font-size:.94rem;
+  }
+  .rec .flag-label{ color:var(--accent); }
+
+  .example{
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:1.1rem 1.3rem;
+    margin:1rem 0 1.5rem;
+  }
+  .example-label{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.6rem;
+    display:block;
+  }
+  .example p{ font-size:.94rem; }
+  .example ul{ margin-bottom:.9rem; }
+  .example li{ font-size:.92rem; }
+  .who-list{ list-style:none; padding-left:0; margin:.8rem 0; }
+  .who-list li{
+    padding-left:1.4rem;
+    position:relative;
+    margin-bottom:.5rem;
+    font-size:.92rem;
+  }
+  .who-list li::before{
+    content:"→";
+    position:absolute;
+    left:0;
+    color:var(--accent);
+  }
+  .finding{
+    border-top:1px solid var(--rule);
+    margin-top:1rem;
+    padding-top:.9rem;
+  }
+  .finding ol{ padding-left:1.2rem; }
+  .finding li{ font-size:.92rem; margin-bottom:.6rem; }
+
+  .flow{
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:1.1rem 1.3rem;
+    margin:1rem 0 1.5rem;
+    font-family:var(--font-mono);
+    font-size:.82rem;
+  }
+  .flow-step{
+    display:flex;
+    gap:.9rem;
+    align-items:flex-start;
+    padding:.5rem 0;
+  }
+  .flow-step:not(:last-child){ border-bottom:1px dashed var(--rule); }
+  .flow-num{
+    flex:none;
+    color:var(--accent);
+    font-weight:700;
+  }
+  .flow-body{ font-family:var(--font-body); font-size:.94rem; }
+  .flow-body b{ font-family:var(--font-mono); font-size:.82rem; color:var(--ink); }
+
+  footer{
+    margin-top:4rem;
+    padding-top:1.5rem;
+    border-top:1px solid var(--rule);
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+  }
+
+  a{ color:var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="doc-head">
+    <div>
+      <h1>StageForge — Provisioning Model</h1>
+      <div class="doc-meta">
+        Technical scoping — Draft v0.1<br>
+        Owner: Kevin Fotheringham · 19 Aug 2026<br>
+        Source: PRD.html §06 "AI-Assisted Project Provisioning" + Kevin's decision, 19 Aug 2026
+      </div>
+    </div>
+    <div class="stamp">Scoping — not built</div>
+  </header>
+
+  <p class="lede">How a new project actually gets its deliverables checklist, compliance requirements, and PM guidance from a short description — the mechanism behind PRD.html §06, worked out to the level DataModel.html and ConfigSchema.html worked out the Compliance Module before it got built.</p>
+
+  <h2><span class="num">01</span>Scope decision</h2>
+  <p>PRD.html §06 described the goal without committing to a mechanism. Two shapes were on the table:</p>
+  <div class="compare">
+    <div class="compare-col">
+      <h5>Template-library selection — chosen</h5>
+      <ul>
+        <li>An LLM call reads the project description and matches it against a growing library of pre-authored Templates (the same <code>Template</code> → <code>StageTemplate</code> → <code>GateTemplate</code> → <code>DeliverableTemplate</code> shape already in the schema).</li>
+        <li>The LLM's job is matching and light adaptation — picking the closest template and extracting <code>Project.tags</code> — never inventing checklist items from scratch.</li>
+        <li>Bounded failure mode: worst case is picking the wrong (but still human-authored, still real) template. Never a hallucinated deliverable.</li>
+      </ul>
+    </div>
+    <div class="compare-col">
+      <h5>Freeform generation — rejected for now</h5>
+      <ul>
+        <li>An LLM drafts a brand-new checklist from scratch each time, no library needed.</li>
+        <li>More flexible, matches the more ambitious reading of the PRD text literally.</li>
+        <li>Unbounded failure mode: a hallucinated or incomplete regulatory checklist, in a system whose entire value proposition is compliance accuracy. Rejected on that basis.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin, 19 Aug 2026: template-library selection. Everything below is scoped to that shape.
+  </div>
+
+  <h2><span class="num">02</span>What's already built and reusable</h2>
+  <p>This isn't starting from zero. Two pieces of existing, shipped work carry almost all of the load:</p>
+  <ul>
+    <li><strong>The RIBA 8-stage structure is fixed</strong>, not generated. Every Health-sector project runs Strategic Definition → Use regardless of what it's for (PRD.html §06 decided flag) — so provisioning never needs to invent stages or gates, only what fills them.</li>
+    <li><strong>The compliance merge mechanism already does the hard part.</strong> <code>matchingComplianceRuleTemplates</code> (<code>app/src/lib/compliance.ts</code>) already matches <code>ComplianceRuleTemplate</code>s onto a Gate at Stage instantiation, driven entirely by <code>Project.tags</code>. Once provisioning can produce a correct tag set from a description, compliance instantiation needs zero new code — it already runs the same way for a reinstated stage or a seeded project.</li>
+  </ul>
+  <div class="rec">
+    <span class="flag-label">Net-new work</span>
+    What's actually missing is narrower than it first looks: (a) more than one <code>Template</code> to choose between — today there's exactly one, "M&amp;E Systems Replacement", (b) matching metadata on each <code>Template</code> for an LLM to match against, (c) an actual "create project" flow — Phase 1 has never had one; every project so far came from <code>seed.ts</code>, (d) the LLM call itself, and (e) a review step before a provisioned project goes live.
+  </div>
+
+  <h2><span class="num">03</span>The provisioning flow</h2>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-body"><b>Input.</b> PM or Compliance Officer enters a free-text project description, e.g. "Replace 12 UPS units across 4 systems, weekend working, live hospital."</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-body"><b>Match.</b> One LLM call, given the description plus every candidate Template's matching metadata (§04) and the full list of known compliance tags, returns: the best-matching <code>templateId</code>, a confidence/reasoning note, and a proposed <code>Project.tags</code> set.</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-body"><b>Draft.</b> A <code>Project</code> row is created in <code>DRAFT</code> status (§05) — not yet visible to a PM as a working project — carrying the original description, the chosen template, and the proposed tags, but stages/gates are <em>not</em> instantiated yet.</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-body"><b>Review.</b> A Compliance Officer reviews the match: right template? right tags? Can edit the tags, can override the template choice, or reject and re-run with a clarified description.</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-body"><b>Activate.</b> On approval, the project flips to <code>ACTIVE</code> and instantiation runs exactly like today's seed/reinstate path: every StageTemplate → Stage, every matching DeliverableTemplate and ComplianceRuleTemplate → live Deliverable/ComplianceRequirement rows. No new instantiation logic — this calls the existing code.</div>
+    </div>
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin (this session): a generated project requires Compliance Officer review before going live — resolves the open question PRD.html §06 left open. This also matches the existing rule that template/rule-set <em>authoring</em> is Compliance Officer-only (ConfigSchema.html §06); reviewing a provisioning match is the same authority tier as authoring the content it draws from.
+  </div>
+
+  <h2><span class="num">04</span>New concepts</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Entity / field</th><th>Purpose</th></tr>
+    <tr><td><code>Template.description</code></td><td>Free text — what kind of works this template covers. Part of what the LLM matches against.</td></tr>
+    <tr><td><code>Template.matchKeywords</code></td><td>String[] — short phrases a Compliance Officer authors when creating a template (e.g. <code>["UPS", "battery backup", "electrical replacement", "M&amp;E"]</code>), to make matching more reliable than description text alone.</td></tr>
+    <tr><td><code>Project.status</code></td><td>New enum: <code>DRAFT | ACTIVE</code>. A DRAFT project has no instantiated stages yet and isn't visible in the normal project list.</td></tr>
+    <tr><td><code>Project.provisioningBrief</code></td><td>The original free-text description, kept for audit/traceability — matches the project's general "why", same instinct as the append-only AuditLogEntry pattern elsewhere.</td></tr>
+    <tr><td><code>Project.provisioningReviewedById</code> / <code>reviewedAt</code></td><td>Who approved the draft and when — the same "single sign-off, no chain" pattern as every other governance action in the model.</td></tr>
+  </table>
+  </div>
+  <p>Nothing here touches <code>DeliverableTemplate</code>, <code>ComplianceRuleTemplate</code>, <code>Stage</code>, <code>Gate</code>, or <code>Deliverable</code>/<code>ComplianceRequirement</code> — instantiation is untouched, only what happens <em>before</em> it changes.</p>
+
+  <h2><span class="num">05</span>The LLM call</h2>
+  <ul>
+    <li>One call per provisioning attempt — matching plus tag extraction in a single structured-output request (template id + tags + a short reasoning string shown to the reviewer), not a multi-turn conversation.</li>
+    <li>Deterministic-leaning: low temperature, since this is a matching task against a closed set of templates and a closed set of known tags — not open creative generation.</li>
+    <li>The reviewer sees the model's stated reasoning alongside its picks, so a wrong match is inspectable, not a black box.</li>
+  </ul>
+  <div class="flag">
+    <span class="flag-label">Open question</span>
+    Which model/provider, and where the API key/cost sits — infra decision, not a data-model one, deferred to implementation time.
+  </div>
+  <div class="flag">
+    <span class="flag-label">Open question</span>
+    With only one Template in the library today, the "match" step is trivially always correct. Worth deciding whether to ship the review/draft/activate plumbing now against that single template (proves the mechanism, zero matching risk yet) and grow the library afterward, or wait until a second template exists to build this at all.
+  </div>
+
+  <h2><span class="num">06</span>Explicitly out of scope here</h2>
+  <ul>
+    <li>Freeform deliverable generation (§01 — rejected).</li>
+    <li>Authoring UI for new Templates/DeliverableTemplates/ComplianceRuleTemplates themselves — still hand-authored in <code>seed.ts</code> for now, same as today. Provisioning selects among templates; it doesn't help create them.</li>
+    <li>Per-gate ongoing PM guidance (PRD.html §06's other open question — one-time brief vs. resurfaced per gate). Assume one-time brief, shown at Stage 0, for a first version; revisit if that's not enough.</li>
+  </ul>
+
+  <footer>StageForge · Provisioning Model draft v0.1 · scoping only, nothing in this document is built · 19 Aug 2026</footer>
+
+</div>
