@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { db } from "./db";
 import { getCurrentUserId, getCurrentUserRoleKeysForProject, SESSION_COOKIE_NAME } from "./session";
-import { canBypassDeliverable, canDecideGate, isGateReadyForSponsor } from "./permissions";
+import { canBypassDeliverable, canDecideGate, canOverrideCompliance, isGateReadyForSponsor } from "./permissions";
+import { matchingComplianceRuleTemplates } from "./compliance";
 
 export async function setActingUser(userId: string) {
   const store = await cookies();
@@ -121,21 +122,143 @@ export async function bypassDeliverable(
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
 }
 
+/**
+ * Records evidence against a compliance requirement — mirrors
+ * recordEvidenceStub exactly (same dev-stub caveat: records a file
+ * name, not an actual upload). A requirement clears normally with
+ * evidence, independently of every other requirement on the gate —
+ * the all-at-once clearing mechanic belongs to overrideCompliance
+ * below, not this.
+ */
+export async function recordComplianceEvidenceStub(
+  complianceRequirementId: string,
+  projectNumber: string,
+  gateId: string,
+  formData: FormData
+) {
+  const fileName = String(formData.get("fileName") ?? "").trim();
+  if (!fileName) throw new Error("A file name is required.");
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId } });
+  if (gate.status === "SIGNED_OFF") {
+    throw new Error("This gate is already signed off — evidence can't be replaced after the fact.");
+  }
+
+  const existingFiles = await db.complianceEvidenceFile.findMany({
+    where: { complianceRequirementId },
+    orderBy: { version: "desc" },
+    take: 1,
+  });
+  const nextVersion = (existingFiles[0]?.version ?? 0) + 1;
+  const isReplacement = existingFiles.length > 0;
+
+  await db.$transaction([
+    db.complianceEvidenceFile.create({
+      data: {
+        complianceRequirementId,
+        fileName,
+        fileRef: `local://dev-upload/${fileName}`,
+        version: nextVersion,
+        uploadedById: userId,
+      },
+    }),
+    db.complianceRequirement.update({
+      where: { id: complianceRequirementId },
+      data: { status: "EVIDENCED" },
+    }),
+    db.auditLogEntry.create({
+      data: {
+        actorId: userId,
+        action: isReplacement ? "compliance.evidence_replaced" : "compliance.evidence_uploaded",
+        gateId,
+        entityType: "ComplianceRequirement",
+        entityId: complianceRequirementId,
+      },
+    }),
+    ...(gate.status === "NOT_STARTED"
+      ? [db.gate.update({ where: { id: gateId }, data: { status: "IN_PROGRESS" as const } })]
+      : []),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
+ * One SRO action clears every outstanding compliance requirement on a
+ * Gate at once — not a per-requirement bypass like bypassDeliverable
+ * (DataModel.html §03 decided note). coveredRequirementIds snapshots
+ * exactly which requirements were outstanding at the moment of
+ * override, so the audit trail shows what was actually accepted even
+ * if new requirements are added to the stage later.
+ */
+export async function overrideCompliance(gateId: string, projectNumber: string, formData: FormData) {
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) throw new Error("A reason is required to override compliance requirements.");
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const gate = await db.gate.findUniqueOrThrow({
+    where: { id: gateId },
+    include: { stage: true, complianceRequirements: true },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+
+  if (!canOverrideCompliance(roleKeys)) {
+    throw new Error("Overriding compliance requirements requires SRO authority.");
+  }
+
+  const outstanding = gate.complianceRequirements.filter((c) => c.blocksGate && c.status === "PENDING");
+  if (outstanding.length === 0) {
+    throw new Error("There are no outstanding compliance requirements on this gate to override.");
+  }
+
+  await db.$transaction([
+    db.complianceOverride.create({
+      data: {
+        gateId,
+        overriddenById: userId,
+        reason,
+        coveredRequirementIds: outstanding.map((c) => c.id),
+      },
+    }),
+    db.complianceRequirement.updateMany({
+      where: { id: { in: outstanding.map((c) => c.id) } },
+      data: { status: "OVERRIDDEN" },
+    }),
+    db.auditLogEntry.create({
+      data: { actorId: userId, action: "compliance.overridden", gateId, entityType: "Gate", entityId: gateId, reason },
+    }),
+    ...(gate.status === "NOT_STARTED"
+      ? [db.gate.update({ where: { id: gateId }, data: { status: "IN_PROGRESS" as const } })]
+      : []),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
 export async function submitForApproval(gateId: string, projectNumber: string) {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
 
   const gate = await db.gate.findUniqueOrThrow({
     where: { id: gateId },
-    include: { stage: true, deliverables: true },
+    include: { stage: true, deliverables: true, complianceRequirements: true },
   });
 
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
   if (!roleKeys.includes("PM")) {
     throw new Error("Only the Project Manager submits a gate for Sponsor approval.");
   }
-  if (!isGateReadyForSponsor(gate.deliverables)) {
-    throw new Error("Every deliverable must be evidenced or bypassed before this gate can be submitted.");
+  if (!isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements)) {
+    throw new Error(
+      "Every deliverable must be evidenced or bypassed, and every compliance requirement evidenced or overridden, before this gate can be submitted."
+    );
   }
 
   await db.$transaction([
@@ -159,7 +282,7 @@ async function decide(
 
   const gate = await db.gate.findUniqueOrThrow({
     where: { id: gateId },
-    include: { stage: true, deliverables: true },
+    include: { stage: true, deliverables: true, complianceRequirements: true },
   });
 
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
@@ -169,8 +292,8 @@ async function decide(
   if (gate.status !== "AWAITING_SPONSOR") {
     throw new Error("This gate hasn't been submitted for approval yet.");
   }
-  if (decision === "APPROVED" && !isGateReadyForSponsor(gate.deliverables)) {
-    throw new Error("This gate still has outstanding deliverables — it isn't ready for approval.");
+  if (decision === "APPROVED" && !isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements)) {
+    throw new Error("This gate still has outstanding deliverables or compliance requirements — it isn't ready for approval.");
   }
   if (decision === "REJECTED" && !reason?.trim()) {
     throw new Error("Rejecting a gate requires a written reason.");
@@ -231,11 +354,16 @@ export async function reinstateStage(
 
   const stageTemplate = await db.stageTemplate.findUniqueOrThrow({
     where: { id: stageTemplateId },
-    include: { gateTemplate: { include: { deliverableTemplates: true } } },
+    include: { gateTemplate: { include: { deliverableTemplates: true } }, template: true },
   });
   if (!stageTemplate.gateTemplate) {
     throw new Error("This stage template has no gate template — nothing to reinstate.");
   }
+
+  const project = await db.project.findUniqueOrThrow({
+    where: { id: projectId },
+    select: { tags: true },
+  });
 
   const alreadyInstantiated = await db.stage.findFirst({
     where: { projectId, key: stageTemplate.key },
@@ -277,6 +405,29 @@ export async function reinstateStage(
         minFiles: dt.minFiles,
         blocksGate: dt.blocksGate,
         bypassAuthority: dt.bypassAuthority,
+        status: "PENDING" as const,
+      })),
+    });
+  }
+
+  const matchingRules = await matchingComplianceRuleTemplates(
+    db,
+    stageTemplate.template.sectorVariantId,
+    stageTemplate.key,
+    project.tags
+  );
+  if (matchingRules.length > 0) {
+    await db.complianceRequirement.createMany({
+      data: matchingRules.map((rt) => ({
+        gateId: gate.id,
+        templateId: rt.id,
+        key: rt.key,
+        label: rt.label,
+        description: rt.description,
+        ruleRef: rt.ruleRef,
+        evidenceType: rt.evidenceType,
+        minFiles: rt.minFiles,
+        blocksGate: rt.blocksGate,
         status: "PENDING" as const,
       })),
     });
