@@ -2,10 +2,17 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "./db";
-import { getCurrentUserId, getCurrentUserRoleKeysForProject, SESSION_COOKIE_NAME } from "./session";
+import {
+  getCurrentUserGlobalRoleKeys,
+  getCurrentUserId,
+  getCurrentUserRoleKeysForProject,
+  SESSION_COOKIE_NAME,
+} from "./session";
 import { canBypassDeliverable, canDecideGate, canOverrideCompliance, isGateReadyForSponsor } from "./permissions";
-import { matchingComplianceRuleTemplates } from "./compliance";
+import { instantiateStage } from "./instantiation";
+import { matchProject } from "./provisioning";
 
 export async function setActingUser(userId: string) {
   const store = await cookies();
@@ -375,63 +382,13 @@ export async function reinstateStage(
   const { _max } = await db.stage.aggregate({ where: { projectId }, _max: { order: true } });
   const nextOrder = (_max.order ?? -1) + 1;
 
-  const stage = await db.stage.create({
-    data: {
-      projectId,
-      sourceStageTemplateId: stageTemplate.id,
-      key: stageTemplate.key,
-      name: stageTemplate.name,
-      order: nextOrder,
-    },
+  const { stage } = await instantiateStage(db, {
+    projectId,
+    projectTags: project.tags,
+    sectorVariantId: stageTemplate.template.sectorVariantId,
+    order: nextOrder,
+    stageTemplate,
   });
-
-  const gate = await db.gate.create({
-    data: {
-      stageId: stage.id,
-      key: stageTemplate.gateTemplate.key,
-      name: stageTemplate.gateTemplate.name,
-      status: "NOT_STARTED",
-    },
-  });
-
-  if (stageTemplate.gateTemplate.deliverableTemplates.length > 0) {
-    await db.deliverable.createMany({
-      data: stageTemplate.gateTemplate.deliverableTemplates.map((dt) => ({
-        gateId: gate.id,
-        templateId: dt.id,
-        key: dt.key,
-        label: dt.label,
-        description: dt.description,
-        minFiles: dt.minFiles,
-        blocksGate: dt.blocksGate,
-        bypassAuthority: dt.bypassAuthority,
-        status: "PENDING" as const,
-      })),
-    });
-  }
-
-  const matchingRules = await matchingComplianceRuleTemplates(
-    db,
-    stageTemplate.template.sectorVariantId,
-    stageTemplate.key,
-    project.tags
-  );
-  if (matchingRules.length > 0) {
-    await db.complianceRequirement.createMany({
-      data: matchingRules.map((rt) => ({
-        gateId: gate.id,
-        templateId: rt.id,
-        key: rt.key,
-        label: rt.label,
-        description: rt.description,
-        ruleRef: rt.ruleRef,
-        evidenceType: rt.evidenceType,
-        minFiles: rt.minFiles,
-        blocksGate: rt.blocksGate,
-        status: "PENDING" as const,
-      })),
-    });
-  }
 
   await db.project.update({
     where: { id: projectId },
@@ -448,4 +405,228 @@ export async function reinstateStage(
   });
 
   revalidatePath(`/projects/${projectNumber}`);
+}
+
+// ── AI-assisted provisioning (ProvisioningModel.html) ──────────────────
+// Draft → review → activate. No REJECTED status — a revision request
+// leaves the Project in DRAFT with a ProvisioningReview(REVISE, reason)
+// row, same "return to editable state with a reason" pattern as gate
+// rejection, not a dead end.
+
+/**
+ * PM or Compliance Officer enters a free-text project description;
+ * the LLM match (§07) proposes a Template and tags; a DRAFT Project is
+ * created carrying that proposal, with no Stages/Gates instantiated
+ * yet. The creator becomes PM immediately (§05 open question on the
+ * rest of role assignment is not solved here).
+ */
+export async function createProvisioningDraft(formData: FormData) {
+  const projectNumber = String(formData.get("projectNumber") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const brief = String(formData.get("brief") ?? "").trim();
+  if (!projectNumber || !name || !brief) {
+    throw new Error("Project number, name, and description are all required.");
+  }
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const match = await matchProject(db, brief);
+
+  const template = await db.template.findUniqueOrThrow({
+    where: { id: match.templateId },
+    include: { stageTemplates: { orderBy: { order: "asc" } } },
+  });
+
+  const creator = await db.user.findUniqueOrThrow({ where: { id: userId } });
+
+  const project = await db.project.create({
+    data: {
+      projectNumber,
+      name,
+      templateId: template.id,
+      // Every RIBA-aligned Template shares the same stage keys (PRD.html
+      // §06 decided flag) — default to all of them, per §05's "default
+      // to all 8, editable later" resolution.
+      includedStageKeys: template.stageTemplates.map((st) => st.key),
+      tags: match.tags,
+      status: "DRAFT",
+      createdById: userId,
+      provisioningBrief: brief,
+      provisioningMatchReasoning: match.reasoning,
+    },
+  });
+
+  if (creator.homeDepartmentId) {
+    const pmRole = await db.role.findUniqueOrThrow({ where: { key: "PM" } });
+    await db.projectRoleAssignment.create({
+      data: { projectId: project.id, departmentId: creator.homeDepartmentId, userId, roleId: pmRole.id },
+    });
+  }
+
+  await db.auditLogEntry.create({
+    data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
+  });
+
+  redirect(`/projects/${projectNumber}/provisioning`);
+}
+
+/**
+ * The drafting PM edits the brief after a REVISE decision; re-runs the
+ * match; overwrites the proposed template/tags/reasoning on the same
+ * Project row — no new project number.
+ */
+export async function reviseProvisioningBrief(projectId: string, projectNumber: string, formData: FormData) {
+  const brief = String(formData.get("brief") ?? "").trim();
+  if (!brief) throw new Error("A description is required.");
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
+  if (project.status !== "DRAFT") throw new Error("This project is no longer a draft.");
+  if (project.createdById !== userId) {
+    throw new Error("Only the project's creator can revise the description.");
+  }
+
+  const match = await matchProject(db, brief);
+
+  await db.project.update({
+    where: { id: projectId },
+    data: {
+      provisioningBrief: brief,
+      provisioningMatchReasoning: match.reasoning,
+      templateId: match.templateId,
+      tags: match.tags,
+    },
+  });
+
+  await db.auditLogEntry.create({
+    data: { actorId: userId, action: "project.provisioning_revised", entityType: "Project", entityId: projectId },
+  });
+
+  revalidatePath(`/projects/${projectNumber}/provisioning`);
+}
+
+/**
+ * A Compliance Officer directly overrides the proposed template/tags
+ * without re-running the LLM — the reviewer just knows better. Same
+ * authority tier as authoring template content (ConfigSchema.html §06).
+ */
+export async function updateProvisioningDraft(projectId: string, projectNumber: string, formData: FormData) {
+  const templateId = String(formData.get("templateId") ?? "").trim();
+  const tagsRaw = String(formData.get("tags") ?? "").trim();
+  const tags = tagsRaw ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean) : [];
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const roleKeys = await getCurrentUserGlobalRoleKeys();
+  if (!roleKeys.includes("COMPLIANCE_OFFICER")) {
+    throw new Error("Only a Compliance Officer can override a provisioning draft's proposed match.");
+  }
+
+  const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
+  if (project.status !== "DRAFT") throw new Error("This project is no longer a draft.");
+
+  await db.project.update({
+    where: { id: projectId },
+    data: { templateId: templateId || project.templateId, tags },
+  });
+
+  await db.auditLogEntry.create({
+    data: { actorId: userId, action: "project.provisioning_draft_overridden", entityType: "Project", entityId: projectId },
+  });
+
+  revalidatePath(`/projects/${projectNumber}/provisioning`);
+}
+
+/** Reason required — same mandatory-reason pattern as every override/bypass/rejection in the model. */
+export async function requestProvisioningRevision(projectId: string, projectNumber: string, formData: FormData) {
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) throw new Error("A reason is required to send a draft back for revision.");
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const roleKeys = await getCurrentUserGlobalRoleKeys();
+  if (!roleKeys.includes("COMPLIANCE_OFFICER")) {
+    throw new Error("Only a Compliance Officer can request a revision.");
+  }
+
+  const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
+  if (project.status !== "DRAFT") throw new Error("This project is no longer a draft.");
+
+  await db.provisioningReview.create({
+    data: { projectId, decision: "REVISE", reviewedById: userId, reason },
+  });
+
+  await db.auditLogEntry.create({
+    data: {
+      actorId: userId,
+      action: "project.provisioning_revision_requested",
+      entityType: "Project",
+      entityId: projectId,
+      reason,
+    },
+  });
+
+  revalidatePath(`/projects/${projectNumber}/provisioning`);
+}
+
+/**
+ * Instantiates every included Stage/Gate from the final templateId —
+ * calls the same instantiateStage helper reinstateStage uses, not new
+ * logic (ProvisioningModel.html §06) — and flips the Project to ACTIVE.
+ */
+export async function approveProvisioning(projectId: string, projectNumber: string) {
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const roleKeys = await getCurrentUserGlobalRoleKeys();
+  if (!roleKeys.includes("COMPLIANCE_OFFICER")) {
+    throw new Error("Only a Compliance Officer can approve a provisioning draft.");
+  }
+
+  const project = await db.project.findUniqueOrThrow({
+    where: { id: projectId },
+    include: {
+      template: {
+        include: {
+          stageTemplates: {
+            orderBy: { order: "asc" },
+            include: { gateTemplate: { include: { deliverableTemplates: true } } },
+          },
+        },
+      },
+    },
+  });
+  if (project.status !== "DRAFT") throw new Error("This project is no longer a draft.");
+
+  await db.provisioningReview.create({
+    data: { projectId, decision: "APPROVED", reviewedById: userId },
+  });
+
+  const includedStageKeys = new Set(project.includedStageKeys);
+  let order = 0;
+  for (const stageTemplate of project.template.stageTemplates) {
+    if (!includedStageKeys.has(stageTemplate.key)) continue;
+    await instantiateStage(db, {
+      projectId,
+      projectTags: project.tags,
+      sectorVariantId: project.template.sectorVariantId,
+      order,
+      stageTemplate,
+    });
+    order += 1;
+  }
+
+  await db.project.update({ where: { id: projectId }, data: { status: "ACTIVE" } });
+
+  await db.auditLogEntry.create({
+    data: { actorId: userId, action: "project.provisioned", entityType: "Project", entityId: projectId },
+  });
+
+  revalidatePath(`/projects/${projectNumber}`);
+  redirect(`/projects/${projectNumber}`);
 }

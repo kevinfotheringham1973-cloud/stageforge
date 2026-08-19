@@ -32,4 +32,22 @@ export async function getCurrentUserRoleKeysForProject(
   return assignments.map((a) => a.role.key);
 }
 
+/**
+ * Role keys the current user holds on ANY project, deduped. A draft
+ * project from AI-assisted provisioning has no role assignments yet
+ * (ProvisioningModel.html §05 open question — full per-project role
+ * assignment at draft time isn't solved), so "is this person a
+ * Compliance Officer anywhere" is the interim stand-in for reviewer
+ * authority on a project that doesn't have one assigned yet.
+ */
+export async function getCurrentUserGlobalRoleKeys(): Promise<string[]> {
+  const userId = await getCurrentUserId();
+  if (!userId) return [];
+  const assignments = await db.projectRoleAssignment.findMany({
+    where: { userId },
+    include: { role: true },
+  });
+  return Array.from(new Set(assignments.map((a) => a.role.key)));
+}
+
 export const SESSION_COOKIE_NAME = COOKIE_NAME;

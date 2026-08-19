@@ -22,9 +22,14 @@ export default async function RootLayout({
     <html lang="en">
       <body className="font-sans">
         <header className="flex items-center justify-between border-b border-rule bg-surface px-10 py-4">
-          <a href="/" className="font-serif text-xl font-bold text-accent">
-            StageForge
-          </a>
+          <div className="flex items-center gap-5">
+            <a href="/" className="font-serif text-xl font-bold text-accent">
+              StageForge
+            </a>
+            <a href="/projects/new" className="text-sm font-semibold text-accent hover:underline">
+              + New project
+            </a>
+          </div>
           <div className="flex items-center gap-3">
             <span className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
               Acting as
