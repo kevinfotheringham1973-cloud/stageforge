@@ -1,0 +1,356 @@
+<title>StageForge Resource Capacity Model</title>
+<style>
+  :root{
+    --bg:#EEF0EC;
+    --surface:#FFFFFF;
+    --surface-2:#E4E7E1;
+    --ink:#1B2422;
+    --ink-muted:#56635E;
+    --accent:#1F5C63;
+    --accent-soft:#DCE7E6;
+    --flag:#A66A1E;
+    --rule:#CBD1C8;
+    --ok:#3F7D5C;
+    --warn:#B8862B;
+    --risk:#B0473C;
+
+    --font-display:'Rockwell','Roboto Slab',Georgia,serif;
+    --font-body:'Charter','Iowan Old Style',Georgia,'Times New Roman',serif;
+    --font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14191A;
+      --surface:#1B2222;
+      --surface-2:#212928;
+      --ink:#E7E9E2;
+      --ink-muted:#9BA6A0;
+      --accent:#5FB0AE;
+      --accent-soft:#1E3B3A;
+      --flag:#E0A94C;
+      --rule:#33403C;
+      --ok:#5FAE81;
+      --warn:#D9A441;
+      --risk:#D46A57;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14191A;
+    --surface:#1B2222;
+    --surface-2:#212928;
+    --ink:#E7E9E2;
+    --ink-muted:#9BA6A0;
+    --accent:#5FB0AE;
+    --accent-soft:#1E3B3A;
+    --flag:#E0A94C;
+    --rule:#33403C;
+    --ok:#5FAE81;
+    --warn:#D9A441;
+    --risk:#D46A57;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    max-width:44rem;
+    margin:0 auto;
+    padding:3.5rem 1.5rem 6rem;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .page{ animation: rise .5s ease-out; }
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  header.doc-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1.5rem;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:1.75rem;
+    margin-bottom:2.25rem;
+  }
+  .doc-head h1{
+    font-family:var(--font-display);
+    font-size:clamp(1.9rem, 1.55rem + 1.4vw, 2.5rem);
+    line-height:1.1;
+    margin:0 0 .6rem;
+    text-wrap:balance;
+    letter-spacing:-0.01em;
+  }
+  .doc-meta{
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--ink-muted);
+    line-height:1.9;
+  }
+  .stamp{
+    flex:none;
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    border:2px solid var(--flag);
+    border-radius:3px;
+    padding:.35rem .7rem;
+    transform:rotate(-3deg);
+    white-space:nowrap;
+    margin-top:.3rem;
+  }
+
+  h2{
+    font-family:var(--font-display);
+    font-size:1.5rem;
+    letter-spacing:-.005em;
+    color:var(--ink);
+    border-top:1px solid var(--rule);
+    padding-top:.5rem;
+    margin:3.25rem 0 1rem;
+    text-wrap:balance;
+  }
+  h2 .num{
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    color:var(--accent);
+    letter-spacing:.05em;
+    display:block;
+    margin-bottom:.35rem;
+  }
+  h3{
+    font-family:var(--font-mono);
+    font-size:.82rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--accent);
+    margin:2rem 0 .6rem;
+  }
+  p{ margin:0 0 1rem; max-width:38rem; }
+  ul, ol{ margin:0 0 1rem; padding-left:1.3rem; }
+  li{ margin-bottom:.4rem; max-width:36rem; }
+  strong{ color:var(--ink); }
+
+  .lede{
+    font-size:1.05rem;
+    color:var(--ink-muted);
+    max-width:36rem;
+  }
+
+  .flag{
+    border-left:3px solid var(--flag);
+    background:var(--accent-soft);
+    padding:.7rem 1rem;
+    margin:1rem 0 1.4rem;
+    font-size:.92rem;
+    max-width:36rem;
+    border-radius:0 3px 3px 0;
+  }
+  .flag-label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.3rem;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:.5rem 0 1.5rem;
+    font-size:.92rem;
+  }
+  .table-wrap{ overflow-x:auto; }
+  th{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+    text-align:left;
+    padding:.5rem .8rem;
+    border-bottom:1px solid var(--rule);
+    background:var(--surface-2);
+  }
+  td{
+    padding:.65rem .8rem;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+    font-variant-numeric:tabular-nums;
+  }
+  tr:last-child td{ border-bottom:none; }
+
+  .oq{ list-style:none; padding-left:0; counter-reset:oq; }
+  .oq li{
+    counter-increment:oq;
+    position:relative;
+    padding-left:2.1rem;
+    margin-bottom:.85rem;
+    max-width:36rem;
+  }
+  .oq li::before{
+    content:counter(oq);
+    position:absolute;
+    left:0;
+    top:.05rem;
+    font-family:var(--font-mono);
+    font-size:.75rem;
+    color:var(--ink-muted);
+    border:1px solid var(--rule);
+    border-radius:50%;
+    width:1.4rem;
+    height:1.4rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .flag.decided{ border-left-color:var(--ok); background:transparent; }
+  .flag.decided .flag-label{ color:var(--ok); }
+
+  .rec{
+    background:var(--accent-soft);
+    border-radius:4px;
+    padding:.9rem 1.1rem;
+    margin:1rem 0 1.5rem;
+    font-size:.94rem;
+  }
+  .rec .flag-label{ color:var(--accent); }
+
+  .example{
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:1.1rem 1.3rem;
+    margin:1rem 0 1.5rem;
+  }
+  .example-label{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.6rem;
+    display:block;
+  }
+  .example p{ font-size:.94rem; }
+  .example ul{ margin-bottom:.9rem; }
+  .example li{ font-size:.92rem; }
+
+  footer{
+    margin-top:4rem;
+    padding-top:1.5rem;
+    border-top:1px solid var(--rule);
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+  }
+
+  a{ color:var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="doc-head">
+    <div>
+      <h1>StageForge — Resource Capacity Model</h1>
+      <div class="doc-meta">
+        Technical scoping — Draft v0.1<br>
+        Owner: Kevin Fotheringham · 19 Aug 2026<br>
+        Source: PRD.html §06 "Resource & Capacity View" + DataModel.html §04 (ResourceAllocation sketch) + Kevin's decisions, 19 Aug 2026
+      </div>
+    </div>
+    <div class="stamp">Scoping — not built</div>
+  </header>
+
+  <p class="lede">Working out the shape of the "lowest-confidence scope item" in the whole system — PRD.html §06 gave it one sentence ("potentially a resource view"), and DataModel.html §04 sketched a single entity with no fields. This document turns that into something buildable.</p>
+
+  <h2><span class="num">01</span>Starting boundary</h2>
+  <p>Two things were already decided before this document existed, and both matter more than they look:</p>
+  <ul>
+    <li><strong>Current-state only.</strong> PRD.html §11 explicitly puts "resource/capacity forecasting beyond a simple current-state view" out of scope. This isn't a scheduling tool — it answers "who's over-allocated right now," not "who will be free in March."</li>
+    <li><strong>The role already exists, unused.</strong> Resource / Portfolio Manager is one of the eight core roles (PRD.html §04: "Views resource allocation and capacity across live projects") and is seeded in <code>roleDefs</code> — but has zero assignments, zero actions, zero UI anywhere in the app today. This view is the first thing that role actually does something.</li>
+  </ul>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin, 19 Aug 2026: capacity is measured as <strong>% FTE per project</strong> (e.g. 40% allocated to Project A) — not days/week or hours/week. Sums per person across their live projects; over 100% is the over-allocation signal. Simplest unit that answers the actual question, no calendar or working-pattern data needed.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin: only <strong>delivery-facing roles</strong> are tracked — PM, Authorised Person, Authorising Engineer, Principal Designer, and FM Contractor-side roles. Sponsor, SRO, and Compliance Officer sit outside this view; their oversight capacity isn't what "resource management" means in this context.
+  </div>
+
+  <h2><span class="num">02</span>What's already built and reusable</h2>
+  <ul>
+    <li><strong><code>ProjectRoleAssignment</code></strong> already grants one User a Role on one Project — the "who's on what" fact this view reads. No schema change needed to know who's eligible to appear.</li>
+    <li><strong><code>getCurrentUserGlobalRoleKeys()</code></strong> (added for provisioning, <code>session.ts</code>) is exactly the shape Resource Manager authority needs too — the role is inherently cross-project, same as it was for a Compliance Officer reviewing a draft with no project-scoped assignment yet.</li>
+  </ul>
+  <div class="rec">
+    <span class="flag-label">Net-new work</span>
+    One new entity (<code>ResourceAllocation</code>) for the percentage itself, a place for a PM to set it, a place for a Resource Manager to view it aggregated, and a decision about which projects still "count" toward someone's total (§04 below — this turned out to be the least obvious part).
+  </div>
+
+  <h2><span class="num">03</span>Data model</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Entity / field</th><th>Purpose</th></tr>
+    <tr><td><code>ResourceAllocation</code></td><td>New model: <code>id, userId, projectId, allocationPercent (Int), updatedById, createdAt, updatedAt</code>. <code>@@unique([userId, projectId])</code> — one live number per person per project, not a role-assignment-scoped or time-boxed value.</td></tr>
+  </table>
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Keyed by <strong>(User, Project)</strong>, not by <code>ProjectRoleAssignment</code>. Someone can hold two roles on the same project (Derek Gibb is both PM and FM Contractor on the UPS example) — their time on that project is still one number, not one per hat worn. Keying to the assignment row would double-count them in every portfolio sum.<br>
+    No time period, no history table beyond the usual <code>AuditLogEntry</code> row on change (<code>resource.allocation_updated</code>) — a straight overwrite. Adding periods would be the first step toward forecasting, which §01 rules out for this pass.
+  </div>
+
+  <h2><span class="num">04</span>The gap this scoping pass actually found</h2>
+  <p>Nothing in the source material addresses this, and it matters more than anything else here: <strong>StageForge has no concept of a project being "finished."</strong> <code>Project.status</code> only has <code>DRAFT</code> and <code>ACTIVE</code> (added for provisioning) — there's no <code>COMPLETE</code>/<code>CLOSED</code> state. A project stays <code>ACTIVE</code> forever, even once every gate is <code>SIGNED_OFF</code>.</p>
+  <p>Left unaddressed, a "current-state" resource view would permanently over-report everyone's allocation — a PM's 40% on a project finished eight months ago would still count toward their total today, with no way for it to ever drop off.</p>
+  <div class="rec">
+    <span class="flag-label">Recommendation</span>
+    Don't add a new <code>Project.status</code> value for this. Derive it from data that already exists: a project only counts toward the resource view while <strong>at least one of its Gates is not yet <code>SIGNED_OFF</code></strong>. Once every included gate is signed off, the project drops out of everyone's live-allocation total automatically — no new field, no migration for existing data, and it's exactly the same signal the rest of the app already treats as "this project is actually moving" (e.g. the project overview's <code>isCurrent</code> highlight logic).
+  </div>
+  <div class="flag">
+    <span class="flag-label">Open question</span>
+    This still leaves the general "does StageForge model project completion at all" question open beyond this one view — e.g. should a fully-signed-off project stop appearing in normal project listings too, once those exist? Out of scope for this document; flagged for whoever builds a project list/portfolio page next.
+  </div>
+
+  <h2><span class="num">05</span>Who sets the number, who views it</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Action</th><th>Who</th><th>Where</th></tr>
+    <tr><td>Set/update a person's <code>allocationPercent</code> on a project</td><td>PM (of that project — project-scoped, same as every other PM action in the model)</td><td>New control on the existing project overview page (<code>/projects/[projectNumber]</code>), next to each delivery-facing role holder already shown there.</td></tr>
+    <tr><td>View aggregated allocation across all live projects</td><td>Resource / Portfolio Manager (global — no single project owns this view, same reasoning as Compliance Officer's draft-review authority in <code>ProvisioningModel.html</code>)</td><td>New route, e.g. <code>/resources</code> — a flat table: one row per tracked person, their summed %, a per-project breakdown, over-100% highlighted.</td></tr>
+  </table>
+  </div>
+  <p>Read-only for the Resource Manager, matching PRD.html §04's exact wording ("<em>Views</em> resource allocation") — they see the picture, they don't edit individual numbers. If two PMs' numbers add up to an over-allocated person, resolving that is a conversation between PMs, not an edit the Resource Manager makes unilaterally.</p>
+
+  <h2><span class="num">06</span>Explicitly out of scope here</h2>
+  <ul>
+    <li>Forecasting, future-dated allocations, or anything calendar-shaped (§01).</li>
+    <li>A pool of "available but unassigned" people — the system only knows about Users who already exist and already hold a <code>ProjectRoleAssignment</code> somewhere. There's no roster of a company's total headcount to compare against.</li>
+    <li>Sponsor/SRO/Compliance Officer capacity (§01 decided).</li>
+    <li>Any automatic rebalancing or suggestion — the view surfaces over-allocation, it doesn't resolve it.</li>
+  </ul>
+
+  <h2><span class="num">07</span>Open questions</h2>
+  <ol class="oq">
+    <li>Whether a fully-signed-off project should eventually get a real completion marker rather than the derived "all gates signed off" signal used here (§04) — revisit once a project list/portfolio page exists and needs the same signal.</li>
+    <li>Whether a PM should be able to set allocation for a person who isn't yet at 100% total review-worthy, i.e. should the UI warn <em>at the point of setting</em> a number that would push someone over 100%, or only surface it later in the Resource Manager's view? Leaning toward warn-at-entry (cheaper to catch), not decided.</li>
+  </ol>
+
+  <footer>StageForge · Resource Capacity Model draft v0.1 · scoping only, nothing in this document is built · 19 Aug 2026</footer>
+
+</div>
