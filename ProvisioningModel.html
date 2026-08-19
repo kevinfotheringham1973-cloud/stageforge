@@ -361,7 +361,7 @@
     <div>
       <h1>StageForge — Provisioning Model</h1>
       <div class="doc-meta">
-        Technical scoping — Draft v0.1<br>
+        Technical scoping — Draft v0.2<br>
         Owner: Kevin Fotheringham · 19 Aug 2026<br>
         Source: PRD.html §06 "AI-Assisted Project Provisioning" + Kevin's decision, 19 Aug 2026
       </div>
@@ -419,7 +419,7 @@
     </div>
     <div class="flow-step">
       <div class="flow-num">3</div>
-      <div class="flow-body"><b>Draft.</b> A <code>Project</code> row is created in <code>DRAFT</code> status (§05) — not yet visible to a PM as a working project — carrying the original description, the chosen template, and the proposed tags, but stages/gates are <em>not</em> instantiated yet.</div>
+      <div class="flow-body"><b>Draft.</b> A <code>Project</code> row is created in <code>DRAFT</code> status (§04) — not yet visible to a PM as a working project — carrying the original description, the chosen template, and the proposed tags, but stages/gates are <em>not</em> instantiated yet.</div>
     </div>
     <div class="flow-step">
       <div class="flow-num">4</div>
@@ -435,41 +435,84 @@
     Confirmed by Kevin (this session): a generated project requires Compliance Officer review before going live — resolves the open question PRD.html §06 left open. This also matches the existing rule that template/rule-set <em>authoring</em> is Compliance Officer-only (ConfigSchema.html §06); reviewing a provisioning match is the same authority tier as authoring the content it draws from.
   </div>
 
-  <h2><span class="num">04</span>New concepts</h2>
+  <h2><span class="num">04</span>Data model</h2>
+  <p>Nothing here touches <code>DeliverableTemplate</code>, <code>ComplianceRuleTemplate</code>, <code>Stage</code>, <code>Gate</code>, or <code>Deliverable</code>/<code>ComplianceRequirement</code> — instantiation itself is untouched, only what happens <em>before</em> it runs.</p>
   <div class="table-wrap">
   <table>
     <tr><th>Entity / field</th><th>Purpose</th></tr>
-    <tr><td><code>Template.description</code></td><td>Free text — what kind of works this template covers. Part of what the LLM matches against.</td></tr>
-    <tr><td><code>Template.matchKeywords</code></td><td>String[] — short phrases a Compliance Officer authors when creating a template (e.g. <code>["UPS", "battery backup", "electrical replacement", "M&amp;E"]</code>), to make matching more reliable than description text alone.</td></tr>
-    <tr><td><code>Project.status</code></td><td>New enum: <code>DRAFT | ACTIVE</code>. A DRAFT project has no instantiated stages yet and isn't visible in the normal project list.</td></tr>
-    <tr><td><code>Project.provisioningBrief</code></td><td>The original free-text description, kept for audit/traceability — matches the project's general "why", same instinct as the append-only AuditLogEntry pattern elsewhere.</td></tr>
-    <tr><td><code>Project.provisioningReviewedById</code> / <code>reviewedAt</code></td><td>Who approved the draft and when — the same "single sign-off, no chain" pattern as every other governance action in the model.</td></tr>
+    <tr><td><code>Template.description</code>, <code>Template.matchKeywords</code></td><td>Shipped (19 Aug 2026, PR #9). What the LLM matches a project description against.</td></tr>
+    <tr><td><code>Project.status</code></td><td>New enum <code>ProjectStatus { DRAFT, ACTIVE }</code>, <code>@default(ACTIVE)</code> — every existing/seeded/reinstated project is unaffected, since only the provisioning path ever sets <code>DRAFT</code>. A DRAFT project has no instantiated Stages/Gates yet.</td></tr>
+    <tr><td><code>Project.createdById</code></td><td>New — who authored the draft (currently nothing on <code>Project</code> tracks this). Needed to know who's allowed to revise the brief; no existing field covers it.</td></tr>
+    <tr><td><code>Project.provisioningBrief</code></td><td>The free-text description. Editable while DRAFT (§05, <code>reviseProvisioningBrief</code>) — each revision re-runs the match.</td></tr>
+    <tr><td><code>Project.provisioningMatchReasoning</code></td><td>The LLM's stated reasoning for its current match, shown to the reviewer. Overwritten each time the match re-runs — it describes the <em>current</em> proposal, not a history.</td></tr>
+    <tr><td><code>ProvisioningReview</code></td><td>New model. The human decision history for a project's provisioning: <code>id, projectId, decision (APPROVED | REVISE), reviewedById, reason, createdAt</code>. Deliberately shaped like <code>GateSignOff</code> — no flat "reviewedBy/reviewedAt" columns on <code>Project</code> itself, same reasoning as why <code>Gate</code> has no such columns either: read the latest row instead of duplicating state.</td></tr>
   </table>
   </div>
-  <p>Nothing here touches <code>DeliverableTemplate</code>, <code>ComplianceRuleTemplate</code>, <code>Stage</code>, <code>Gate</code>, or <code>Deliverable</code>/<code>ComplianceRequirement</code> — instantiation is untouched, only what happens <em>before</em> it changes.</p>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    No <code>REJECTED</code> terminal status — mirrors the existing <code>GateSignOff</code> pattern exactly (PRD.html §06 Stage-Gate Engine: rejection returns a gate to <code>IN_PROGRESS</code> with a reason, never a dead end). A Compliance Officer sending a draft back for revision is a <code>ProvisioningReview(REVISE, reason)</code> row; the Project simply stays <code>DRAFT</code>, editable, not deleted or archived.
+  </div>
 
-  <h2><span class="num">05</span>The LLM call</h2>
+  <h2><span class="num">05</span>Actions &amp; permissions</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Action</th><th>Who</th><th>Effect</th></tr>
+    <tr><td><code>createProvisioningDraft</code></td><td>PM or Compliance Officer</td><td>Calls the LLM match (§07) against the free-text brief; creates the <code>Project</code> as <code>DRAFT</code> with the proposed <code>templateId</code>/<code>tags</code>/reasoning. No Stages/Gates yet.</td></tr>
+    <tr><td><code>reviseProvisioningBrief</code></td><td>The drafting PM only (<code>createdById</code>)</td><td>Edits <code>provisioningBrief</code>, re-runs the match, overwrites the proposed template/tags/reasoning. Same Project row — no new project number.</td></tr>
+    <tr><td><code>updateProvisioningDraft</code></td><td>Compliance Officer only</td><td>Directly overrides the proposed <code>templateId</code>/<code>tags</code> without re-running the LLM — the reviewer just knows better. Same authority tier as authoring template content (ConfigSchema.html §06).</td></tr>
+    <tr><td><code>requestProvisioningRevision</code></td><td>Compliance Officer only</td><td>Reason required (same mandatory-reason pattern as every override/bypass/rejection in the model). Records <code>ProvisioningReview(REVISE, reason)</code>. Project stays <code>DRAFT</code>.</td></tr>
+    <tr><td><code>approveProvisioning</code></td><td>Compliance Officer only</td><td>Records <code>ProvisioningReview(APPROVED)</code>, instantiates every included Stage/Gate from the final templateId (§06), sets <code>status: ACTIVE</code>.</td></tr>
+  </table>
+  </div>
+  <p>Every action also writes the usual <code>AuditLogEntry</code> — <code>project.provisioning_drafted</code>, <code>project.provisioning_revised</code>, <code>project.provisioning_revision_requested</code>, <code>project.provisioned</code> — same append-only trail as everything else.</p>
+  <div class="flag">
+    <span class="flag-label">Open question</span>
+    Role assignment. A real project needs a PM, Sponsor, SRO, Compliance Officer, FM Contractor, and Client Authority (§04 of PRD.html) — <code>createProvisioningDraft</code> only settles the creator as PM. Whether the rest get assigned as part of the creation form, during review, or in a separate step afterward isn't decided here.
+  </div>
+  <div class="flag">
+    <span class="flag-label">Open question</span>
+    Stage inclusion. Every seeded/reinstated project today sets <code>includedStageKeys</code> deliberately (the UPS example excludes Gate 7/Use). Provisioning could default to all 8 stages and let the PM exclude some before or during review — simplest for v1, but not decided as the final answer.
+  </div>
+
+  <h2><span class="num">06</span>Reusing the instantiation logic</h2>
+  <p><code>approveProvisioning</code>'s instantiation step — Stage/Gate creation, copying <code>DeliverableTemplate</code> rows to live <code>Deliverable</code>s, calling <code>matchingComplianceRuleTemplates</code> for the compliance merge — is <em>not</em> new logic. It's what <code>reinstateStage</code> (<code>app/src/lib/actions.ts</code>) already does for one stage at a time, and what <code>seed.ts</code> does for every stage of a new project at once.</p>
+  <div class="rec">
+    <span class="flag-label">Recommendation</span>
+    Extract a shared <code>instantiateStage(db, project, stageTemplate)</code> helper (alongside <code>matchingComplianceRuleTemplates</code> in <code>app/src/lib/compliance.ts</code>, or a new <code>app/src/lib/instantiation.ts</code>) before building <code>approveProvisioning</code> — today the same Stage/Gate/Deliverable/ComplianceRequirement creation sequence is written out inline in two places (<code>reinstateStage</code> and <code>seed.ts</code>'s loop); a third copy for provisioning would be the point it stops being a coincidence and starts being a maintenance liability. <code>approveProvisioning</code> then just calls this once per included stage, same as <code>reinstateStage</code> calls it once.
+  </div>
+
+  <h2><span class="num">07</span>The LLM call</h2>
   <ul>
     <li>One call per provisioning attempt — matching plus tag extraction in a single structured-output request (template id + tags + a short reasoning string shown to the reviewer), not a multi-turn conversation.</li>
     <li>Deterministic-leaning: low temperature, since this is a matching task against a closed set of templates and a closed set of known tags — not open creative generation.</li>
     <li>The reviewer sees the model's stated reasoning alongside its picks, so a wrong match is inspectable, not a black box.</li>
+    <li>Called from both <code>createProvisioningDraft</code> (first match) and <code>reviseProvisioningBrief</code> (re-match after a revision) — one function, two call sites.</li>
   </ul>
   <div class="flag">
     <span class="flag-label">Open question</span>
     Which model/provider, and where the API key/cost sits — infra decision, not a data-model one, deferred to implementation time.
   </div>
-  <div class="flag">
-    <span class="flag-label">Open question</span>
-    With only one Template in the library today, the "match" step is trivially always correct. Worth deciding whether to ship the review/draft/activate plumbing now against that single template (proves the mechanism, zero matching risk yet) and grow the library afterward, or wait until a second template exists to build this at all.
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    The library now has two Templates (19 Aug 2026, PR #9) — the "match step is trivially always correct" concern from the previous draft of this document no longer applies. §05/§06 above can be built for real, not just as unreachable plumbing.
   </div>
 
-  <h2><span class="num">06</span>Explicitly out of scope here</h2>
+  <h2><span class="num">08</span>Open questions carried forward</h2>
+  <p>Consolidated from §05–§07 above, plus one from the review flow itself:</p>
+  <ol class="oq">
+    <li>Role assignment at draft/approval time — who assigns Sponsor, SRO, FM Contractor, Client Authority, and the rest beyond the creating PM.</li>
+    <li>Stage inclusion — default to all 8 RIBA stages, or let the PM exclude some at creation/review time.</li>
+    <li>LLM provider/model and API key/cost ownership.</li>
+    <li>Whether <code>updateProvisioningDraft</code> (silent reviewer override) and <code>requestProvisioningRevision</code> (send back to the PM with a reason) are both genuinely needed, or whether one subsumes the other in practice — kept both here since they serve different situations (reviewer knows the fix vs. reviewer needs the PM to clarify), but worth revisiting once there's real usage to observe.</li>
+  </ol>
+
+  <h2><span class="num">09</span>Explicitly out of scope here</h2>
   <ul>
     <li>Freeform deliverable generation (§01 — rejected).</li>
     <li>Authoring UI for new Templates/DeliverableTemplates/ComplianceRuleTemplates themselves — still hand-authored in <code>seed.ts</code> for now, same as today. Provisioning selects among templates; it doesn't help create them.</li>
     <li>Per-gate ongoing PM guidance (PRD.html §06's other open question — one-time brief vs. resurfaced per gate). Assume one-time brief, shown at Stage 0, for a first version; revisit if that's not enough.</li>
   </ul>
 
-  <footer>StageForge · Provisioning Model draft v0.1 · scoping only, nothing in this document is built · 19 Aug 2026</footer>
+  <footer>StageForge · Provisioning Model draft v0.2 · scoping only, nothing in this document is built · 19 Aug 2026</footer>
 
 </div>

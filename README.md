@@ -22,7 +22,7 @@ NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
 | [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.10) |
 | [`DataModel.html`](DataModel.html) | Entity model — tenancy/access resolution, the gate-closure mechanism, tiered bypass/override authority. (draft v0.5) |
 | [`ConfigSchema.html`](ConfigSchema.html) | Config schema for Stage/Gate/Deliverable templates and Compliance rule sets. (draft v0.4) |
-| [`ProvisioningModel.html`](ProvisioningModel.html) | Scoping for AI-assisted project provisioning — template-library matching, the draft/review/activate flow, and what's still open. (draft v0.1, not built) |
+| [`ProvisioningModel.html`](ProvisioningModel.html) | Scoping for AI-assisted project provisioning — template-library matching, the draft/review/activate flow (data model, actions & permissions), and what's still open. (draft v0.2, not built) |
 | [`Complaince and Regulations.docx`](Complaince%20and%20Regulations.docx), [`Maintenance schedule - SHTM.docx`](Maintenance%20schedule%20-%20SHTM.docx), [`Example_Overview_Plan.docx`](Example_Overview_Plan.docx) | Domain reference material for Scottish NHS Hard FM — the compliance/regulatory stack, an SHTM-mapped PPM schedule by plant category, and a full worked example (Forth Valley Royal Hospital UPS replacement) the current seed data is built from. |
 | [`design/`](design) | Design canvas source — screens for every role (PM, Sponsor, Compliance Officer, Finance, Resource Manager) as Design Component artboards. |
 | [`app/`](app) | Working Phase 1 MVP scaffold — Next.js, PostgreSQL, Prisma, TypeScript. See [`app/README.md`](app/README.md) for setup and what's actually built vs. stubbed. |
