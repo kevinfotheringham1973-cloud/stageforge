@@ -23,11 +23,16 @@ async function main() {
 
   // ── Managed project-number counter (lib/projectNumber.ts) — starts a
   // fresh block at 30001, deliberately unrelated to the ad-hoc numbers
-  // the three demo projects below already carry (20456, 20777, 55998).
+  // the first three demo projects below already carry (20456, 20777,
+  // 55998). Seeded to 30001, not 30000: the fourth demo project below
+  // is itself the real project that was issued 30001 live, so the
+  // counter has to already account for that number being taken —
+  // otherwise the next real project created after a reset would
+  // collide with it.
   await db.projectNumberCounter.upsert({
     where: { id: 1 },
     update: {},
-    create: { id: 1, value: 30000 },
+    create: { id: 1, value: 30001 },
   });
 
   // ── Roles (global, Phase 1's core eight, plus three project-specific
@@ -311,22 +316,24 @@ async function main() {
 
   await createDeliverableTemplates(meStageTemplates, meDeliverableDefsByStage);
 
-  // Calorifier & Hot Water System Replacement — calorifiers and hot/cold
-  // water storage plant, not general "water systems": drainage/foul
-  // water is a genuinely different discipline (flow paths and falls,
-  // not water safety/Legionella) and got its own Template below after
-  // a live drainage project was wrongly matched here on the strength of
-  // an over-broad "water system"/"plumbing" keyword match (confirmed by
-  // Kevin, 19 Aug 2026). Grounded in Complaince and Regulations.docx
-  // and Maintenance schedule - SHTM.docx (SHTM 04-01, Legionella/water
-  // safety).
+  // Calorifier & Hot Water System Replacement — calorifiers and HOT
+  // water storage/distribution plant specifically, not general "water
+  // systems": drainage/foul water and cold water storage are both
+  // genuinely different disciplines and got their own Templates below,
+  // after live projects were wrongly matched here — a drainage project
+  // on an over-broad "water system"/"plumbing" keyword match, and then
+  // a cold-water-tank project on this template's description still
+  // over-claiming "hot/cold water storage" even after the drainage fix
+  // (both confirmed by Kevin, 19 Aug 2026). Grounded in Complaince and
+  // Regulations.docx and Maintenance schedule - SHTM.docx (SHTM 04-01,
+  // Legionella/water safety).
   const waterTemplate = await db.template.create({
     data: {
       key: "template.health.calorifier_replacement",
       name: "Calorifier & Hot Water System Replacement",
       description:
-        "Calorifier and hot/cold water storage plant replacement, including the immediate distribution pipework carrying that stored water — Legionella/water-safety-led, in an operational healthcare environment. Not drainage/foul water — see Drainage & Foul Water System Replacement for that.",
-      matchKeywords: ["calorifier", "hot water storage", "hot water cylinder", "Legionella", "hot water", "cold water storage", "water safety", "water heater"],
+        "Calorifier and hot water storage/distribution plant replacement — Legionella/water-safety-led, in an operational healthcare environment. Not cold water storage (see Cold Water Storage & Distribution Replacement) and not drainage/foul water (see Drainage & Foul Water System Replacement).",
+      matchKeywords: ["calorifier", "hot water storage", "hot water cylinder", "Legionella", "hot water", "water safety", "water heater"],
       sectorVariantId: health.id,
     },
   });
@@ -531,6 +538,118 @@ async function main() {
     ],
   ];
   await createDeliverableTemplates(drainageStageTemplates, drainageDeliverableDefsByStage);
+
+  // Cold Water Storage & Distribution Replacement — inlet mains, break/
+  // storage tanks, filtration, and cold water distribution pipework:
+  // tank inspection/cleaning and supply continuity, not the calorifier
+  // template's hot-water/Legionella-at-temperature focus. Added after a
+  // live "Main water tank replacement" project (2 inlet + 2 filtered
+  // storage tanks) got wrongly matched to the calorifier template —
+  // its description still said "hot/cold water storage" even after the
+  // drainage-template fix narrowed its keywords (confirmed by Kevin,
+  // 19 Aug 2026). Grounded in SHTM 04-01 Part B (water storage tank
+  // operational management), BS 8558 (cold water services), and the
+  // Water Supply (Water Fittings) (Scotland) Byelaws 2014 (WRAS-
+  // approved fittings).
+  const coldWaterTemplate = await db.template.create({
+    data: {
+      key: "template.health.cold_water_storage_replacement",
+      name: "Cold Water Storage & Distribution Replacement",
+      description:
+        "Cold water storage and distribution replacement — inlet mains, break/storage tanks, filtration plant, and cold water distribution pipework, in an operational healthcare environment. Not hot water/calorifiers — see Calorifier & Hot Water System Replacement for that.",
+      matchKeywords: ["cold water tank", "water storage tank", "inlet main", "water filtration", "cold water storage", "break tank", "cistern", "cold water main", "water inlet"],
+      sectorVariantId: health.id,
+    },
+  });
+  const coldWaterStageTemplates = await createStageAndGateTemplates(coldWaterTemplate.id);
+
+  const coldWaterDeliverableDefsByStage: DeliverableDef[][] = [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.coldwater_strategic_brief", label: "Strategic Brief — condition of existing inlet mains/storage tanks and options appraisal" },
+      { key: "del.coldwater_high_level_risk_register", label: "High-level Risk Register — water supply continuity and cross-contamination focus" },
+      { key: "del.coldwater_detailed_project_plan", label: "Detailed Project Plan" },
+      { key: "del.coldwater_zone_confirmation", label: "Confirmation of affected water storage/distribution zones against SHTM 04-01 Part B", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.coldwater_outline_business_case", label: "Outline Business Case / funding confirmation" },
+      { key: "del.coldwater_stakeholder_map", label: "Initial Stakeholder Map, including the Water Safety Group" },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.coldwater_project_brief", label: "Project Brief — full scope, constraints, success criteria, phased shutdown rules" },
+      { key: "del.coldwater_hygiene_survey", label: "Complete water hygiene survey and existing tank/main condition report" },
+      { key: "del.coldwater_preliminary_programme", label: "Preliminary Programme, including phased zone-by-zone shutdown strategy" },
+      { key: "del.coldwater_hs_haiscribe", label: "Initial Health & Safety Strategy and HAI-SCRIBE assessment", description: "HAI-SCRIBE (SHFN 30) infection-risk assessment for construction/refurbishment in a healthcare setting.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.coldwater_expanded_risk_register", label: "Expanded Risk Register" },
+      { key: "del.coldwater_detailed_project_plan_updated_briefing", label: "Updated Detailed Project Plan — full scope, methodology and resourcing" },
+      { key: "del.coldwater_stakeholder_engagement_plan", label: "Stakeholder Engagement Plan and early consultation records" },
+      { key: "del.coldwater_continuity_confirmation", label: "Confirmation of continuity-of-supply arrangements during tank isolation", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.coldwater_concept_design_report", label: "Concept Design Report — tank/main topology, redundancy, temporary water supply strategy" },
+      { key: "del.coldwater_outline_plant_spec", label: "Outline storage tank and filtration plant specification" },
+      { key: "del.coldwater_preliminary_method_statements", label: "Preliminary Method Statements and high-level RAMS" },
+      { key: "del.coldwater_concept_schematics", label: "Concept distribution schematics" },
+      { key: "del.coldwater_updated_programme_shutdowns", label: "Updated Programme showing phased shutdowns" },
+      { key: "del.coldwater_stakeholder_feedback_log", label: "Stakeholder consultation feedback log" },
+      { key: "del.coldwater_concept_risk_assessment", label: "Concept-level Risk Assessment" },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.coldwater_plant_room_drawings", label: "Coordinated plant room / tank room drawings" },
+      { key: "del.coldwater_pipework_routing", label: "Inlet main and distribution pipework routing proposals" },
+      { key: "del.coldwater_access_delivery_strategy", label: "Access, delivery and temporary works strategy" },
+      { key: "del.coldwater_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for tank room penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.coldwater_updated_risk_register_spatial", label: "Updated Risk Register and Method Statements reflecting spatial constraints" },
+      { key: "del.coldwater_detailed_project_plan_updated_spatial", label: "Updated Detailed Project Plan reflecting spatial constraints" },
+      { key: "del.coldwater_structure_confirmation", label: "Confirmation that existing plant room/structure can support the new tanks (structural loading, access)", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 4 — Technical Design
+    [
+      { key: "del.coldwater_full_technical_design_package", label: "Full Technical Design Package — detailed drawings, schematics, specifications" },
+      { key: "del.coldwater_design_calculations", label: "Design calculations — storage capacity, demand profile, filtration duty, pump/booster duty" },
+      { key: "del.coldwater_plant_spec_compliant", label: "Complete storage tank, filtration and pipework specification compliant with SHTM 04-01 Part B, BS 8558 and the Water Supply (Water Fittings) (Scotland) Byelaws 2014", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.coldwater_installation_method_statements", label: "Detailed Installation Method Statements and RAMS" },
+      { key: "del.coldwater_compliance_matrix", label: "Compliance Matrix — mapping against SHTM 04-01, BS 8558, Water Byelaws, HSE ACOP L8, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.coldwater_pre_construction_information", label: "Pre-Construction Information (CDM)" },
+      { key: "del.coldwater_procurement_package", label: "Tender or direct-award procurement package" },
+      { key: "del.coldwater_updated_programme_resource_plan", label: "Updated Programme and Resource Plan" },
+      { key: "del.coldwater_design_risk_assessment_signed", label: "Design Risk Assessment signed by the Designer", bypassAuthority: "SRO" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.coldwater_manufacturer_drawings_cert", label: "Manufacturer drawings and product certification (WRAS-approved fittings) for tanks/filtration plant" },
+      { key: "del.coldwater_delivery_storage_records", label: "Delivery and secure storage records" },
+      { key: "del.coldwater_construction_phase_plan", label: "Approved Construction Phase Plan / Method Statements for each shutdown" },
+      { key: "del.coldwater_permit_to_work_isolation", label: "Permit-to-Work and isolation certificates for every main/tank shutdown", bypassAuthority: "SRO" },
+      { key: "del.coldwater_progress_test_records", label: "Daily and shutdown progress / test records" },
+      { key: "del.coldwater_temp_supply_reinstatement", label: "Temporary water supply and reinstatement records after each shutdown" },
+      { key: "del.coldwater_as_installed_drawings_progressive", label: "Progressive as-installed drawings" },
+      { key: "del.coldwater_disinfection_evidence", label: "Evidence of disinfection/chlorination and sampling of new tanks/mains before reconnection", description: "Critical Legionella control step — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.coldwater_snagging_list", label: "Snagging list and resolution tracker" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.coldwater_hygiene_commissioning_cert", label: "Water hygiene commissioning certificate — disinfection, flushing, and sampling results", bypassAuthority: "SRO" },
+      { key: "del.coldwater_commissioning_validation_reports", label: "Full Commissioning and Validation Reports — flow/pressure tests, filtration performance" },
+      { key: "del.coldwater_as_built_drawings", label: "As-built drawings and distribution schematics" },
+      { key: "del.coldwater_om_manuals", label: "Complete Operation & Maintenance (O&M) Manuals, including tank inspection/cleaning schedule" },
+      { key: "del.coldwater_legionella_risk_assessment_updated", label: "Legionella risk assessment updated and water safety plan reissued", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.coldwater_training_records", label: "Training records for Estates staff" },
+      { key: "del.coldwater_final_risk_assessment_closed", label: "Final Risk Assessment and closed-out RAMS" },
+      { key: "del.coldwater_asset_data_cafm", label: "Asset data uploaded to CAFM / asset register" },
+      { key: "del.coldwater_acceptance_to_service_certificate", label: 'Formal "Acceptance to Service" certificate signed by the Client Authority', bypassAuthority: "SRO" },
+      { key: "del.coldwater_defects_liability_schedule", label: "Defects Liability Schedule" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.coldwater_defects_monitoring_reports", label: "Defects Liability monitoring reports" },
+      { key: "del.coldwater_lessons_learned_report", label: "Final Lessons Learned report" },
+      { key: "del.coldwater_updated_ppm_schedules", label: "Updated Planned Preventative Maintenance (PPM) schedules, including tank inspection/cleaning regime" },
+      { key: "del.coldwater_end_of_defects_certificate", label: "End-of-Defects Certificate (if applicable)" },
+    ],
+  ];
+  await createDeliverableTemplates(coldWaterStageTemplates, coldWaterDeliverableDefsByStage);
 
   // ── Compliance corpus: independently maintained, reused across every
   // programme type (ConfigSchema.html §04) — not authored per project.
@@ -962,6 +1081,69 @@ async function main() {
       recordedById: derek.id,
     },
   });
+
+  // ── Fourth demo project: Cold Water Storage & Distribution
+  // Replacement, originally created live via the managed project-number
+  // flow on 19 Aug 2026 as project 30001 — at the time, matched to the
+  // calorifier template because its description still over-claimed
+  // "hot/cold water storage" scope, which is exactly the gap the Cold
+  // Water template above exists to close. Replayed here against the
+  // correct template, same reproducible pattern as the drainage
+  // project. Kept as project number 30001 to match what was actually
+  // issued — the counter below is seeded to 30001 (not 30000) so the
+  // next real project correctly gets 30002, not a collision with this one.
+  const coldWaterProject = await db.project.create({
+    data: {
+      projectNumber: "30001",
+      name: "Main Water Tank Replacement for the Entire Hospital",
+      templateId: coldWaterTemplate.id,
+      includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8
+      tags: ["water_systems_affected", "occupied_during_works"],
+      // Replacing 4 large inlet/filtered storage tanks serving the
+      // whole hospital needs a reinforced plant-room base and new
+      // access/overflow arrangements — building fabric work, not a
+      // like-for-like swap.
+      worksType: "BUILDING_MODIFICATION",
+      status: "ACTIVE",
+      createdById: derek.id,
+      provisioningBrief:
+        "There are 2 main inlet water tanks and 2 filtered tanks, supplying the whole of the Hospital. Currently, they are leaking badly and need to be replaced.",
+      provisioningMatchReasoning:
+        "Replacement of leaking inlet and filtered cold water storage tanks serving the hospital — cold water storage/distribution plant, not calorifiers or hot water, and not drainage — matches Cold Water Storage & Distribution Replacement. Water systems clearly affected, and the hospital remains operational during works.",
+    },
+  });
+
+  await db.projectRoleAssignment.createMany({
+    data: [
+      { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.PM.id },
+      { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },
+      { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.SPONSOR.id },
+      { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
+      { projectId: coldWaterProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
+      { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
+      { projectId: coldWaterProject.id, departmentId: buildCareFinance.id, userId: priya.id, roleId: roles.FINANCE.id },
+      { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
+    ],
+  });
+
+  await db.provisioningReview.create({
+    data: { projectId: coldWaterProject.id, decision: "APPROVED", reviewedById: gary.id },
+  });
+
+  const coldWaterStageTemplatesFull = await db.stageTemplate.findMany({
+    where: { templateId: coldWaterTemplate.id },
+    orderBy: { order: "asc" },
+    include: { gateTemplate: { include: { deliverableTemplates: true } } },
+  });
+  for (let i = 0; i < coldWaterStageTemplatesFull.length; i++) {
+    await instantiateStage(db, {
+      projectId: coldWaterProject.id,
+      projectTags: effectiveComplianceTags(coldWaterProject),
+      sectorVariantId: health.id,
+      order: i,
+      stageTemplate: coldWaterStageTemplatesFull[i]!,
+    });
+  }
 
   console.log("Seed complete.");
   console.log("Dev users — switch between them with the header switcher:");
