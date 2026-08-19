@@ -2,7 +2,21 @@
 // DataModel.html's gate-closure diagram, made real. Deliberately has
 // no DB dependency so it stays trivially testable.
 
-import type { BypassAuthority, ComplianceRequirementStatus, DeliverableStatus } from "@prisma/client";
+import type { BypassAuthority, ComplianceRequirementStatus, DeliverableStatus, GateStatus } from "@prisma/client";
+
+/**
+ * The roles the Resource/Capacity view tracks (ResourceCapacityModel.html
+ * §01 decided flag) — the people doing hands-on project work, whose time
+ * is the scarce thing being planned. Sponsor/SRO/Compliance Officer sit
+ * outside this view.
+ */
+export const DELIVERY_FACING_ROLE_KEYS = [
+  "PM",
+  "AUTHORISED_PERSON",
+  "AUTHORISING_ENGINEER",
+  "PRINCIPAL_DESIGNER",
+  "FM_CONTRACTOR",
+];
 
 // Authority ladder: SRO can do anything Compliance Officer or PM can
 // do (bypass-wise); Compliance Officer can do anything PM can do;
@@ -122,4 +136,17 @@ export function outstandingComplianceCount(
   complianceRequirements: { status: ComplianceRequirementStatus; blocksGate: boolean }[]
 ): number {
   return complianceRequirements.filter((c) => c.blocksGate && c.status === "PENDING").length;
+}
+
+/**
+ * The gap ResourceCapacityModel.html §04 found: StageForge has no
+ * "project finished" status. Rather than add one, a project only
+ * counts toward the resource view while at least one of its Gates
+ * isn't yet SIGNED_OFF — no schema change, reuses data that already
+ * exists. A project with zero instantiated Gates (e.g. still DRAFT)
+ * is vacuously not live by this definition, which is correct: nobody
+ * has committed to it yet.
+ */
+export function isProjectStillLive(gates: { status: GateStatus }[]): boolean {
+  return gates.some((g) => g.status !== "SIGNED_OFF");
 }

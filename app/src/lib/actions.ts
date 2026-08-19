@@ -630,3 +630,50 @@ export async function approveProvisioning(projectId: string, projectNumber: stri
   revalidatePath(`/projects/${projectNumber}`);
   redirect(`/projects/${projectNumber}`);
 }
+
+// ── Resource/Capacity view (ResourceCapacityModel.html) ─────────────────
+
+/**
+ * PM sets a delivery-facing team member's % FTE allocation on their own
+ * project. Current-state only — a straight overwrite, no time period
+ * (§03 decided). Read-only for the Resource Manager (§05): they view
+ * the aggregate, they don't edit individual numbers here.
+ */
+export async function setResourceAllocation(
+  projectId: string,
+  targetUserId: string,
+  projectNumber: string,
+  formData: FormData
+) {
+  const raw = String(formData.get("allocationPercent") ?? "").trim();
+  const allocationPercent = Number(raw);
+  if (!Number.isInteger(allocationPercent) || allocationPercent < 0 || allocationPercent > 100) {
+    throw new Error("Allocation must be a whole number between 0 and 100.");
+  }
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const roleKeys = await getCurrentUserRoleKeysForProject(projectId);
+  if (!roleKeys.includes("PM")) {
+    throw new Error("Only the Project Manager can set resource allocation.");
+  }
+
+  await db.resourceAllocation.upsert({
+    where: { userId_projectId: { userId: targetUserId, projectId } },
+    create: { userId: targetUserId, projectId, allocationPercent, updatedById: actorId },
+    update: { allocationPercent, updatedById: actorId },
+  });
+
+  await db.auditLogEntry.create({
+    data: {
+      actorId,
+      action: "resource.allocation_updated",
+      entityType: "ResourceAllocation",
+      entityId: `${targetUserId}:${projectId}`,
+    },
+  });
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath("/resources");
+}
