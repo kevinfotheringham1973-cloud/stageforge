@@ -60,6 +60,8 @@ model User {
   auditEntries        AuditLogEntry[]
   complianceUploads   ComplianceEvidenceFile[]
   complianceOverrides ComplianceOverride[]
+  createdProjects     Project[]                @relation("ProjectCreatedBy")
+  provisioningReviews ProvisioningReview[]
   createdAt           DateTime                 @default(now())
 }
 
@@ -284,25 +286,62 @@ model ComplianceOverride {
   createdAt             DateTime @default(now())
 }
 
+// AI-assisted provisioning (ProvisioningModel.html §04). Every existing/
+// seeded/reinstated project is unaffected — only the provisioning path
+// (not built yet beyond this schema + the shared instantiation helper)
+// ever creates a DRAFT project. No REJECTED-style terminal state here
+// either, same reasoning as GateStatus below: a revision request is a
+// ProvisioningReview(REVISE, reason) row, the Project just stays DRAFT.
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+}
+
 model Project {
-  id                String                  @id @default(cuid())
-  projectNumber     String                  @unique
-  name              String
-  templateId        String
-  template          Template                @relation(fields: [templateId], references: [id])
+  id                         String                  @id @default(cuid())
+  projectNumber              String                  @unique
+  name                       String
+  templateId                 String
+  template                   Template                @relation(fields: [templateId], references: [id])
   // Stage scoping (ConfigSchema.html §06): which of the template's
   // stage keys this project actually uses. Editable — a PM can
   // reinstate a skipped stage later; it appends after the project's
   // current point rather than reinserting into template order.
-  includedStageKeys String[]
+  includedStageKeys          String[]
   // Compliance rule matching (ConfigSchema.html §04): a
   // ComplianceRuleTemplate with a non-empty appliesIfTags applies if at
   // least one tag here matches ("any match", no AND/OR/NOT). e.g.
   // "acute_hospital", "listed_building", "occupied_during_works".
-  tags              String[]                @default([])
-  roleAssignments   ProjectRoleAssignment[]
-  stages            Stage[]
-  createdAt         DateTime                @default(now())
+  tags                       String[]                @default([])
+  status                     ProjectStatus           @default(ACTIVE)
+  createdById                String?
+  createdBy                  User?                   @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  provisioningBrief          String?
+  provisioningMatchReasoning String?
+  provisioningReviews        ProvisioningReview[]
+  roleAssignments            ProjectRoleAssignment[]
+  stages                     Stage[]
+  createdAt                  DateTime                @default(now())
+}
+
+enum ProvisioningReviewDecision {
+  APPROVED
+  REVISE
+}
+
+// The human decision history for a project's provisioning match —
+// deliberately shaped like GateSignOff (no flat reviewedBy/reviewedAt
+// columns on Project itself; read the latest row instead of
+// duplicating state, same reasoning as why Gate has no such columns).
+model ProvisioningReview {
+  id           String                     @id @default(cuid())
+  projectId    String
+  project      Project                    @relation(fields: [projectId], references: [id])
+  decision     ProvisioningReviewDecision
+  reviewedById String
+  reviewedBy   User                       @relation(fields: [reviewedById], references: [id])
+  reason       String?
+  createdAt    DateTime                   @default(now())
 }
 
 // No REJECTED status here on purpose: per the PRD, rejecting a gate
