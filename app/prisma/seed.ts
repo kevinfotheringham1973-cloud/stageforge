@@ -4,6 +4,12 @@
 // units) for FVRH NHS at Forth Valley Royal Hospital. Stage/gate
 // structure and deliverables follow the RIBA Plan of Work 2020,
 // matching the worked example in Example_Overview_Plan.docx.
+//
+// Also seeds a second Template — Water Systems Replacement — purely
+// as template-library content (no live project instantiated from it).
+// This is what AI-assisted provisioning (ProvisioningModel.html) will
+// have to choose between once it exists: a "match" against a library
+// of exactly one entry proves nothing.
 
 import { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "../src/lib/compliance";
@@ -118,15 +124,10 @@ async function main() {
     },
   });
 
-  // ── Template: one Health template, Gateway-Review shaped ─────────
-  const template = await db.template.create({
-    data: {
-      key: "template.health.me_systems_replacement",
-      name: "M&E Systems Replacement",
-      sectorVariantId: health.id,
-    },
-  });
-
+  // ── Stage/gate structure: RIBA Plan of Work 2020, fixed regardless of
+  // project type (PRD.html §06 decided flag) — every Health-sector
+  // Template reuses the same eight stages; only the deliverables per
+  // gate vary by discipline.
   const stageDefs = [
     { key: "stage.strategic_definition", name: "Strategic Definition", gateKey: "gate.g0_strategic_definition", gateName: "Gate 0 — Strategic Definition" },
     { key: "stage.preparation_briefing", name: "Preparation & Briefing", gateKey: "gate.g1_preparation_briefing", gateName: "Gate 1 — Preparation & Briefing" },
@@ -138,30 +139,69 @@ async function main() {
     { key: "stage.use", name: "Use", gateKey: "gate.g7_use", gateName: "Gate 7 — Use" },
   ];
 
-  const stageTemplates = [];
-  for (let i = 0; i < stageDefs.length; i++) {
-    const def = stageDefs[i]!;
-    const st = await db.stageTemplate.create({
-      data: { templateId: template.id, key: def.key, name: def.name, order: i },
-    });
-    await db.gateTemplate.create({
-      data: { stageTemplateId: st.id, key: def.gateKey, name: def.gateName },
-    });
-    stageTemplates.push(st);
-  }
-
-  // Deliverable templates for every gate — the full mandatory-deliverables
-  // list per RIBA stage from the UPS Systems Replacement worked example
-  // (Example_Overview_Plan.docx §3). bypassAuthority reflects which items
-  // carry statutory/safety weight (SRO), compliance documentation
-  // (Compliance Officer), or ordinary delivery (PM).
   type DeliverableDef = {
     key: string;
     label: string;
     description?: string;
     bypassAuthority?: "PM" | "COMPLIANCE_OFFICER" | "SRO";
   };
-  const deliverableDefsByStage: DeliverableDef[][] = [
+
+  async function createStageAndGateTemplates(templateId: string) {
+    const templates = [];
+    for (let i = 0; i < stageDefs.length; i++) {
+      const def = stageDefs[i]!;
+      const st = await db.stageTemplate.create({
+        data: { templateId, key: def.key, name: def.name, order: i },
+      });
+      await db.gateTemplate.create({
+        data: { stageTemplateId: st.id, key: def.gateKey, name: def.gateName },
+      });
+      templates.push(st);
+    }
+    return templates;
+  }
+
+  async function createDeliverableTemplates(
+    stageTemplatesForTemplate: Awaited<ReturnType<typeof createStageAndGateTemplates>>,
+    deliverableDefsByStage: DeliverableDef[][]
+  ) {
+    for (let i = 0; i < stageTemplatesForTemplate.length; i++) {
+      const gateTemplate = await db.gateTemplate.findUniqueOrThrow({
+        where: { stageTemplateId: stageTemplatesForTemplate[i]!.id },
+      });
+      await db.deliverableTemplate.createMany({
+        data: deliverableDefsByStage[i]!.map((d) => ({
+          gateTemplateId: gateTemplate.id,
+          key: d.key,
+          label: d.label,
+          description: d.description,
+          bypassAuthority: d.bypassAuthority ?? "PM",
+        })),
+      });
+    }
+  }
+
+  // ── Template library ──────────────────────────────────────────────
+
+  // M&E Systems Replacement — the UPS Systems Replacement worked example.
+  const meTemplate = await db.template.create({
+    data: {
+      key: "template.health.me_systems_replacement",
+      name: "M&E Systems Replacement",
+      description:
+        "Electrical and mechanical plant replacement — UPS/battery backup systems, generators, switchgear, and associated distribution, in an operational healthcare environment.",
+      matchKeywords: ["UPS", "battery backup", "electrical replacement", "generator", "switchgear", "M&E", "power resilience"],
+      sectorVariantId: health.id,
+    },
+  });
+  const meStageTemplates = await createStageAndGateTemplates(meTemplate.id);
+
+  // Deliverable templates for every gate — the full mandatory-deliverables
+  // list per RIBA stage from the UPS Systems Replacement worked example
+  // (Example_Overview_Plan.docx §3). bypassAuthority reflects which items
+  // carry statutory/safety weight (SRO), compliance documentation
+  // (Compliance Officer), or ordinary delivery (PM).
+  const meDeliverableDefsByStage: DeliverableDef[][] = [
     // Gate 0 — Strategic Definition
     [
       { key: "del.strategic_brief", label: "Strategic Brief — clinical risk of existing systems and options appraisal" },
@@ -245,20 +285,111 @@ async function main() {
     ],
   ];
 
-  for (let i = 0; i < stageTemplates.length; i++) {
-    const gateTemplate = await db.gateTemplate.findUniqueOrThrow({
-      where: { stageTemplateId: stageTemplates[i]!.id },
-    });
-    await db.deliverableTemplate.createMany({
-      data: deliverableDefsByStage[i]!.map((d) => ({
-        gateTemplateId: gateTemplate.id,
-        key: d.key,
-        label: d.label,
-        description: d.description,
-        bypassAuthority: d.bypassAuthority ?? "PM",
-      })),
-    });
-  }
+  await createDeliverableTemplates(meStageTemplates, meDeliverableDefsByStage);
+
+  // Water Systems Replacement — calorifiers, hot/cold water storage, and
+  // distribution pipework. Grounded in Complaince and Regulations.docx
+  // and Maintenance schedule - SHTM.docx (SHTM 04-01, Legionella/water
+  // safety). Template-library content only — no live project below is
+  // instantiated from it, it exists so AI-assisted provisioning has a
+  // second candidate to match against instead of trivially always
+  // picking the one Template that used to exist.
+  const waterTemplate = await db.template.create({
+    data: {
+      key: "template.health.water_systems_replacement",
+      name: "Water Systems Replacement",
+      description:
+        "Water system plant and distribution replacement — calorifiers, hot/cold water storage, and pipework, in an operational healthcare environment.",
+      matchKeywords: ["water system", "calorifier", "pipework", "Legionella", "hot water", "cold water", "water safety", "plumbing"],
+      sectorVariantId: health.id,
+    },
+  });
+  const waterStageTemplates = await createStageAndGateTemplates(waterTemplate.id);
+
+  const waterDeliverableDefsByStage: DeliverableDef[][] = [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.water_strategic_brief", label: "Strategic Brief — water safety risk of existing calorifiers/pipework and options appraisal" },
+      { key: "del.water_high_level_risk_register", label: "High-level Risk Register — water safety and supply continuity focus" },
+      { key: "del.water_safety_zone_confirmation", label: "Confirmation of affected water safety zones against SHTM 04-01", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_outline_business_case", label: "Outline Business Case / funding confirmation" },
+      { key: "del.water_stakeholder_map", label: "Initial Stakeholder Map, including the Water Safety Group" },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.water_project_brief", label: "Project Brief — full scope, constraints, success criteria, phased shutdown rules" },
+      { key: "del.water_hygiene_survey", label: "Complete water hygiene survey and existing system condition report" },
+      { key: "del.water_preliminary_programme", label: "Preliminary Programme, including phased zone-by-zone shutdown strategy" },
+      { key: "del.water_hs_haiscribe", label: "Initial Health & Safety Strategy and HAI-SCRIBE assessment", description: "HAI-SCRIBE (SHFN 30) infection-risk assessment for construction/refurbishment in a healthcare setting.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_expanded_risk_register", label: "Expanded Risk Register" },
+      { key: "del.water_stakeholder_engagement_plan", label: "Stakeholder Engagement Plan and early consultation records" },
+      { key: "del.water_augmented_care_confirmation", label: "Confirmation of augmented/high-risk care areas affected (SHTM 04-01 Part A risk categories)", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.water_concept_design_report", label: "Concept Design Report — system topology, redundancy, temporary water supply strategy" },
+      { key: "del.water_outline_plant_spec", label: "Outline calorifier and plant specification" },
+      { key: "del.water_preliminary_method_statements", label: "Preliminary Method Statements and high-level RAMS" },
+      { key: "del.water_concept_schematics", label: "Concept distribution schematics" },
+      { key: "del.water_updated_programme_shutdowns", label: "Updated Programme showing phased shutdowns" },
+      { key: "del.water_stakeholder_feedback_log", label: "Stakeholder consultation feedback log" },
+      { key: "del.water_concept_risk_assessment", label: "Concept-level Risk Assessment" },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.water_plant_room_riser_drawings", label: "Coordinated plant room / riser drawings" },
+      { key: "del.water_pipework_routing", label: "Pipework routing and containment proposals" },
+      { key: "del.water_access_delivery_strategy", label: "Access, delivery and temporary works strategy" },
+      { key: "del.water_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for pipework penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.water_updated_risk_register_spatial", label: "Updated Risk Register and Method Statements reflecting spatial constraints" },
+      { key: "del.water_infrastructure_confirmation", label: "Confirmation that existing plant room infrastructure can support the new units (structural, thermal, electrical supply)", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 4 — Technical Design
+    [
+      { key: "del.water_full_technical_design_package", label: "Full Technical Design Package — detailed drawings, schematics, specifications" },
+      { key: "del.water_design_calculations", label: "Design calculations — flow rates, storage capacity, thermal balance, pump duty" },
+      { key: "del.water_plant_spec_compliant", label: "Complete calorifier/plant and pipework specifications compliant with SHTM 04-01 and the Water Supply (Water Fittings) (Scotland) Byelaws 2014", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_installation_method_statements", label: "Detailed Installation Method Statements, permit procedures and RAMS" },
+      { key: "del.water_compliance_matrix", label: "Compliance Matrix — mapping against SHTM 04-01, Water Byelaws, HSE ACOP L8, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_pre_construction_information", label: "Pre-Construction Information (CDM)" },
+      { key: "del.water_procurement_package", label: "Tender or direct-award procurement package" },
+      { key: "del.water_updated_programme_resource_plan", label: "Updated Programme and Resource Plan" },
+      { key: "del.water_design_risk_assessment_signed", label: "Design Risk Assessment signed by the Designer", bypassAuthority: "SRO" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.water_manufacturer_drawings_fat", label: "Manufacturer drawings and Factory Acceptance Test (FAT) reports" },
+      { key: "del.water_delivery_storage_records", label: "Delivery and secure storage records" },
+      { key: "del.water_construction_phase_plan", label: "Approved Construction Phase Plan / Method Statements for each shutdown" },
+      { key: "del.water_permit_to_work_isolation", label: "Permit-to-Work and Isolation Certificates for every zone shutdown", bypassAuthority: "SRO" },
+      { key: "del.water_progress_test_records", label: "Daily and shutdown progress / test records" },
+      { key: "del.water_temp_supply_reinstatement", label: "Temporary water supply and reinstatement records after each shutdown" },
+      { key: "del.water_as_installed_drawings_progressive", label: "Progressive as-installed drawings" },
+      { key: "del.water_disinfection_evidence", label: "Evidence of disinfection/chlorination of new pipework before reconnection", description: "Critical Legionella control step — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.water_snagging_list", label: "Snagging list and resolution tracker" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.water_hygiene_commissioning_cert", label: "Water hygiene commissioning certificate — disinfection, flushing, and sampling results", bypassAuthority: "SRO" },
+      { key: "del.water_commissioning_validation_reports", label: "Full Commissioning and Validation Reports — flow/temperature tests, TMV commissioning" },
+      { key: "del.water_as_built_drawings", label: "As-built drawings and distribution schematics" },
+      { key: "del.water_om_manuals", label: "Complete Operation & Maintenance (O&M) Manuals, including configuration files and recommended spares" },
+      { key: "del.water_legionella_risk_assessment_updated", label: "Legionella risk assessment updated and water safety plan reissued", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_training_records", label: "Training records for Estates and relevant clinical staff" },
+      { key: "del.water_final_risk_assessment_closed", label: "Final Risk Assessment and closed-out RAMS" },
+      { key: "del.water_asset_data_cafm", label: "Asset data uploaded to CAFM / asset register" },
+      { key: "del.water_acceptance_to_service_certificate", label: 'Formal "Acceptance to Service" certificate signed by the Client Authority', bypassAuthority: "SRO" },
+      { key: "del.water_defects_liability_schedule", label: "Defects Liability Schedule" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.water_defects_monitoring_reports", label: "Defects Liability monitoring reports" },
+      { key: "del.water_lessons_learned_report", label: "Final Lessons Learned report" },
+      { key: "del.water_updated_ppm_schedules", label: "Updated Planned Preventative Maintenance (PPM) schedules" },
+      { key: "del.water_end_of_defects_certificate", label: "End-of-Defects Certificate (if applicable)" },
+    ],
+  ];
+  await createDeliverableTemplates(waterStageTemplates, waterDeliverableDefsByStage);
 
   // ── Compliance corpus: independently maintained, reused across every
   // programme type (ConfigSchema.html §04) — not authored per project.
@@ -317,6 +448,16 @@ async function main() {
         appliesToStageKeys: ["stage.concept_design"],
         appliesIfTags: ["national_treatment_centre"],
       },
+      {
+        ruleSetId: scottishHealthCompliance.id,
+        key: "comp.legionella_water_safety",
+        label: "Legionella risk assessment and water safety plan reviewed",
+        description: "Required wherever works affect water storage, distribution, or temperature control — sentinel outlet monitoring and disinfection records must be current.",
+        ruleRef: "SHTM 04-01 / HSE ACOP L8 / Water Supply (Water Fittings) (Scotland) Byelaws 2014",
+        blocksGate: true,
+        appliesToStageKeys: ["stage.spatial_coordination", "stage.manufacturing_construction"],
+        appliesIfTags: ["water_systems_affected"],
+      },
     ],
   });
 
@@ -325,7 +466,7 @@ async function main() {
     data: {
       projectNumber: "20456",
       name: "UPS Systems Replacement – 4 Main Systems (12 units)",
-      templateId: template.id,
+      templateId: meTemplate.id,
       includedStageKeys: stageDefs.slice(0, 7).map((s) => s.key), // all but use
       // Forth Valley Royal Hospital is a live acute site, works run
       // alongside continuous clinical use — not a National Treatment
@@ -354,7 +495,7 @@ async function main() {
   // instantiated, per ConfigSchema.html §03).
   for (let i = 0; i < 7; i++) {
     const def = stageDefs[i]!;
-    const st = stageTemplates[i]!;
+    const st = meStageTemplates[i]!;
     const stage = await db.stage.create({
       data: {
         projectId: project.id,

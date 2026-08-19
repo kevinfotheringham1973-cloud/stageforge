@@ -107,12 +107,18 @@ model SectorVariant {
 
 // The named template a Project is built from, e.g.
 // "template.health.ward_refurbishment". Authoring (create/edit) is
-// Platform Admin + Compliance Officer only — not built in Phase 1,
-// which ships with one seeded template.
+// Platform Admin + Compliance Officer only.
 model Template {
   id              String          @id @default(cuid())
   key             String          @unique
   name            String
+  // Matching metadata for AI-assisted provisioning (ProvisioningModel.html
+  // §04) — what an LLM matches a free-text project description against
+  // when picking the closest Template from the library. Not used by
+  // anything else; a Template with no matchKeywords just isn't a
+  // provisioning candidate yet.
+  description     String?
+  matchKeywords   String[]        @default([])
   sectorVariantId String
   sectorVariant   SectorVariant   @relation(fields: [sectorVariantId], references: [id])
   stageTemplates  StageTemplate[]
