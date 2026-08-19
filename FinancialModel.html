@@ -1,0 +1,367 @@
+<title>StageForge Financial Model</title>
+<style>
+  :root{
+    --bg:#EEF0EC;
+    --surface:#FFFFFF;
+    --surface-2:#E4E7E1;
+    --ink:#1B2422;
+    --ink-muted:#56635E;
+    --accent:#1F5C63;
+    --accent-soft:#DCE7E6;
+    --flag:#A66A1E;
+    --rule:#CBD1C8;
+    --ok:#3F7D5C;
+    --warn:#B8862B;
+    --risk:#B0473C;
+
+    --font-display:'Rockwell','Roboto Slab',Georgia,serif;
+    --font-body:'Charter','Iowan Old Style',Georgia,'Times New Roman',serif;
+    --font-mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14191A;
+      --surface:#1B2222;
+      --surface-2:#212928;
+      --ink:#E7E9E2;
+      --ink-muted:#9BA6A0;
+      --accent:#5FB0AE;
+      --accent-soft:#1E3B3A;
+      --flag:#E0A94C;
+      --rule:#33403C;
+      --ok:#5FAE81;
+      --warn:#D9A441;
+      --risk:#D46A57;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14191A;
+    --surface:#1B2222;
+    --surface-2:#212928;
+    --ink:#E7E9E2;
+    --ink-muted:#9BA6A0;
+    --accent:#5FB0AE;
+    --accent-soft:#1E3B3A;
+    --flag:#E0A94C;
+    --rule:#33403C;
+    --ok:#5FAE81;
+    --warn:#D9A441;
+    --risk:#D46A57;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:17px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{
+    max-width:44rem;
+    margin:0 auto;
+    padding:3.5rem 1.5rem 6rem;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .page{ animation: rise .5s ease-out; }
+  }
+  @keyframes rise{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  header.doc-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:1.5rem;
+    border-bottom:1px solid var(--rule);
+    padding-bottom:1.75rem;
+    margin-bottom:2.25rem;
+  }
+  .doc-head h1{
+    font-family:var(--font-display);
+    font-size:clamp(1.9rem, 1.55rem + 1.4vw, 2.5rem);
+    line-height:1.1;
+    margin:0 0 .6rem;
+    text-wrap:balance;
+    letter-spacing:-0.01em;
+  }
+  .doc-meta{
+    font-family:var(--font-mono);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--ink-muted);
+    line-height:1.9;
+  }
+  .stamp{
+    flex:none;
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    border:2px solid var(--flag);
+    border-radius:3px;
+    padding:.35rem .7rem;
+    transform:rotate(-3deg);
+    white-space:nowrap;
+    margin-top:.3rem;
+  }
+
+  h2{
+    font-family:var(--font-display);
+    font-size:1.5rem;
+    letter-spacing:-.005em;
+    color:var(--ink);
+    border-top:1px solid var(--rule);
+    padding-top:.5rem;
+    margin:3.25rem 0 1rem;
+    text-wrap:balance;
+  }
+  h2 .num{
+    font-family:var(--font-mono);
+    font-size:.8rem;
+    color:var(--accent);
+    letter-spacing:.05em;
+    display:block;
+    margin-bottom:.35rem;
+  }
+  h3{
+    font-family:var(--font-mono);
+    font-size:.82rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--accent);
+    margin:2rem 0 .6rem;
+  }
+  p{ margin:0 0 1rem; max-width:38rem; }
+  ul, ol{ margin:0 0 1rem; padding-left:1.3rem; }
+  li{ margin-bottom:.4rem; max-width:36rem; }
+  strong{ color:var(--ink); }
+
+  .lede{
+    font-size:1.05rem;
+    color:var(--ink-muted);
+    max-width:36rem;
+  }
+
+  .flag{
+    border-left:3px solid var(--flag);
+    background:var(--accent-soft);
+    padding:.7rem 1rem;
+    margin:1rem 0 1.4rem;
+    font-size:.92rem;
+    max-width:36rem;
+    border-radius:0 3px 3px 0;
+  }
+  .flag-label{
+    display:block;
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.3rem;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:.5rem 0 1.5rem;
+    font-size:.92rem;
+  }
+  .table-wrap{ overflow-x:auto; }
+  th{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+    text-align:left;
+    padding:.5rem .8rem;
+    border-bottom:1px solid var(--rule);
+    background:var(--surface-2);
+  }
+  td{
+    padding:.65rem .8rem;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+    font-variant-numeric:tabular-nums;
+  }
+  tr:last-child td{ border-bottom:none; }
+
+  .oq{ list-style:none; padding-left:0; counter-reset:oq; }
+  .oq li{
+    counter-increment:oq;
+    position:relative;
+    padding-left:2.1rem;
+    margin-bottom:.85rem;
+    max-width:36rem;
+  }
+  .oq li::before{
+    content:counter(oq);
+    position:absolute;
+    left:0;
+    top:.05rem;
+    font-family:var(--font-mono);
+    font-size:.75rem;
+    color:var(--ink-muted);
+    border:1px solid var(--rule);
+    border-radius:50%;
+    width:1.4rem;
+    height:1.4rem;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .flag.decided{ border-left-color:var(--ok); background:transparent; }
+  .flag.decided .flag-label{ color:var(--ok); }
+
+  .rec{
+    background:var(--accent-soft);
+    border-radius:4px;
+    padding:.9rem 1.1rem;
+    margin:1rem 0 1.5rem;
+    font-size:.94rem;
+  }
+  .rec .flag-label{ color:var(--accent); }
+
+  .example{
+    border:1px solid var(--rule);
+    border-radius:4px;
+    padding:1.1rem 1.3rem;
+    margin:1rem 0 1.5rem;
+  }
+  .example-label{
+    font-family:var(--font-mono);
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--flag);
+    margin-bottom:.6rem;
+    display:block;
+  }
+  .example p{ font-size:.94rem; }
+  .example ul{ margin-bottom:.9rem; }
+  .example li{ font-size:.92rem; }
+
+  footer{
+    margin-top:4rem;
+    padding-top:1.5rem;
+    border-top:1px solid var(--rule);
+    font-family:var(--font-mono);
+    font-size:.7rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--ink-muted);
+  }
+
+  a{ color:var(--accent); }
+</style>
+
+<div class="page">
+
+  <header class="doc-head">
+    <div>
+      <h1>StageForge — Financial Model</h1>
+      <div class="doc-meta">
+        Technical scoping — Draft v0.1<br>
+        Owner: Kevin Fotheringham · 19 Aug 2026<br>
+        Source: PRD.html §06 "Financial View" + DataModel.html §04 (SpendRecord sketch) + Kevin's decisions, 19 Aug 2026
+      </div>
+    </div>
+    <div class="stamp">Scoping — not built</div>
+  </header>
+
+  <p class="lede">Working out the last unbuilt piece from the PRD's Phase 2–3 roadmap — actual spend, rolled up against a project, classified into the three Hard FM approval buckets, with a real approval step rather than passive logging.</p>
+
+  <h2><span class="num">01</span>Starting boundary</h2>
+  <p>Already decided before this document, from the PRD:</p>
+  <ul>
+    <li><strong>Manual/invoice-level actuals only.</strong> PRD.html §06 decided flag: SAP/D365 integration is not near-term — ship with manual entry, ERP reconciliation stays a later-phase ambition.</li>
+    <li><strong>Three approval buckets.</strong> Lifecycle Replacement, Small Works, Variation — a single large project can draw from more than one at once, and the view must show total spend across all buckets combined <em>and</em> broken out per bucket.</li>
+    <li><strong>Rolled up against the central project number.</strong> Project-level, not deliverable- or gate-level — matches every other PRD reference to spend tracking.</li>
+    <li><strong>The Finance role already exists</strong>, seeded, unused (<code>roleDefs</code> in <code>seed.ts</code>) — PRD.html §04: "Reconciles invoice-level actual spend against the central project number."</li>
+  </ul>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin, 19 Aug 2026: spend needs a real <strong>approval step</strong>, not passive recording — the PRD's own unresolved open question ("approval thresholds and workflow differences between the three buckets... whether each bucket has its own sign-off role") is resolved in the direction of building governance here, mirroring the gate-closure pattern used everywhere else in the app rather than treating Financial View as a simple log.
+  </div>
+
+  <h2><span class="num">02</span>What's already built and reusable</h2>
+  <p>This is the fourth time this exact shape has been needed — <code>GateSignOff</code>, <code>ProvisioningReview</code>, and <code>ComplianceOverride</code> all follow the same pattern: a record entity, a decision-history entity shaped like it (not flat columns on the record — read the latest row instead of duplicating state), a mandatory reason on anything other than approval, and an <code>AuditLogEntry</code> alongside every action. Spend approval is the same pattern a fourth time, not a new one.</p>
+  <div class="rec">
+    <span class="flag-label">Net-new work</span>
+    Two entities (<code>SpendRecord</code>, <code>SpendApproval</code>), an approval-authority rule (§04 — the genuinely undecided part), three or four actions, and a view — project-level plus a portfolio-wide Finance route, mirroring <code>/resources</code>.
+  </div>
+
+  <h2><span class="num">03</span>Data model</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Entity / field</th><th>Purpose</th></tr>
+    <tr><td><code>ApprovalBucket</code></td><td>New enum: <code>LIFECYCLE_REPLACEMENT | SMALL_WORKS | VARIATION</code>.</td></tr>
+    <tr><td><code>SpendRecord</code></td><td><code>id, projectId, bucket, amount (Decimal), description, invoiceReference (String?), recordedById, status (PENDING | APPROVED), createdAt</code>. One row per invoice/actual, not per project — a project's total is the sum of its records.</td></tr>
+    <tr><td><code>SpendApproval</code></td><td><code>id, spendRecordId, decision (APPROVED | REJECTED), approvedById, reason (String?), createdAt</code>. Shaped exactly like <code>GateSignOff</code>/<code>ProvisioningReview</code>.</td></tr>
+  </table>
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    No <code>REJECTED</code> terminal status on <code>SpendRecord</code> — same reasoning as every other status enum in this app (<code>GateStatus</code>, <code>ProjectStatus</code>): a rejection is a <code>SpendApproval(REJECTED, reason)</code> row, and the record simply stays <code>PENDING</code>, editable, visible to Finance with the reason attached, not a dead end.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    <code>amount</code> is <code>Decimal</code>, not <code>Int</code>/<code>Float</code> — money needs exact arithmetic; Postgres <code>numeric</code> via Prisma's <code>Decimal</code> type is the correct fit, unlike <code>ResourceAllocation.allocationPercent</code> which is a legitimate whole-number <code>Int</code>. GBP only, no multi-currency — every example in every source document is UK-only.
+  </div>
+
+  <h2><span class="num">04</span>Approval authority — the genuinely undecided part</h2>
+  <p>The PRD flagged, unresolved, whether buckets have different sign-off roles or value thresholds. Real Hard FM practice likely does vary this by bucket and amount, but no specific rule survives in any source document — inventing numbers here would be guessing at someone else's finance policy.</p>
+  <div class="rec">
+    <span class="flag-label">Recommendation</span>
+    Ship v1 with a single, flat rule reusing authority the app already has: <strong>Sponsor approves</strong> (same actor who approves gates — PRD.html §06 already casts the Sponsor as the accountable approver for a project), <strong>SRO can also approve</strong> (the existing tiered-authority pattern — whoever can do more can do less), <strong>identical across all three buckets</strong>, and <strong>no amount-based threshold</strong> (every spend record needs sign-off regardless of size). This is deliberately the simplest rule that satisfies "add an approval step" without guessing at bucket- or value-specific policy that isn't written down anywhere yet.
+  </div>
+  <div class="flag">
+    <span class="flag-label">Open question</span>
+    Whether Lifecycle Replacement, Small Works, and Variation should actually require different approval tiers or value thresholds in practice — the exact question the PRD already left open, still open. If Kevin's real process differs (e.g. Small Works auto-approves under some value, Lifecycle Replacement always needs SRO), that's a straightforward extension of the same rule shape once the actual numbers exist.
+  </div>
+
+  <h2><span class="num">05</span>Actions</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Action</th><th>Who</th><th>Effect</th></tr>
+    <tr><td><code>recordSpend</code></td><td>Finance (project-scoped)</td><td>Creates a <code>SpendRecord</code> — bucket, amount, description, invoice reference — status <code>PENDING</code>.</td></tr>
+    <tr><td><code>reviseSpend</code></td><td>Finance, while <code>PENDING</code></td><td>Edits amount/bucket/description/invoice reference on the same record — no re-approval needed until submitted again, since nothing's been approved yet.</td></tr>
+    <tr><td><code>approveSpend</code></td><td>Sponsor or SRO (§04)</td><td>Records <code>SpendApproval(APPROVED)</code>, flips <code>SpendRecord.status</code> to <code>APPROVED</code>.</td></tr>
+    <tr><td><code>rejectSpend</code></td><td>Sponsor or SRO, reason required</td><td>Records <code>SpendApproval(REJECTED, reason)</code>. Record stays <code>PENDING</code> — same "return to editable state with a reason" pattern as gate rejection and provisioning revision.</td></tr>
+  </table>
+  </div>
+  <p>Every action also writes the usual <code>AuditLogEntry</code> — <code>spend.recorded</code>, <code>spend.revised</code>, <code>spend.approved</code>, <code>spend.rejected</code> — same append-only trail as everything else.</p>
+
+  <h2><span class="num">06</span>The view</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Where</th><th>Shows</th></tr>
+    <tr><td>Project overview page — new "Spend" section, alongside Team &amp; Capacity</td><td>Total approved, total pending, per-bucket breakdown, and a list of individual <code>SpendRecord</code>s with status — Finance's <code>recordSpend</code>/<code>reviseSpend</code> forms, Sponsor/SRO's approve/reject controls on pending records, all inline, no navigation — matching the established pattern from <code>GateDetail.tsx</code> and Team &amp; Capacity.</td></tr>
+    <tr><td>New route <code>/finance</code></td><td>Portfolio-wide, read-only: every project's approved/pending totals and per-bucket split in one place — the Finance role's equivalent of the Resource Manager's <code>/resources</code>.</td></tr>
+  </table>
+  </div>
+
+  <h2><span class="num">07</span>Explicitly out of scope here</h2>
+  <ul>
+    <li>ERP integration (SAP/D365) — PRD.html §06/§08, confirmed not near-term.</li>
+    <li>Amount-based approval thresholds (§04) — flat rule for v1, revisit once real threshold numbers exist.</li>
+    <li>Multi-currency.</li>
+    <li>Budget-vs-actual — this tracks actuals only, no budget/forecast figure to compare against. Would need its own scoping if wanted.</li>
+    <li>Deliverable- or gate-level spend attribution — project-level only, per §01.</li>
+  </ul>
+
+  <h2><span class="num">08</span>Open questions</h2>
+  <ol class="oq">
+    <li>Bucket- or value-specific approval authority (§04) — the PRD's own unresolved question, still unresolved, shipped with a deliberately simple default in the meantime.</li>
+    <li>Whether Finance should be able to delete a <code>PENDING</code> record they made in error, or whether every record — even a mistaken one — stays in the audit trail forever with a note. Leaning toward the latter (matches the "no undo, ever" philosophy already established for bypasses and overrides), not decided.</li>
+  </ol>
+
+  <footer>StageForge · Financial Model draft v0.1 · scoping only, nothing in this document is built · 19 Aug 2026</footer>
+
+</div>
