@@ -338,7 +338,7 @@
     <div>
       <h1>StageForge</h1>
       <div class="doc-meta">
-        Product Requirements Document — Draft v0.9<br>
+        Product Requirements Document — Draft v0.10<br>
         Owner: Kevin Fotheringham · 19 Aug 2026<br>
         Source: Overview.docx + Kevin's decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx
       </div>
@@ -498,25 +498,30 @@
   </div>
 
   <h3>AI-Assisted Project Provisioning</h3>
-  <p>Kevin's framing, 19 Aug 2026: the compliance corpus for a given sector/jurisdiction (e.g. the SHTM series, Building (Scotland) Act, HAI-SCRIBE for Scottish Health) is largely static — it doesn't change drastically once loaded — and the RIBA Plan of Work's eight stages are already a standard, sector-agnostic gate structure (see decided flag above). Given both of those as fixed background knowledge, a new project shouldn't need its Delivery Module hand-authored from scratch or picked from one hardcoded template — StageForge should be able to generate it from a short description of the project.</p>
+  <p>Kevin's framing, 19 Aug 2026: the compliance corpus for a given sector/jurisdiction (e.g. the SHTM series, Building (Scotland) Act, HAI-SCRIBE for Scottish Health) is largely static — it doesn't change drastically once loaded — and the RIBA Plan of Work's eight stages are already a standard, sector-agnostic gate structure (see decided flag above). Given both of those as fixed background knowledge, a new project shouldn't need its Delivery Module hand-authored from scratch or picked from one hardcoded template — StageForge should be able to provision it from a short description of the project.</p>
+  <p>Full mechanism scoped separately in <a href="ProvisioningModel.html">ProvisioningModel.html</a> — summary below.</p>
   <ul>
     <li>At project creation, the PM (or Compliance Officer) enters a free-text project description — e.g. "Replace 12 UPS units across 4 systems, weekend working, live hospital."</li>
-    <li>StageForge maps that description against the standing compliance corpus and the standard RIBA gate structure to auto-populate: the deliverables checklist per gate, each deliverable's bypass authority (PM / Compliance Officer / SRO) based on its statutory significance, and narrative process guidance for the assigned PM at each stage.</li>
-    <li>Building age is a determining input, not a footnote: which SHTM/HTM edition applied depends on when the hospital building was constructed, so generated checklists should reference the standard in force at build time, not just the current edition.</li>
-    <li>The compliance corpus itself is managed, versioned reference data — maintained by the Compliance Officer once, reused across every project generated from it — not re-entered per project.</li>
-    <li>Generated output is a starting point, not a locked template: the PM/Compliance Officer retain the same edit rights over a generated checklist as over a hand-authored one before and during delivery.</li>
+    <li>An LLM call matches that description against a library of pre-authored Templates (not freeform generation — see decided flag below) and proposes the closest Template plus a compliance-tag set; a Compliance Officer reviews and approves before the project goes live.</li>
+    <li>Building age is a determining input, not a footnote: which SHTM/HTM edition applied depends on when the hospital building was constructed, so a matched checklist should reference the standard in force at build time, not just the current edition.</li>
+    <li>The compliance corpus itself is managed, versioned reference data — maintained by the Compliance Officer once, reused across every project provisioned from it — not re-entered per project.</li>
+    <li>Provisioned output is a starting point, not a locked template: the PM/Compliance Officer retain the same edit rights over a provisioned checklist as over a hand-authored one before and during delivery.</li>
   </ul>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: this depends on the Compliance Module existing as structured data first (Phase 2) — see roadmap, §09 — since generation is only as good as the corpus it's grounded in.
+    Confirmed by Kevin: this depends on the Compliance Module existing as structured data first (Phase 2) — see roadmap, §09 — since matching is only as good as the corpus it's grounded in. The Compliance Module shipped 19 Aug 2026 (schema, live instantiation, gate-closure enforcement, UI), unblocking this.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin, 19 Aug 2026: template-library selection, not freeform generation — an LLM matches and adapts against a human-authored template library rather than drafting checklist items from scratch, to bound the failure mode to "picked the wrong real template" rather than "hallucinated a regulatory requirement."
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Confirmed by Kevin, 19 Aug 2026: a provisioned project requires Compliance Officer review and approval before it goes live — resolves the human-review open question below. A provisioned project sits in draft, not instantiated, until reviewed.
   </div>
   <div class="flag">
     <span class="flag-label">Open question</span>
-    How much PM-facing guidance the platform should surface — a one-time generated brief the PM reads at project start, versus ongoing contextual guidance resurfaced at each gate — is undefined. Needs a decision before this reaches design.
-  </div>
-  <div class="flag">
-    <span class="flag-label">Open question</span>
-    Whether a generated checklist needs a human review/approval step (e.g. Compliance Officer sign-off) before a project goes live, or whether the PM can start editing and delivering against it immediately. Matters for how much the platform is trusted to gate real regulatory decisions unsupervised.
+    How much PM-facing guidance the platform should surface — a one-time generated brief the PM reads at project start, versus ongoing contextual guidance resurfaced at each gate — is undefined. ProvisioningModel.html assumes a one-time brief for a first version.
   </div>
 
   <h3>Roles &amp; Permissions</h3>
@@ -624,10 +629,10 @@
   <p>Every question from the original concept note is resolved. Three detail-level questions remain, added this round:</p>
   <ol class="oq">
     <li>Does StageForge share any infrastructure or login with Kevin's GasNet project under pmopassport.co.uk, or does it just coexist as a sibling subdomain?</li>
-    <li>How much PM-facing guidance AI-assisted project provisioning should surface — a one-time generated brief versus ongoing per-gate guidance — and whether a generated checklist needs human review before a project goes live.</li>
+    <li>How much PM-facing guidance AI-assisted project provisioning should surface — a one-time generated brief versus ongoing per-gate guidance.</li>
     <li>Approval thresholds and workflow differences between the three spend buckets (Lifecycle Replacement, Small Works, Variation) — value ranges, bucket-specific approvers, and whether bucket is set per-deliverable or per-project.</li>
   </ol>
-  <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (19 Aug 2026): the Health sector's standard Delivery Module template follows the RIBA Plan of Work 2020's eight stages, validated against a real worked example; the Compliance Module's grounding corpus for Scottish Health (SHTM series, Building (Scotland) Act, HAI-SCRIBE) is now documented; AI-assisted project provisioning — generating a project's checklist and PM guidance from a free-text description, grounded in that corpus — is scoped as a Phase 2 addition; the three Hard FM approval buckets (Lifecycle Replacement, Small Works, Variation) and cross-bucket spend rollup are scoped into the Financial View.</p>
+  <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (19 Aug 2026): the Health sector's standard Delivery Module template follows the RIBA Plan of Work 2020's eight stages, validated against a real worked example; the Compliance Module's grounding corpus for Scottish Health (SHTM series, Building (Scotland) Act, HAI-SCRIBE) is now documented, and the Compliance Module itself has shipped (schema, live instantiation, gate-closure enforcement, UI); AI-assisted project provisioning is scoped in full in ProvisioningModel.html — template-library matching rather than freeform generation, and a mandatory Compliance Officer review/approval step before a provisioned project goes live; the three Hard FM approval buckets (Lifecycle Replacement, Small Works, Variation) and cross-bucket spend rollup are scoped into the Financial View.</p>
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved in earlier rounds and reflected here: target user/buyer, role set, role-assignment model, bypass/approval permissions, audit trail &amp; versioning, tenancy model, compliance architecture direction, ERP timing, compliance-blocks-by-default with SRO override, SRO assigned per-project, SRO override requires written reason + single sign-off, PM bypass requires written reason, tenant boundary resolved via project-scoped access, legally significant deliverables escalate bypass authority to Compliance Officer/SRO, pmopassport.co.uk as sibling subdomain, SRO title, gate rejection requires written reason and returns to PM, sector priority after Health stays open.</p>
 
   <h2><span class="num">11</span>Out of scope, for now</h2>
@@ -646,6 +651,6 @@
     <li>Reduction in manual spend-reconciliation effort versus the current process — needs a baseline from Kevin.</li>
   </ul>
 
-  <footer>StageForge · PRD draft v0.9 · expanded from Overview.docx + Kevin's decisions, 18–19 Aug 2026</footer>
+  <footer>StageForge · PRD draft v0.10 · expanded from Overview.docx + Kevin's decisions, 18–19 Aug 2026</footer>
 
 </div>
