@@ -45,7 +45,16 @@ export default async function ProvisioningReviewPage({
       <div className="mb-1 font-mono text-xs uppercase tracking-wide text-inkmuted">
         Project No. {project.projectNumber} &middot; Draft, awaiting review
       </div>
-      <h1 className="mb-6 text-2xl font-bold">{project.name}</h1>
+      <h1 className="mb-2 text-2xl font-bold">{project.name}</h1>
+
+      {!isComplianceOfficer && (
+        <div className="mb-6 rounded-lg border border-dashed border-flag bg-accentsoft/40 px-4 py-3 text-sm">
+          <span className="font-semibold">Waiting on Compliance Officer review.</span> This draft
+          isn&rsquo;t live yet — someone with the Compliance Officer role needs to review the match
+          below and approve it. Switch &ldquo;Acting as&rdquo; in the header to a Compliance Officer
+          (e.g. Gary Grant) to review, override the match, or approve it.
+        </div>
+      )}
 
       <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
         <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Description</div>
