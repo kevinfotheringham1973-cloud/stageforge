@@ -5,11 +5,11 @@ export default async function HomePage() {
   const projects = await db.project.findMany({ orderBy: { projectNumber: "asc" } });
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
       <h1 className="mb-2 text-2xl font-bold">Projects</h1>
       <p className="mb-8 text-inkmuted">
-        Phase 1 scaffold — one seeded project. Switch acting user in the header to see how
-        permissions change what you can do on a gate.
+        Dev scaffold — {projects.length} seeded demo projects. Switch acting user in the header to
+        see how permissions change what you can do on a gate.
       </p>
       <div className="flex flex-col gap-3">
         {projects.map((p) => (

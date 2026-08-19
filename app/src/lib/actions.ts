@@ -10,14 +10,42 @@ import {
   getCurrentUserRoleKeysForProject,
   SESSION_COOKIE_NAME,
 } from "./session";
-import { canBypassDeliverable, canDecideGate, canOverrideCompliance, isGateReadyForSponsor } from "./permissions";
+import {
+  canApproveSpend,
+  canBypassDeliverable,
+  canDecideGate,
+  canOverrideCompliance,
+  canRecordSpend,
+  canSetGateTimeline,
+  isGateReadyForSponsor,
+} from "./permissions";
 import { instantiateStage } from "./instantiation";
 import { matchProject } from "./provisioning";
+import { effectiveComplianceTags } from "./cdm";
+import type { CdmWorksType } from "@prisma/client";
 
 export async function setActingUser(userId: string) {
   const store = await cookies();
   store.set(SESSION_COOKIE_NAME, userId, { path: "/" });
   revalidatePath("/", "layout");
+}
+
+/**
+ * A gate starts NOT_STARTED; the first thing anyone does on any of its
+ * deliverables/compliance/spend is what actually starts it — reused by
+ * every action that can trigger that transition, so actualStartDate
+ * (Gate timeline's "what really happened", not a target anyone typed
+ * in) gets stamped exactly once, in exactly one place.
+ */
+function startGateUpdate(gateId: string, currentStatus: string) {
+  return currentStatus === "NOT_STARTED"
+    ? [
+        db.gate.update({
+          where: { id: gateId },
+          data: { status: "IN_PROGRESS" as const, actualStartDate: new Date() },
+        }),
+      ]
+    : [];
 }
 
 /**
@@ -76,14 +104,7 @@ export async function recordEvidenceStub(
         entityId: deliverableId,
       },
     }),
-    // A gate starts NOT_STARTED; the first thing anyone does on one of
-    // its deliverables is what actually starts it. Nothing else in the
-    // model ever makes this transition — without it a gate created
-    // NOT_STARTED (every reinstated stage, every seeded future gate)
-    // could accumulate evidence forever but never reach a Submit button.
-    ...(gate.status === "NOT_STARTED"
-      ? [db.gate.update({ where: { id: gateId }, data: { status: "IN_PROGRESS" as const } })]
-      : []),
+    ...startGateUpdate(gateId, gate.status),
   ]);
 
   revalidatePath(`/projects/${projectNumber}`);
@@ -118,11 +139,7 @@ export async function bypassDeliverable(
     db.auditLogEntry.create({
       data: { actorId: userId, action: "deliverable.bypassed", gateId, entityType: "Deliverable", entityId: deliverableId, reason },
     }),
-    // See the same note in recordEvidenceStub — a bypass also starts a
-    // NOT_STARTED gate.
-    ...(gate.status === "NOT_STARTED"
-      ? [db.gate.update({ where: { id: gateId }, data: { status: "IN_PROGRESS" as const } })]
-      : []),
+    ...startGateUpdate(gateId, gate.status),
   ]);
 
   revalidatePath(`/projects/${projectNumber}`);
@@ -185,9 +202,7 @@ export async function recordComplianceEvidenceStub(
         entityId: complianceRequirementId,
       },
     }),
-    ...(gate.status === "NOT_STARTED"
-      ? [db.gate.update({ where: { id: gateId }, data: { status: "IN_PROGRESS" as const } })]
-      : []),
+    ...startGateUpdate(gateId, gate.status),
   ]);
 
   revalidatePath(`/projects/${projectNumber}`);
@@ -240,13 +255,119 @@ export async function overrideCompliance(gateId: string, projectNumber: string, 
     db.auditLogEntry.create({
       data: { actorId: userId, action: "compliance.overridden", gateId, entityType: "Gate", entityId: gateId, reason },
     }),
-    ...(gate.status === "NOT_STARTED"
-      ? [db.gate.update({ where: { id: gateId }, data: { status: "IN_PROGRESS" as const } })]
-      : []),
+    ...startGateUpdate(gateId, gate.status),
   ]);
 
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
+ * Records an invoice-level spend against a gate (FinancialModel.html,
+ * revised: spend is checked and approved at each gate). Finance-only,
+ * same "domain owner enters" split as Compliance. Starts PENDING —
+ * blocks the gate (isGateReadyForSponsor) until a Sponsor/SRO approves
+ * it via approveSpend.
+ */
+export async function recordSpend(gateId: string, projectNumber: string, formData: FormData) {
+  const bucket = String(formData.get("bucket") ?? "");
+  const amount = String(formData.get("amount") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const invoiceReference = String(formData.get("invoiceReference") ?? "").trim();
+  if (!["LIFECYCLE_REPLACEMENT", "SMALL_WORKS", "VARIATION"].includes(bucket)) {
+    throw new Error("A valid approval bucket is required.");
+  }
+  if (!amount || Number.isNaN(Number(amount)) || Number(amount) <= 0) {
+    throw new Error("A positive amount is required.");
+  }
+  if (!description) throw new Error("A description is required.");
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
+  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  if (!canRecordSpend(roleKeys)) {
+    throw new Error("Recording spend requires the Finance role.");
+  }
+
+  await db.$transaction([
+    db.spendRecord.create({
+      data: {
+        gateId,
+        bucket: bucket as "LIFECYCLE_REPLACEMENT" | "SMALL_WORKS" | "VARIATION",
+        amount,
+        description,
+        invoiceReference: invoiceReference || null,
+        recordedById: userId,
+      },
+    }),
+    db.auditLogEntry.create({
+      data: { actorId: userId, action: "spend.recorded", gateId, entityType: "Gate", entityId: gateId },
+    }),
+    ...startGateUpdate(gateId, gate.status),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+async function decideSpend(
+  spendRecordId: string,
+  projectNumber: string,
+  gateId: string,
+  decision: "APPROVED" | "REJECTED",
+  reason: string | null
+) {
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const spendRecord = await db.spendRecord.findUniqueOrThrow({
+    where: { id: spendRecordId },
+    include: { gate: { include: { stage: true } } },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(spendRecord.gate.stage.projectId);
+  if (!canApproveSpend(roleKeys)) {
+    throw new Error("Approving spend requires Sponsor or SRO authority.");
+  }
+  if (spendRecord.status !== "PENDING") {
+    throw new Error("This spend record has already been approved.");
+  }
+  if (decision === "REJECTED" && !reason?.trim()) {
+    throw new Error("Rejecting a spend record requires a written reason.");
+  }
+
+  // Rejection leaves the record PENDING, editable, not a dead end —
+  // the reason lives on this SpendApproval row, same pattern as every
+  // other decision-history entity in this app.
+  await db.$transaction([
+    db.spendApproval.create({ data: { spendRecordId, decision, approvedById: userId, reason } }),
+    ...(decision === "APPROVED"
+      ? [db.spendRecord.update({ where: { id: spendRecordId }, data: { status: "APPROVED" as const } })]
+      : []),
+    db.auditLogEntry.create({
+      data: {
+        actorId: userId,
+        action: decision === "APPROVED" ? "spend.approved" : "spend.rejected",
+        gateId,
+        entityType: "SpendRecord",
+        entityId: spendRecordId,
+        reason,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+export async function approveSpend(spendRecordId: string, projectNumber: string, gateId: string) {
+  await decideSpend(spendRecordId, projectNumber, gateId, "APPROVED", null);
+}
+
+export async function rejectSpend(spendRecordId: string, projectNumber: string, gateId: string, formData: FormData) {
+  const reason = String(formData.get("reason") ?? "").trim();
+  await decideSpend(spendRecordId, projectNumber, gateId, "REJECTED", reason);
 }
 
 export async function submitForApproval(gateId: string, projectNumber: string) {
@@ -255,16 +376,16 @@ export async function submitForApproval(gateId: string, projectNumber: string) {
 
   const gate = await db.gate.findUniqueOrThrow({
     where: { id: gateId },
-    include: { stage: true, deliverables: true, complianceRequirements: true },
+    include: { stage: true, deliverables: true, complianceRequirements: true, spendRecords: true },
   });
 
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
   if (!roleKeys.includes("PM")) {
     throw new Error("Only the Project Manager submits a gate for Sponsor approval.");
   }
-  if (!isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements)) {
+  if (!isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements, gate.spendRecords)) {
     throw new Error(
-      "Every deliverable must be evidenced or bypassed, and every compliance requirement evidenced or overridden, before this gate can be submitted."
+      "Every deliverable must be evidenced or bypassed, every compliance requirement evidenced or overridden, and every spend record approved, before this gate can be submitted."
     );
   }
 
@@ -289,7 +410,7 @@ async function decide(
 
   const gate = await db.gate.findUniqueOrThrow({
     where: { id: gateId },
-    include: { stage: true, deliverables: true, complianceRequirements: true },
+    include: { stage: true, deliverables: true, complianceRequirements: true, spendRecords: true },
   });
 
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
@@ -299,8 +420,8 @@ async function decide(
   if (gate.status !== "AWAITING_SPONSOR") {
     throw new Error("This gate hasn't been submitted for approval yet.");
   }
-  if (decision === "APPROVED" && !isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements)) {
-    throw new Error("This gate still has outstanding deliverables or compliance requirements — it isn't ready for approval.");
+  if (decision === "APPROVED" && !isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements, gate.spendRecords)) {
+    throw new Error("This gate still has outstanding deliverables, compliance requirements, or unapproved spend — it isn't ready for approval.");
   }
   if (decision === "REJECTED" && !reason?.trim()) {
     throw new Error("Rejecting a gate requires a written reason.");
@@ -312,7 +433,10 @@ async function decide(
     db.gateSignOff.create({ data: { gateId, decision, signedOffById: userId, reason } }),
     db.gate.update({
       where: { id: gateId },
-      data: { status: decision === "APPROVED" ? "SIGNED_OFF" : "IN_PROGRESS" },
+      data: {
+        status: decision === "APPROVED" ? "SIGNED_OFF" : "IN_PROGRESS",
+        ...(decision === "APPROVED" ? { actualEndDate: new Date() } : {}),
+      },
     }),
     db.auditLogEntry.create({
       data: {
@@ -369,7 +493,7 @@ export async function reinstateStage(
 
   const project = await db.project.findUniqueOrThrow({
     where: { id: projectId },
-    select: { tags: true },
+    select: { tags: true, worksType: true },
   });
 
   const alreadyInstantiated = await db.stage.findFirst({
@@ -384,7 +508,7 @@ export async function reinstateStage(
 
   const { stage } = await instantiateStage(db, {
     projectId,
-    projectTags: project.tags,
+    projectTags: effectiveComplianceTags(project),
     sectorVariantId: stageTemplate.template.sectorVariantId,
     order: nextOrder,
     stageTemplate,
@@ -424,8 +548,14 @@ export async function createProvisioningDraft(formData: FormData) {
   const projectNumber = String(formData.get("projectNumber") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const brief = String(formData.get("brief") ?? "").trim();
+  const worksType = String(formData.get("worksType") ?? "");
   if (!projectNumber || !name || !brief) {
     throw new Error("Project number, name, and description are all required.");
+  }
+  if (worksType !== "DIRECT_REPLACEMENT" && worksType !== "BUILDING_MODIFICATION") {
+    throw new Error(
+      "The CDM 2015 works-type question is required: is this a direct replacement, or does it involve building modification?"
+    );
   }
 
   const userId = await getCurrentUserId();
@@ -450,6 +580,7 @@ export async function createProvisioningDraft(formData: FormData) {
       // to all 8, editable later" resolution.
       includedStageKeys: template.stageTemplates.map((st) => st.key),
       tags: match.tags,
+      worksType: worksType as CdmWorksType,
       status: "DRAFT",
       createdById: userId,
       provisioningBrief: brief,
@@ -517,6 +648,10 @@ export async function updateProvisioningDraft(projectId: string, projectNumber: 
   const templateId = String(formData.get("templateId") ?? "").trim();
   const tagsRaw = String(formData.get("tags") ?? "").trim();
   const tags = tagsRaw ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean) : [];
+  const worksTypeRaw = String(formData.get("worksType") ?? "");
+  if (worksTypeRaw !== "DIRECT_REPLACEMENT" && worksTypeRaw !== "BUILDING_MODIFICATION") {
+    throw new Error("A valid CDM 2015 works-type answer is required.");
+  }
 
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
@@ -531,7 +666,7 @@ export async function updateProvisioningDraft(projectId: string, projectNumber: 
 
   await db.project.update({
     where: { id: projectId },
-    data: { templateId: templateId || project.templateId, tags },
+    data: { templateId: templateId || project.templateId, tags, worksType: worksTypeRaw as CdmWorksType },
   });
 
   await db.auditLogEntry.create({
@@ -613,7 +748,7 @@ export async function approveProvisioning(projectId: string, projectNumber: stri
     if (!includedStageKeys.has(stageTemplate.key)) continue;
     await instantiateStage(db, {
       projectId,
-      projectTags: project.tags,
+      projectTags: effectiveComplianceTags(project),
       sectorVariantId: project.template.sectorVariantId,
       order,
       stageTemplate,
@@ -676,4 +811,42 @@ export async function setResourceAllocation(
 
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath("/resources");
+}
+
+// ── Timeline (planned vs. actual) ───────────────────────────────────────
+
+/**
+ * PM sets or revises a gate's planned start/end dates — pure planning
+ * input, straight overwrite, no approval workflow (unlike everything
+ * else on a gate, this doesn't gate the gate). Actual dates are never
+ * user-settable — they're stamped automatically by startGateUpdate and
+ * decide() above, the moment the real thing happens.
+ */
+export async function setGateTimeline(gateId: string, projectNumber: string, formData: FormData) {
+  const targetStartRaw = String(formData.get("targetStartDate") ?? "").trim();
+  const targetEndRaw = String(formData.get("targetEndDate") ?? "").trim();
+  const targetStartDate = targetStartRaw ? new Date(targetStartRaw) : null;
+  const targetEndDate = targetEndRaw ? new Date(targetEndRaw) : null;
+  if (targetStartDate && targetEndDate && targetStartDate > targetEndDate) {
+    throw new Error("Target start date must be on or before the target end date.");
+  }
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
+  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  if (!canSetGateTimeline(roleKeys)) {
+    throw new Error("Only the Project Manager can set a gate's target dates.");
+  }
+
+  await db.$transaction([
+    db.gate.update({ where: { id: gateId }, data: { targetStartDate, targetEndDate } }),
+    db.auditLogEntry.create({
+      data: { actorId, action: "timeline.target_set", gateId, entityType: "Gate", entityId: gateId },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
 }

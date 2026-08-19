@@ -41,7 +41,7 @@ export default async function ProvisioningReviewPage({
   const isComplianceOfficer = roleKeys.includes("COMPLIANCE_OFFICER");
 
   return (
-    <div className="mx-auto max-w-2xl px-10 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
       <div className="mb-1 font-mono text-xs uppercase tracking-wide text-inkmuted">
         Project No. {project.projectNumber} &middot; Draft, awaiting review
       </div>
@@ -80,6 +80,27 @@ export default async function ProvisioningReviewPage({
         </div>
         {project.provisioningMatchReasoning && (
           <p className="text-sm text-inkmuted">{project.provisioningMatchReasoning}</p>
+        )}
+      </div>
+
+      <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
+        <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">CDM 2015 works type</div>
+        {project.worksType === "BUILDING_MODIFICATION" ? (
+          <>
+            <div className="mb-1 text-sm font-semibold text-flag">Building modification</div>
+            <p className="text-sm text-inkmuted">
+              A Principal Designer must be engaged and planning permission needs to be confirmed —
+              additional compliance requirements will be instantiated for this project.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="mb-1 text-sm font-semibold">Direct replacement</div>
+            <p className="text-sm text-inkmuted">
+              Like-for-like plant/equipment swap — no additional CDM 2015 building-modification
+              requirements apply.
+            </p>
+          </>
         )}
       </div>
 
@@ -150,6 +171,31 @@ export default async function ProvisioningReviewPage({
                 className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
               />
             </div>
+            <div className="w-full basis-full">
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                CDM 2015 works type
+              </label>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-1.5 text-sm">
+                  <input
+                    type="radio"
+                    name="worksType"
+                    value="DIRECT_REPLACEMENT"
+                    defaultChecked={project.worksType === "DIRECT_REPLACEMENT"}
+                  />
+                  Direct replacement
+                </label>
+                <label className="flex items-center gap-1.5 text-sm">
+                  <input
+                    type="radio"
+                    name="worksType"
+                    value="BUILDING_MODIFICATION"
+                    defaultChecked={project.worksType === "BUILDING_MODIFICATION"}
+                  />
+                  Building modification
+                </label>
+              </div>
+            </div>
             <button type="submit" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Update draft
             </button>
@@ -163,13 +209,13 @@ export default async function ProvisioningReviewPage({
             </form>
             <form
               action={requestProvisioningRevision.bind(null, project.id, projectNumber)}
-              className="flex items-center gap-2"
+              className="flex flex-wrap items-center gap-2"
             >
               <input
                 name="reason"
                 placeholder="Reason for sending back (required)"
                 required
-                className="w-64 rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
               />
               <button type="submit" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
                 Send back for revision

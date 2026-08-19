@@ -49,7 +49,7 @@ export default async function ResourcesPage() {
   const rows = Array.from(byUser.values()).sort((a, b) => b.total - a.total);
 
   return (
-    <div className="mx-auto max-w-3xl px-10 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
       <h1 className="mb-1 text-2xl font-bold">Resource &amp; capacity</h1>
       <p className="mb-8 text-sm text-inkmuted">
         Delivery-facing team members across every live project — % FTE, current state only, no
@@ -67,7 +67,7 @@ export default async function ResourcesPage() {
                 key={row.name}
                 className={`rounded-lg border bg-surface p-5 ${overAllocated ? "border-dashed border-risk" : "border-rule"}`}
               >
-                <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <span className="font-semibold">{row.name}</span>
                   <span
                     className={`rounded-full px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wide ${

@@ -24,7 +24,7 @@ NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
 | [`ConfigSchema.html`](ConfigSchema.html) | Config schema for Stage/Gate/Deliverable templates and Compliance rule sets. (draft v0.4) |
 | [`ProvisioningModel.html`](ProvisioningModel.html) | Design for AI-assisted project provisioning — template-library matching, the draft/review/activate flow, and the LLM call itself (structured-output enforcement, model/prompt-caching design). (draft v0.3 — built in `app/`, see Status below) |
 | [`ResourceCapacityModel.html`](ResourceCapacityModel.html) | Design for the Resource/Capacity view — % FTE allocation per delivery-facing role holder, current-state only, no forecasting. (draft v0.1 — built in `app/`, see Status below) |
-| [`FinancialModel.html`](FinancialModel.html) | Scoping for the Financial View — invoice-level spend against a project, classified into three Hard FM approval buckets, with a Sponsor/SRO approval step. (draft v0.1, not built) |
+| [`FinancialModel.html`](FinancialModel.html) | Design for the Financial View — invoice-level spend checked and approved at each gate, classified into three Hard FM approval buckets, with a Sponsor/SRO approval step. (draft v0.2 — gate-level record/approve loop built in `app/`, see Status below) |
 | [`Complaince and Regulations.docx`](Complaince%20and%20Regulations.docx), [`Maintenance schedule - SHTM.docx`](Maintenance%20schedule%20-%20SHTM.docx), [`Example_Overview_Plan.docx`](Example_Overview_Plan.docx) | Domain reference material for Scottish NHS Hard FM — the compliance/regulatory stack, an SHTM-mapped PPM schedule by plant category, and a full worked example (Forth Valley Royal Hospital UPS replacement) the current seed data is built from. |
 | [`design/`](design) | Design canvas source — screens for every role (PM, Sponsor, Compliance Officer, Finance, Resource Manager) as Design Component artboards. |
 | [`app/`](app) | Working Phase 1 MVP scaffold — Next.js, PostgreSQL, Prisma, TypeScript. See [`app/README.md`](app/README.md) for setup and what's actually built vs. stubbed. |
@@ -50,8 +50,18 @@ view (`ResourceCapacityModel.html`) is built too — % FTE allocation per
 delivery-facing role holder, with a portfolio-wide over-allocation view
 — see `app/README.md` for how to run any of this yourself.
 
-Financial View (`FinancialModel.html`) remains Phase 3 per the PRD
-roadmap — scoped, but not yet built in `app/`.
+Financial View (`FinancialModel.html`) is built too, gate-level: spend is
+recorded, checked, and approved at each gate rather than just logged
+against the project, folding into the same closure check as the delivery
+and compliance checklists, with a project-level roll-up visible at a
+glance on the project overview. The portfolio-wide `/finance` route
+remains unbuilt.
+
+A Timeline is built alongside it: PM-set target start/end dates per
+gate, actual dates stamped automatically the moment a gate really
+starts or finishes, and a colour-coded planned-vs-actual health status
+(on track / overdue / completed on time or late) — both as a Gantt-style
+high-level chart on the project overview and a per-gate breakdown.
 
 ## Contributing
 

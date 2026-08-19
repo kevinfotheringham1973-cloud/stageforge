@@ -64,6 +64,8 @@ model User {
   provisioningReviews        ProvisioningReview[]
   resourceAllocations        ResourceAllocation[]
   resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
+  recordedSpend              SpendRecord[]            @relation("SpendRecordedBy")
+  spendApprovals             SpendApproval[]          @relation("SpendApprovedBy")
   createdAt                  DateTime                 @default(now())
 }
 
@@ -299,6 +301,20 @@ enum ProjectStatus {
   ACTIVE
 }
 
+// The CDM 2015 statutory question, asked at project creation: is this
+// works a direct/like-for-like replacement, or does it modify the
+// building (structure, layout, or fabric)? BUILDING_MODIFICATION
+// carries real duties under the Construction (Design and Management)
+// Regulations 2015 that DIRECT_REPLACEMENT doesn't automatically
+// trigger — a Principal Designer must be appointed, and planning
+// permission becomes a live question. Defaults to DIRECT_REPLACEMENT
+// (the lighter-duty answer) only so existing/seeded rows have a value;
+// the creation form always requires an explicit choice.
+enum CdmWorksType {
+  DIRECT_REPLACEMENT
+  BUILDING_MODIFICATION
+}
+
 model Project {
   id                         String                  @id @default(cuid())
   projectNumber              String                  @unique
@@ -315,6 +331,12 @@ model Project {
   // least one tag here matches ("any match", no AND/OR/NOT). e.g.
   // "acute_hospital", "listed_building", "occupied_during_works".
   tags                       String[]                @default([])
+  // See CdmWorksType above. Kept as its own field rather than folded
+  // into `tags` — it's an explicit statutory answer the creator/
+  // Compliance Officer gives, not something an LLM should guess from
+  // free text (see lib/provisioning.ts, which excludes the derived tag
+  // from its tag-matching vocabulary for exactly this reason).
+  worksType                  CdmWorksType            @default(DIRECT_REPLACEMENT)
   status                     ProjectStatus           @default(ACTIVE)
   createdById                String?
   createdBy                  User?                   @relation("ProjectCreatedBy", fields: [createdById], references: [id])
@@ -325,6 +347,69 @@ model Project {
   resourceAllocations        ResourceAllocation[]
   stages                     Stage[]
   createdAt                  DateTime                @default(now())
+}
+
+// Financial View (FinancialModel.html, revised per Kevin: spend is
+// checked and approved at each gate, not just recorded against the
+// project as a whole). Manual/invoice-level actuals only — no ERP
+// integration (PRD.html §06/§08 decided, not near-term). Attaches to
+// Gate rather than Project directly, the same shape as Deliverable and
+// ComplianceRequirement — a project's total is the sum across its
+// gates' records, reached via Gate -> Stage -> Project, not a direct FK.
+enum ApprovalBucket {
+  LIFECYCLE_REPLACEMENT
+  SMALL_WORKS
+  VARIATION
+}
+
+// One row per invoice/actual, not per gate — a gate's total is the sum
+// of its records. blocksGate mirrors Deliverable/ComplianceRequirement:
+// an unapproved blocking record holds the gate at NOT_STARTED/
+// IN_PROGRESS the same way an unevidenced deliverable does. No REJECTED
+// terminal status, same reasoning as every other status enum in this
+// app: a rejection is a SpendApproval(REJECTED, reason) row and the
+// record just stays PENDING, editable, not a dead end.
+model SpendRecord {
+  id               String            @id @default(cuid())
+  gateId           String
+  gate             Gate              @relation(fields: [gateId], references: [id])
+  bucket           ApprovalBucket
+  // Money needs exact arithmetic — Decimal (Postgres numeric), not
+  // Int/Float. GBP only, no multi-currency (every source document is
+  // UK-only).
+  amount           Decimal           @db.Decimal(12, 2)
+  description      String
+  invoiceReference String?
+  blocksGate       Boolean           @default(true)
+  recordedById     String
+  recordedBy       User              @relation("SpendRecordedBy", fields: [recordedById], references: [id])
+  status           SpendRecordStatus @default(PENDING)
+  approvals        SpendApproval[]
+  createdAt        DateTime          @default(now())
+}
+
+enum SpendRecordStatus {
+  PENDING
+  APPROVED
+}
+
+enum SpendApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+// The decision history for a SpendRecord — shaped exactly like
+// GateSignOff/ProvisioningReview: read the latest row instead of
+// duplicating state on SpendRecord itself.
+model SpendApproval {
+  id            String                @id @default(cuid())
+  spendRecordId String
+  spendRecord   SpendRecord           @relation(fields: [spendRecordId], references: [id])
+  decision      SpendApprovalDecision
+  approvedById  String
+  approvedBy    User                  @relation("SpendApprovedBy", fields: [approvedById], references: [id])
+  reason        String?
+  createdAt     DateTime              @default(now())
 }
 
 // Resource/Capacity View (ResourceCapacityModel.html). Keyed by (User,
@@ -410,9 +495,19 @@ model Gate {
   key                    String
   name                   String
   status                 GateStatus              @default(NOT_STARTED)
+  // Timeline (planned vs. actual). Target dates are PM-set planning
+  // input; actual dates are stamped automatically by the app itself
+  // (never user-entered) the moment the gate really starts/finishes —
+  // see startGateUpdate and decide() in actions.ts — so "actual" stays
+  // trustworthy, not something anyone can backdate.
+  targetStartDate        DateTime?
+  targetEndDate          DateTime?
+  actualStartDate        DateTime?
+  actualEndDate          DateTime?
   deliverables           Deliverable[]
   complianceRequirements ComplianceRequirement[]
   complianceOverrides    ComplianceOverride[]
+  spendRecords           SpendRecord[]
   signOffs               GateSignOff[]
   auditEntries           AuditLogEntry[]
   createdAt              DateTime                @default(now())
