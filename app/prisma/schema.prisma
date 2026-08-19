@@ -392,6 +392,15 @@ model Stage {
   order                 Int
   gate                  Gate?
   createdAt             DateTime       @default(now())
+
+  // Belt-and-braces against double-instantiation (a real bug hit in
+  // practice: a project ended up with duplicate Stage/Gate rows for
+  // its first four stages after a request was interrupted mid-loop
+  // and retried). reinstateStage already checks this in application
+  // code before creating a Stage, but that check has a race window;
+  // this makes the invariant impossible to violate regardless of
+  // cause, for both reinstateStage and approveProvisioning.
+  @@unique([projectId, key])
 }
 
 model Gate {
