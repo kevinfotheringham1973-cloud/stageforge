@@ -14,12 +14,21 @@
 import { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "../src/lib/compliance";
 import { instantiateStage } from "../src/lib/instantiation";
-import { CDM_BUILDING_MODIFICATION_TAG, effectiveComplianceTags } from "../src/lib/cdm";
+import { CDM_BUILDING_MODIFICATION_TAG, CDM_PRINCIPAL_DESIGNER_TAG, effectiveComplianceTags } from "../src/lib/cdm";
 
 const db = new PrismaClient();
 
 async function main() {
   console.log("Seeding StageForge Phase 1 dev data…");
+
+  // ── Managed project-number counter (lib/projectNumber.ts) — starts a
+  // fresh block at 30001, deliberately unrelated to the ad-hoc numbers
+  // the three demo projects below already carry (20456, 20777, 55998).
+  await db.projectNumberCounter.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, value: 30000 },
+  });
 
   // ── Roles (global, Phase 1's core eight, plus three project-specific
   // gate-approver roles named in the UPS example — informational only,
@@ -611,18 +620,21 @@ async function main() {
         appliesIfTags: ["kitchen_drainage"],
       },
       // CDM 2015 duties triggered by the Project.worksType statutory
-      // question (lib/cdm.ts), not free text — appliesIfTags carries
-      // CDM_BUILDING_MODIFICATION_TAG, which effectiveComplianceTags()
-      // adds only when worksType is BUILDING_MODIFICATION.
+      // question (lib/cdm.ts), not free text. Two separate tags because
+      // the two duties have different triggers: Principal Designer on
+      // "more than one contractor" (so it also applies to
+      // DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS, not just building
+      // modification); planning permission only on an actual building
+      // fabric change.
       {
         ruleSetId: scottishHealthCompliance.id,
         key: "comp.cdm_principal_designer_appointed",
         label: "Principal Designer appointed under CDM 2015",
-        description: "Required as soon as practicable, and before design work begins, on any project involving building modification with more than one contractor.",
+        description: "Required as soon as practicable, and before design work begins, whenever more than one contractor is or will be working on the project.",
         ruleRef: "Construction (Design and Management) Regulations 2015, reg 5(1)",
         blocksGate: true,
         appliesToStageKeys: ["stage.preparation_briefing"],
-        appliesIfTags: [CDM_BUILDING_MODIFICATION_TAG],
+        appliesIfTags: [CDM_PRINCIPAL_DESIGNER_TAG],
       },
       {
         ruleSetId: scottishHealthCompliance.id,
@@ -651,11 +663,15 @@ async function main() {
       // inclusion).
       tags: ["acute_hospital", "occupied_during_works"],
       // Like-for-like UPS/battery swap in the existing plant rooms — no
-      // structural or fabric change, so CDM's building-modification
-      // duties (Principal Designer, planning permission) don't apply
-      // here. The water project below is the BUILDING_MODIFICATION
-      // demonstration instead.
-      worksType: "DIRECT_REPLACEMENT",
+      // structural or fabric change, so planning permission never
+      // arises. But 4 systems across 12 units needs both an M&E
+      // contractor and a specialist battery-disposal contractor on
+      // site, so a Principal Designer IS required — the live
+      // demonstration that CDM's Principal Designer duty and "modifies
+      // the building" are genuinely different triggers (see
+      // CdmWorksType in schema.prisma). The water/drainage projects
+      // below demonstrate the full BUILDING_MODIFICATION case instead.
+      worksType: "DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS",
     },
   });
 
@@ -782,6 +798,23 @@ async function main() {
     }
   }
 
+  // A lesson learned on the UPS project's Gate 3 — deliberately the
+  // same gate key ("stage.spatial_coordination") the Water and
+  // Drainage projects also record a lesson against below, so
+  // /lessons-learned demonstrates cross-project/cross-template
+  // grouping, not just a per-project list.
+  const upsSpatialGate = await db.gate.findFirstOrThrow({
+    where: { stage: { projectId: project.id, key: "stage.spatial_coordination" } },
+  });
+  await db.lessonLearned.create({
+    data: {
+      gateId: upsSpatialGate.id,
+      type: "TO_IMPROVE",
+      text: "The SRO review for the fire compartmentation assessment wasn't booked until the deliverable was already flagged pending, adding avoidable delay — book that slot at Gate 2, not after Gate 3 starts.",
+      recordedById: derek.id,
+    },
+  });
+
   // ── Second demo project: Water Systems Replacement, created live via
   // AI-assisted provisioning (ProvisioningModel.html) on 19 Aug 2026 and
   // kept as a permanent second example — the real Claude Opus 5 match,
@@ -845,6 +878,18 @@ async function main() {
     });
   }
 
+  const waterSpatialGate = await db.gate.findFirstOrThrow({
+    where: { stage: { projectId: waterProject.id, key: "stage.spatial_coordination" } },
+  });
+  await db.lessonLearned.create({
+    data: {
+      gateId: waterSpatialGate.id,
+      type: "WENT_WELL",
+      text: "Circulating the coordinated riser drawings to Estates for comment before formal submission caught every spatial clash early — no rework needed after sign-off. Worth doing as standard practice.",
+      recordedById: derek.id,
+    },
+  });
+
   // ── Third demo project: Drainage & Foul Water System Replacement,
   // originally created live via AI-assisted provisioning on 19 Aug 2026
   // — at the time, matched to the calorifier/water template for lack of
@@ -905,6 +950,18 @@ async function main() {
       stageTemplate: drainageStageTemplatesFull[i]!,
     });
   }
+
+  const drainageBriefingGate = await db.gate.findFirstOrThrow({
+    where: { stage: { projectId: drainageProject.id, key: "stage.preparation_briefing" } },
+  });
+  await db.lessonLearned.create({
+    data: {
+      gateId: drainageBriefingGate.id,
+      type: "TO_IMPROVE",
+      text: "Scottish Water's trade effluent consent process took longer than the preliminary programme assumed — start that application at Gate 0 alongside the strategic brief, not once briefing is underway.",
+      recordedById: derek.id,
+    },
+  });
 
   console.log("Seed complete.");
   console.log("Dev users — switch between them with the header switcher:");

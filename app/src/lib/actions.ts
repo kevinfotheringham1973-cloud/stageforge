@@ -15,14 +15,15 @@ import {
   canBypassDeliverable,
   canDecideGate,
   canOverrideCompliance,
+  canRecordLessonLearned,
   canRecordSpend,
   canSetGateTimeline,
   isGateReadyForSponsor,
 } from "./permissions";
 import { instantiateStage } from "./instantiation";
 import { matchProject } from "./provisioning";
-import { effectiveComplianceTags } from "./cdm";
-import type { CdmWorksType } from "@prisma/client";
+import { effectiveComplianceTags, isCdmWorksType } from "./cdm";
+import { issueNextProjectNumber } from "./projectNumber";
 
 export async function setActingUser(userId: string) {
   const store = await cookies();
@@ -545,16 +546,15 @@ export async function reinstateStage(
  * rest of role assignment is not solved here).
  */
 export async function createProvisioningDraft(formData: FormData) {
-  const projectNumber = String(formData.get("projectNumber") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const brief = String(formData.get("brief") ?? "").trim();
   const worksType = String(formData.get("worksType") ?? "");
-  if (!projectNumber || !name || !brief) {
-    throw new Error("Project number, name, and description are all required.");
+  if (!name || !brief) {
+    throw new Error("Project name and description are both required.");
   }
-  if (worksType !== "DIRECT_REPLACEMENT" && worksType !== "BUILDING_MODIFICATION") {
+  if (!isCdmWorksType(worksType)) {
     throw new Error(
-      "The CDM 2015 works-type question is required: is this a direct replacement, or does it involve building modification?"
+      "The CDM 2015 works-type question is required: single-contractor direct replacement, multiple-contractor direct replacement, or building modification?"
     );
   }
 
@@ -569,6 +569,7 @@ export async function createProvisioningDraft(formData: FormData) {
   });
 
   const creator = await db.user.findUniqueOrThrow({ where: { id: userId } });
+  const projectNumber = await issueNextProjectNumber();
 
   const project = await db.project.create({
     data: {
@@ -580,7 +581,7 @@ export async function createProvisioningDraft(formData: FormData) {
       // to all 8, editable later" resolution.
       includedStageKeys: template.stageTemplates.map((st) => st.key),
       tags: match.tags,
-      worksType: worksType as CdmWorksType,
+      worksType,
       status: "DRAFT",
       createdById: userId,
       provisioningBrief: brief,
@@ -648,8 +649,8 @@ export async function updateProvisioningDraft(projectId: string, projectNumber: 
   const templateId = String(formData.get("templateId") ?? "").trim();
   const tagsRaw = String(formData.get("tags") ?? "").trim();
   const tags = tagsRaw ? tagsRaw.split(",").map((t) => t.trim()).filter(Boolean) : [];
-  const worksTypeRaw = String(formData.get("worksType") ?? "");
-  if (worksTypeRaw !== "DIRECT_REPLACEMENT" && worksTypeRaw !== "BUILDING_MODIFICATION") {
+  const worksType = String(formData.get("worksType") ?? "");
+  if (!isCdmWorksType(worksType)) {
     throw new Error("A valid CDM 2015 works-type answer is required.");
   }
 
@@ -666,7 +667,7 @@ export async function updateProvisioningDraft(projectId: string, projectNumber: 
 
   await db.project.update({
     where: { id: projectId },
-    data: { templateId: templateId || project.templateId, tags, worksType: worksTypeRaw as CdmWorksType },
+    data: { templateId: templateId || project.templateId, tags, worksType },
   });
 
   await db.auditLogEntry.create({
@@ -849,4 +850,44 @@ export async function setGateTimeline(gateId: string, projectNumber: string, for
 
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+// ── Lessons learned ──────────────────────────────────────────────────
+
+/**
+ * Any project stakeholder can log a lesson at any point in a gate's
+ * life — canRecordLessonLearned (permissions.ts) deliberately doesn't
+ * lock this to one role, unlike everything else on a gate. Shows up
+ * both on this gate and, grouped by Gate.key, on the portfolio-wide
+ * /lessons-learned view.
+ */
+export async function recordLessonLearned(gateId: string, projectNumber: string, formData: FormData) {
+  const type = String(formData.get("type") ?? "");
+  const text = String(formData.get("text") ?? "").trim();
+  if (type !== "WENT_WELL" && type !== "TO_IMPROVE") {
+    throw new Error("A valid lesson type is required.");
+  }
+  if (!text) throw new Error("Lesson text is required.");
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
+  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  if (!canRecordLessonLearned(roleKeys)) {
+    throw new Error("Only someone holding a role on this project can record a lesson learned.");
+  }
+
+  await db.$transaction([
+    db.lessonLearned.create({
+      data: { gateId, type: type as "WENT_WELL" | "TO_IMPROVE", text, recordedById: actorId },
+    }),
+    db.auditLogEntry.create({
+      data: { actorId, action: "lesson.recorded", gateId, entityType: "Gate", entityId: gateId },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+  revalidatePath("/lessons-learned");
 }

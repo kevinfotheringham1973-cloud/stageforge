@@ -116,6 +116,18 @@ export function canApproveSpend(actorRoleKeys: string[]): boolean {
   return actorRoleKeys.includes("SPONSOR") || actorRoleKeys.includes("SRO");
 }
 
+/**
+ * Recording a lesson learned is deliberately open to any role holder
+ * on the project — unlike every other action in this file, it's
+ * reflective knowledge capture, not a governance decision with one
+ * clear owner. The whole point is a wide range of perspectives (PM,
+ * Compliance Officer, Principal Designer, ...), so this only checks
+ * that the actor is a legitimate stakeholder on this project at all.
+ */
+export function canRecordLessonLearned(actorRoleKeys: string[]): boolean {
+  return actorRoleKeys.length > 0;
+}
+
 export function outstandingSpendCount(
   spendRecords: { status: SpendRecordStatus; blocksGate: boolean }[]
 ): number {

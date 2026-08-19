@@ -189,12 +189,17 @@ export default async function ProjectDashboardLayout({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold">{project.name}</h1>
-            {project.worksType === "BUILDING_MODIFICATION" && (
+            {project.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" && (
               <span
                 className="rounded-full bg-flag px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white"
-                title="CDM 2015 applies — Principal Designer engaged, planning permission confirmed"
+                title={
+                  project.worksType === "BUILDING_MODIFICATION"
+                    ? "CDM 2015 applies — Principal Designer engaged, planning permission confirmed"
+                    : "CDM 2015 applies — Principal Designer engaged (multiple contractors)"
+                }
               >
-                Building modification &middot; CDM 2015
+                {project.worksType === "BUILDING_MODIFICATION" ? "Building modification" : "Multiple contractors"}{" "}
+                &middot; CDM 2015
               </span>
             )}
           </div>

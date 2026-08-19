@@ -32,6 +32,9 @@ export default async function RootLayout({
             <a href="/resources" className="text-sm font-semibold text-accent hover:underline">
               Resources
             </a>
+            <a href="/lessons-learned" className="text-sm font-semibold text-accent hover:underline">
+              Lessons learned
+            </a>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">

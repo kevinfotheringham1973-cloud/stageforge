@@ -5,6 +5,7 @@ import {
   canBypassDeliverable,
   canDecideGate,
   canOverrideCompliance,
+  canRecordLessonLearned,
   canRecordSpend,
   canSetGateTimeline,
   canUploadComplianceEvidence,
@@ -21,6 +22,7 @@ import {
   overrideCompliance,
   recordComplianceEvidenceStub,
   recordEvidenceStub,
+  recordLessonLearned,
   recordSpend,
   rejectGate,
   rejectSpend,
@@ -78,6 +80,7 @@ export async function GateDetail({
       },
       signOffs: { orderBy: { createdAt: "desc" }, include: { signedOffBy: true } },
       auditEntries: { orderBy: { createdAt: "desc" }, include: { actor: true } },
+      lessonsLearned: { orderBy: { createdAt: "desc" }, include: { recordedBy: true } },
     },
   });
   if (!gate || gate.stage.project.projectNumber !== projectNumber) notFound();
@@ -93,6 +96,7 @@ export async function GateDetail({
   const canRecord = canRecordSpend(roleKeys);
   const canApprove = canApproveSpend(roleKeys);
   const canSetTimeline = canSetGateTimeline(roleKeys);
+  const canRecordLesson = canRecordLessonLearned(roleKeys);
   const timelineStatus = gateTimelineStatus(gate);
 
   return (
@@ -601,6 +605,64 @@ export async function GateDetail({
           </div>
         </div>
       )}
+
+      <div className="mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="font-mono text-[11px] uppercase tracking-wide text-inkmuted">
+            Lessons learned{gate.lessonsLearned.length > 0 && <> &middot; {gate.lessonsLearned.length} recorded</>}
+          </div>
+          <span className="text-xs text-inkmuted">Shared across every project on this gate type &rarr; /lessons-learned</span>
+        </div>
+
+        {gate.lessonsLearned.length > 0 && (
+          <div className="mb-3 flex flex-col gap-2">
+            {gate.lessonsLearned.map((l) => (
+              <div key={l.id} className="rounded-md border border-rule bg-surface px-4 py-2.5 text-sm">
+                <span
+                  className={`mr-2 rounded px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wide ${
+                    l.type === "WENT_WELL" ? "bg-accentsoft text-ok" : "bg-accentsoft text-warn"
+                  }`}
+                >
+                  {l.type === "WENT_WELL" ? "Went well" : "To improve"}
+                </span>
+                {l.text}
+                <div className="mt-1 text-xs text-inkmuted">
+                  {l.recordedBy.name} &middot; {l.createdAt.toLocaleDateString("en-GB")}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {canRecordLesson && (
+          <form
+            action={recordLessonLearned.bind(null, gateId, projectNumber)}
+            className="flex flex-col gap-2 rounded-lg border border-dashed border-rule bg-surface p-4"
+          >
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-1.5 text-sm">
+                <input type="radio" name="type" value="WENT_WELL" defaultChecked required /> Went well
+              </label>
+              <label className="flex items-center gap-1.5 text-sm">
+                <input type="radio" name="type" value="TO_IMPROVE" required /> To improve
+              </label>
+            </div>
+            <textarea
+              name="text"
+              required
+              rows={2}
+              placeholder="What happened, and what should the next project like this do differently (or repeat)?"
+              className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+            />
+            <button
+              type="submit"
+              className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent"
+            >
+              Add lesson
+            </button>
+          </form>
+        )}
+      </div>
 
       {gate.auditEntries.length > 0 && (
         <div className="mt-6">

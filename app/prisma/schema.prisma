@@ -66,6 +66,7 @@ model User {
   resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
   recordedSpend              SpendRecord[]            @relation("SpendRecordedBy")
   spendApprovals             SpendApproval[]          @relation("SpendApprovedBy")
+  lessonsLearned             LessonLearned[]
   createdAt                  DateTime                 @default(now())
 }
 
@@ -290,6 +291,23 @@ model ComplianceOverride {
   createdAt             DateTime @default(now())
 }
 
+// A managed, incrementing project-number sequence (confirmed by Kevin,
+// 19 Aug 2026 — replacing the old free-text "type your own project
+// number" field, which had no collision/typo protection beyond the DB
+// unique constraint). Single-row counter rather than a Postgres
+// SEQUENCE object so it's visible/resettable through the same Prisma
+// migrations and seed.ts as everything else. Starts a fresh block at
+// 30001 — deliberately unrelated to the pre-existing ad-hoc numbers
+// (20456, 20777, 55998) already in the seed data, so newly-issued
+// numbers are visibly distinct from those legacy ones. Issuing a
+// number is an atomic `UPDATE ... SET value = value + 1 RETURNING
+// value` (via Prisma's `increment`), safe under concurrent creates —
+// see issueNextProjectNumber in lib/actions.ts.
+model ProjectNumberCounter {
+  id    Int @id @default(1)
+  value Int
+}
+
 // AI-assisted provisioning (ProvisioningModel.html §04). Every existing/
 // seeded/reinstated project is unaffected — only the provisioning path
 // (not built yet beyond this schema + the shared instantiation helper)
@@ -301,17 +319,25 @@ enum ProjectStatus {
   ACTIVE
 }
 
-// The CDM 2015 statutory question, asked at project creation: is this
-// works a direct/like-for-like replacement, or does it modify the
-// building (structure, layout, or fabric)? BUILDING_MODIFICATION
-// carries real duties under the Construction (Design and Management)
-// Regulations 2015 that DIRECT_REPLACEMENT doesn't automatically
-// trigger — a Principal Designer must be appointed, and planning
-// permission becomes a live question. Defaults to DIRECT_REPLACEMENT
-// (the lighter-duty answer) only so existing/seeded rows have a value;
-// the creation form always requires an explicit choice.
+// The CDM 2015 statutory question, asked at project creation — three
+// options because CDM 2015's Principal Designer/Principal Contractor
+// duty (reg 5) triggers on "more than one contractor", independently
+// of whether the building itself is touched: a like-for-like swap
+// needing two trades on site still needs a Principal Designer, even
+// though it's not BUILDING_MODIFICATION and never raises planning
+// permission (confirmed by Kevin, 19 Aug 2026 — corrects an earlier
+// version of this field that conflated "modifies the building" with
+// "CDM applies").
+//   - DIRECT_REPLACEMENT_SINGLE_CONTRACTOR: neither duty applies.
+//   - DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS: Principal Designer
+//     required; no building fabric change, so no planning question.
+//   - BUILDING_MODIFICATION: both — Principal Designer required, and
+//     planning permission becomes a live question.
+// Defaults to the lightest-duty answer only so existing/seeded rows
+// have a value; the creation form always requires an explicit choice.
 enum CdmWorksType {
-  DIRECT_REPLACEMENT
+  DIRECT_REPLACEMENT_SINGLE_CONTRACTOR
+  DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS
   BUILDING_MODIFICATION
 }
 
@@ -336,7 +362,7 @@ model Project {
   // Compliance Officer gives, not something an LLM should guess from
   // free text (see lib/provisioning.ts, which excludes the derived tag
   // from its tag-matching vocabulary for exactly this reason).
-  worksType                  CdmWorksType            @default(DIRECT_REPLACEMENT)
+  worksType                  CdmWorksType            @default(DIRECT_REPLACEMENT_SINGLE_CONTRACTOR)
   status                     ProjectStatus           @default(ACTIVE)
   createdById                String?
   createdBy                  User?                   @relation("ProjectCreatedBy", fields: [createdById], references: [id])
@@ -510,6 +536,7 @@ model Gate {
   spendRecords           SpendRecord[]
   signOffs               GateSignOff[]
   auditEntries           AuditLogEntry[]
+  lessonsLearned         LessonLearned[]
   createdAt              DateTime                @default(now())
 }
 
@@ -579,6 +606,30 @@ model GateSignOff {
   signedOffBy   User            @relation(fields: [signedOffById], references: [id])
   reason        String?
   createdAt     DateTime        @default(now())
+}
+
+enum LessonType {
+  WENT_WELL
+  TO_IMPROVE
+}
+
+// Reflective knowledge capture, not a governance action — no
+// blocksGate, no bypass authority, addable at any point in a gate's
+// life (not just at sign-off). The point of this table is cross-
+// project learning: Gate.key is the same RIBA stage key across every
+// Template (M&E/Water/Drainage all reuse "stage.spatial_coordination"
+// etc.), so grouping LessonLearned rows by that key surfaces "what
+// went wrong/well at Spatial Coordination" across the whole portfolio,
+// not just within one project — see /lessons-learned.
+model LessonLearned {
+  id           String     @id @default(cuid())
+  gateId       String
+  gate         Gate       @relation(fields: [gateId], references: [id])
+  type         LessonType
+  text         String
+  recordedById String
+  recordedBy   User       @relation(fields: [recordedById], references: [id])
+  createdAt    DateTime   @default(now())
 }
 
 // Append-only. One row per upload, bypass, sign-off, and rejection.
