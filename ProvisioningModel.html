@@ -361,7 +361,7 @@
     <div>
       <h1>StageForge — Provisioning Model</h1>
       <div class="doc-meta">
-        Technical scoping — Draft v0.2<br>
+        Technical scoping — Draft v0.3<br>
         Owner: Kevin Fotheringham · 19 Aug 2026<br>
         Source: PRD.html §06 "AI-Assisted Project Provisioning" + Kevin's decision, 19 Aug 2026
       </div>
@@ -482,19 +482,45 @@
   </div>
 
   <h2><span class="num">07</span>The LLM call</h2>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Provider: Anthropic (Claude). No competing LLM dependency exists anywhere else in StageForge to reconcile against, and the app is itself built inside Claude Code — first-party is the obvious choice, not a real trade-off.
+  </div>
+  <h3>Call shape</h3>
   <ul>
-    <li>One call per provisioning attempt — matching plus tag extraction in a single structured-output request (template id + tags + a short reasoning string shown to the reviewer), not a multi-turn conversation.</li>
-    <li>Deterministic-leaning: low temperature, since this is a matching task against a closed set of templates and a closed set of known tags — not open creative generation.</li>
-    <li>The reviewer sees the model's stated reasoning alongside its picks, so a wrong match is inspectable, not a black box.</li>
+    <li>A single, non-agentic request via the TypeScript Anthropic SDK (<code>@anthropic-ai/sdk</code>, matching the app's stack) — one <code>messages.create()</code> call with <strong>structured outputs</strong> (<code>output_config.format</code>), not the Tool Runner. There's no tool-calling loop here, just one classification.</li>
     <li>Called from both <code>createProvisioningDraft</code> (first match) and <code>reviseProvisioningBrief</code> (re-match after a revision) — one function, two call sites.</li>
   </ul>
-  <div class="flag">
-    <span class="flag-label">Open question</span>
-    Which model/provider, and where the API key/cost sits — infra decision, not a data-model one, deferred to implementation time.
+  <h3>Structured output — the actual enforcement mechanism</h3>
+  <p>§01 decided "bounded failure mode: picked the wrong real template, never a hallucinated one." That boundary isn't prompting discipline — it's enforced by constraining the output schema itself:</p>
+  <div class="example">
+    <span class="example-label">Response schema</span>
+    <ul>
+      <li><code>templateId</code> — <strong>enum</strong> of every current <code>Template.id</code>. The model cannot return a template that doesn't exist.</li>
+      <li><code>tags</code> — array, each item an <strong>enum</strong> of every distinct <code>appliesIfTags</code> value already used across the compliance corpus. The model cannot invent a tag with no corresponding rule.</li>
+      <li><code>reasoning</code> — free string, shown to the reviewer alongside the pick.</li>
+    </ul>
   </div>
+  <p>Both enums are built fresh from the database at call time (<code>SELECT DISTINCT</code> equivalent over <code>Template</code> and <code>ComplianceRuleTemplate.appliesIfTags</code>) — never hand-maintained, so the schema can't drift out of sync with the actual corpus as templates and rules get added.</p>
+  <h3>Model &amp; effort</h3>
+  <ul>
+    <li>Closed-set classification against a short candidate list is exactly the "simple task" case — <code>output_config: {effort: "low"}</code> (not <code>high</code>/<code>xhigh</code>/<code>max</code>, which buy reasoning depth this task doesn't need). Temperature/top_p/top_k don't exist as controls on current Claude models — effort is the actual lever here, not a "low temperature" setting (a stale idea from older-model thinking).</li>
+    <li><strong>Recommendation, not decided:</strong> lead with match quality over cost. Call volume for a Hard FM provisioning tool is inherently low (tens per month, not millions) — at this shape (short cached system prompt, short structured JSON output), the cost gap between the cheapest and most capable Claude tier is fractions of a cent per call, negligible in absolute terms. Getting the match right matters more than shaving that cost, so pick the more capable tier over the cheapest one; which exact tier is genuinely Kevin's call, not locked in here.</li>
+  </ul>
+  <h3>Prompt structure &amp; caching</h3>
+  <ul>
+    <li><strong>System prompt</strong> (stable): matching instructions + the full Template library listing (id, name, description, matchKeywords) + the full known-tag list. This only changes when a Compliance Officer authors a new Template or rule — a natural <code>cache_control</code> breakpoint, so nearly every real call after the first reuses the cached prefix.</li>
+    <li><strong>User message</strong> (volatile): just the free-text brief. Stable content first, volatile content last — standard cache-friendly ordering.</li>
+  </ul>
+  <h3>Error handling</h3>
+  <p>A most-specific-first exception chain server-side (rate limit → API status → connection error). On any failure, <code>createProvisioningDraft</code>/<code>reviseProvisioningBrief</code> fails outright with a clear message — no partial <code>DRAFT</code> left in an inconsistent state, matching the transactional pattern already used elsewhere in <code>actions.ts</code>. No client-side retry loop needed at this call volume; a failed match just asks the PM to resubmit.</p>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
     The library now has two Templates (19 Aug 2026, PR #9) — the "match step is trivially always correct" concern from the previous draft of this document no longer applies. §05/§06 above can be built for real, not just as unreachable plumbing.
+  </div>
+  <div class="flag">
+    <span class="flag-label">Open question</span>
+    Exact model tier (see recommendation above), and which Anthropic account/API key the calls bill against — an organisational decision, not a technical one, outside what this document can settle.
   </div>
 
   <h2><span class="num">08</span>Open questions carried forward</h2>
@@ -502,8 +528,9 @@
   <ol class="oq">
     <li>Role assignment at draft/approval time — who assigns Sponsor, SRO, FM Contractor, Client Authority, and the rest beyond the creating PM.</li>
     <li>Stage inclusion — default to all 8 RIBA stages, or let the PM exclude some at creation/review time.</li>
-    <li>LLM provider/model and API key/cost ownership.</li>
+    <li>Exact model tier and which Anthropic account/API key the calls bill against.</li>
     <li>Whether <code>updateProvisioningDraft</code> (silent reviewer override) and <code>requestProvisioningRevision</code> (send back to the PM with a reason) are both genuinely needed, or whether one subsumes the other in practice — kept both here since they serve different situations (reviewer knows the fix vs. reviewer needs the PM to clarify), but worth revisiting once there's real usage to observe.</li>
+    <li>Building age as a matching input — PRD.html §06 flags it as "a determining input, not a footnote" for which SHTM/HTM edition applied, but no field carries it yet (not on <code>Project</code>, not in the match schema above). Left out of this pass deliberately to keep the LLM call scoped to template/tag matching; needs its own decision about where it's captured and how it feeds compliance requirements.</li>
   </ol>
 
   <h2><span class="num">09</span>Explicitly out of scope here</h2>
@@ -513,6 +540,6 @@
     <li>Per-gate ongoing PM guidance (PRD.html §06's other open question — one-time brief vs. resurfaced per gate). Assume one-time brief, shown at Stage 0, for a first version; revisit if that's not enough.</li>
   </ul>
 
-  <footer>StageForge · Provisioning Model draft v0.2 · scoping only, nothing in this document is built · 19 Aug 2026</footer>
+  <footer>StageForge · Provisioning Model draft v0.3 · scoping only, nothing in this document is built · 19 Aug 2026</footer>
 
 </div>
