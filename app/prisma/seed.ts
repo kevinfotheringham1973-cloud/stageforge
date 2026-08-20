@@ -48,22 +48,22 @@ async function main() {
   // app already treats "PM" and "SRO" as distinct roles rather than one
   // role plus a type field.
   const roleDefs = [
-    { key: "PM", name: "Project Manager" },
-    { key: "SPONSOR", name: "Project Sponsor" },
+    { key: "PM", name: "PM" },
+    { key: "SPONSOR", name: "PS" },
     { key: "SRO", name: "Senior Responsible Owner" },
     { key: "FM_CONTRACTOR", name: "FM Contractor" },
     { key: "CLIENT_AUTHORITY", name: "Client Authority" },
     { key: "COMPLIANCE_OFFICER", name: "Compliance Officer" },
     { key: "RESOURCE_MANAGER", name: "Resource / Portfolio Manager" },
     { key: "FINANCE", name: "Finance" },
-    { key: "AUTHORISED_PERSON_WATER", name: "Authorised Person (Water)" },
-    { key: "AUTHORISED_PERSON_ELECTRICAL", name: "Authorised Person (Electrical)" },
-    { key: "AUTHORISED_PERSON_MEDICAL_GASES", name: "Authorised Person (Medical Gases)" },
-    { key: "AUTHORISED_PERSON_VENTILATION", name: "Authorised Person (Ventilation)" },
-    { key: "AUTHORISING_ENGINEER_WATER", name: "Authorising Engineer (Water)" },
-    { key: "AUTHORISING_ENGINEER_ELECTRICAL", name: "Authorising Engineer (Electrical)" },
-    { key: "AUTHORISING_ENGINEER_MEDICAL_GASES", name: "Authorising Engineer (Medical Gases)" },
-    { key: "AUTHORISING_ENGINEER_VENTILATION", name: "Authorising Engineer (Ventilation)" },
+    { key: "AUTHORISED_PERSON_WATER", name: "AP (Water)" },
+    { key: "AUTHORISED_PERSON_ELECTRICAL", name: "AP (Electrical)" },
+    { key: "AUTHORISED_PERSON_MEDICAL_GASES", name: "AP (Medical Gases)" },
+    { key: "AUTHORISED_PERSON_VENTILATION", name: "AP (Ventilation)" },
+    { key: "AUTHORISING_ENGINEER_WATER", name: "AE (Water)" },
+    { key: "AUTHORISING_ENGINEER_ELECTRICAL", name: "AE (Electrical)" },
+    { key: "AUTHORISING_ENGINEER_MEDICAL_GASES", name: "AE (Medical Gases)" },
+    { key: "AUTHORISING_ENGINEER_VENTILATION", name: "AE (Ventilation)" },
     { key: "PRINCIPAL_DESIGNER", name: "Principal Designer" },
   ];
   const roles = Object.fromEntries(
@@ -157,10 +157,10 @@ async function main() {
       homeDepartmentId: buildCareNorth.id,
     },
   });
-  const priya = await db.user.create({
+  const andrea = await db.user.create({
     data: {
-      name: "Priya Sharma",
-      email: "priya.sharma@buildcare.example",
+      name: "Andrea",
+      email: "andrea@buildcare.example",
       homeDepartmentId: buildCareFinance.id,
     },
   });
@@ -822,7 +822,7 @@ async function main() {
       { projectId: project.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
       { projectId: project.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.AUTHORISING_ENGINEER_ELECTRICAL.id },
       { projectId: project.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
-      { projectId: project.id, departmentId: buildCareFinance.id, userId: priya.id, roleId: roles.FINANCE.id },
+      { projectId: project.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
     ],
   });
 
@@ -988,7 +988,7 @@ async function main() {
       { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
       { projectId: waterProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
       { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
-      { projectId: waterProject.id, departmentId: buildCareFinance.id, userId: priya.id, roleId: roles.FINANCE.id },
+      { projectId: waterProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
       // Required by CDM 2015 — this project's worksType is
       // BUILDING_MODIFICATION, so a Principal Designer must be engaged.
       { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
@@ -1061,7 +1061,7 @@ async function main() {
       { projectId: drainageProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
       { projectId: drainageProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
       { projectId: drainageProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
-      { projectId: drainageProject.id, departmentId: buildCareFinance.id, userId: priya.id, roleId: roles.FINANCE.id },
+      { projectId: drainageProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
       // Required by CDM 2015 — this project's worksType is
       // BUILDING_MODIFICATION, so a Principal Designer must be engaged.
       { projectId: drainageProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
@@ -1138,7 +1138,7 @@ async function main() {
       { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
       { projectId: coldWaterProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
       { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
-      { projectId: coldWaterProject.id, departmentId: buildCareFinance.id, userId: priya.id, roleId: roles.FINANCE.id },
+      { projectId: coldWaterProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
       { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
     ],
   });
