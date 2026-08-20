@@ -23,8 +23,11 @@ import { db } from "./db";
 const STANDARD_TEAM: { email: string; roleKey: string }[] = [
   { email: "derek.gibb@buildcare.example", roleKey: "PM" },
   { email: "derek.gibb@buildcare.example", roleKey: "FM_CONTRACTOR" },
-  { email: "david.mackay@staldwyn.example", roleKey: "SPONSOR" },
-  { email: "david.mackay@staldwyn.example", roleKey: "CLIENT_AUTHORITY" },
+  // Real address (not .example) — see prisma/seed.ts, David is the one
+  // demo persona pointed at a real inbox so scheduled-report emails
+  // have somewhere to actually land.
+  { email: "kevinfotheringham1973@gmail.com", roleKey: "SPONSOR" },
+  { email: "kevinfotheringham1973@gmail.com", roleKey: "CLIENT_AUTHORITY" },
   { email: "gary.grant@buildcare.example", roleKey: "COMPLIANCE_OFFICER" },
   { email: "mark.ohear@staldwyn.example", roleKey: "SRO" },
   { email: "andrea@buildcare.example", roleKey: "FINANCE" },
