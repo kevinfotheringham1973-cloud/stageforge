@@ -38,6 +38,15 @@ async function main() {
   // ── Roles (global, Phase 1's core eight, plus three project-specific
   // gate-approver roles named in the UPS example — informational only,
   // same non-bypass standing as FM Contractor / Client Authority) ────
+  //
+  // Authorised Person and Authorising Engineer are always discipline-
+  // specific appointments in real NHS estates practice — someone's AP/AE
+  // competency certificate names one engineering discipline, never a
+  // bare "Authorised Person" (confirmed by Kevin, 19 Aug 2026). One Role
+  // row per discipline rather than a field on the assignment: it's a
+  // property of the person's standing appointment, the same way this
+  // app already treats "PM" and "SRO" as distinct roles rather than one
+  // role plus a type field.
   const roleDefs = [
     { key: "PM", name: "Project Manager" },
     { key: "SPONSOR", name: "Project Sponsor" },
@@ -47,8 +56,14 @@ async function main() {
     { key: "COMPLIANCE_OFFICER", name: "Compliance Officer" },
     { key: "RESOURCE_MANAGER", name: "Resource / Portfolio Manager" },
     { key: "FINANCE", name: "Finance" },
-    { key: "AUTHORISED_PERSON", name: "Authorised Person" },
-    { key: "AUTHORISING_ENGINEER", name: "Authorising Engineer" },
+    { key: "AUTHORISED_PERSON_WATER", name: "Authorised Person (Water)" },
+    { key: "AUTHORISED_PERSON_ELECTRICAL", name: "Authorised Person (Electrical)" },
+    { key: "AUTHORISED_PERSON_MEDICAL_GASES", name: "Authorised Person (Medical Gases)" },
+    { key: "AUTHORISED_PERSON_VENTILATION", name: "Authorised Person (Ventilation)" },
+    { key: "AUTHORISING_ENGINEER_WATER", name: "Authorising Engineer (Water)" },
+    { key: "AUTHORISING_ENGINEER_ELECTRICAL", name: "Authorising Engineer (Electrical)" },
+    { key: "AUTHORISING_ENGINEER_MEDICAL_GASES", name: "Authorising Engineer (Medical Gases)" },
+    { key: "AUTHORISING_ENGINEER_VENTILATION", name: "Authorising Engineer (Ventilation)" },
     { key: "PRINCIPAL_DESIGNER", name: "Principal Designer" },
   ];
   const roles = Object.fromEntries(
@@ -121,17 +136,17 @@ async function main() {
       homeDepartmentId: stAldwynEstates.id,
     },
   });
-  const alan = await db.user.create({
+  const bob = await db.user.create({
     data: {
-      name: "Alan Petrie",
-      email: "alan.petrie@buildcare.example",
+      name: "Bob Smith",
+      email: "bob.smith@buildcare.example",
       homeDepartmentId: buildCareNorth.id,
     },
   });
-  const fiona = await db.user.create({
+  const dennis = await db.user.create({
     data: {
-      name: "Fiona Carswell",
-      email: "fiona.carswell@independent.example",
+      name: "Dennis Kelly",
+      email: "dennis.kelly@independent.example",
       homeDepartmentId: stAldwynEstates.id,
     },
   });
@@ -802,8 +817,10 @@ async function main() {
       { projectId: project.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
       { projectId: project.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
       { projectId: project.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
-      { projectId: project.id, departmentId: buildCareNorth.id, userId: alan.id, roleId: roles.AUTHORISED_PERSON.id },
-      { projectId: project.id, departmentId: stAldwynEstates.id, userId: fiona.id, roleId: roles.AUTHORISING_ENGINEER.id },
+      // UPS/battery/switchgear replacement is an electrical system —
+      // both AP and AE hold the Electrical discipline appointment here.
+      { projectId: project.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
+      { projectId: project.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.AUTHORISING_ENGINEER_ELECTRICAL.id },
       { projectId: project.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
       { projectId: project.id, departmentId: buildCareFinance.id, userId: priya.id, roleId: roles.FINANCE.id },
     ],
@@ -1151,8 +1168,8 @@ async function main() {
   console.log(`  Sponsor:               ${david.name} <${david.email}>`);
   console.log(`  Compliance Officer:    ${gary.name} <${gary.email}>`);
   console.log(`  SRO:                   ${mark.name} <${mark.email}>`);
-  console.log(`  Authorised Person:     ${alan.name} <${alan.email}>`);
-  console.log(`  Authorising Engineer:  ${fiona.name} <${fiona.email}>`);
+  console.log(`  Authorised Person (Electrical):    ${bob.name} <${bob.email}>`);
+  console.log(`  Authorising Engineer (Electrical): ${dennis.name} <${dennis.email}>`);
   console.log(`  Principal Designer:    ${ross.name} <${ross.email}>`);
 }
 
