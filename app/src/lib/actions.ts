@@ -967,3 +967,69 @@ export async function renameProject(projectId: string, projectNumber: string, fo
   revalidatePath("/");
   revalidatePath(`/projects/${projectNumber}`);
 }
+
+/**
+ * Platform-admin-only, irreversible (confirmed by Kevin, 20 Aug 2026:
+ * "only admin access is able to delete projects"). No cascade at the
+ * schema level — every dependent row (deliverables, evidence,
+ * compliance, spend, sign-offs, lessons learned, ...) is deleted
+ * explicitly, in dependency order, inside one transaction, rather than
+ * relying on onDelete: Cascade — keeps deletion fully visible in
+ * application code instead of implicit in the schema. AuditLogEntry
+ * rows are the one exception: entityId is a free-text reference, not a
+ * real foreign key, so the "project.deleted" entry below survives the
+ * project it describes, same as intended for an audit trail.
+ *
+ * Requires typing the project number back, the same "can't happen by
+ * a stray click" rail as GitHub-style destructive confirmations —
+ * there's no real password-gated auth in this scaffold to re-prompt
+ * for instead.
+ */
+export async function deleteProject(projectId: string, formData: FormData) {
+  const confirmProjectNumber = String(formData.get("confirmProjectNumber") ?? "").trim();
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can delete a project.");
+  }
+
+  const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
+  if (confirmProjectNumber !== project.projectNumber) {
+    throw new Error("Type the project number exactly to confirm deletion.");
+  }
+
+  await db.$transaction([
+    db.evidenceFile.deleteMany({ where: { deliverable: { gate: { stage: { projectId } } } } }),
+    db.deliverableBypass.deleteMany({ where: { deliverable: { gate: { stage: { projectId } } } } }),
+    db.deliverable.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.complianceEvidenceFile.deleteMany({ where: { complianceRequirement: { gate: { stage: { projectId } } } } }),
+    db.complianceRequirement.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.complianceOverride.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.spendApproval.deleteMany({ where: { spendRecord: { gate: { stage: { projectId } } } } }),
+    db.spendRecord.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.gateSignOff.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.lessonLearned.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.auditLogEntry.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.gate.deleteMany({ where: { stage: { projectId } } }),
+    db.stage.deleteMany({ where: { projectId } }),
+    db.projectRoleAssignment.deleteMany({ where: { projectId } }),
+    db.resourceAllocation.deleteMany({ where: { projectId } }),
+    db.provisioningReview.deleteMany({ where: { projectId } }),
+    db.project.delete({ where: { id: projectId } }),
+    db.auditLogEntry.create({
+      data: {
+        actorId,
+        action: "project.deleted",
+        entityType: "Project",
+        entityId: projectId,
+        reason: `Project #${project.projectNumber} "${project.name}" deleted`,
+      },
+    }),
+  ]);
+
+  revalidatePath("/");
+  redirect("/");
+}

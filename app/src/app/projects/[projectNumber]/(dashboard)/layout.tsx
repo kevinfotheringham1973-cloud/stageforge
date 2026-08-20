@@ -8,8 +8,8 @@ import {
   gateTimelineStatus,
   type GateTimelineStatus,
 } from "@/lib/permissions";
-import { getCurrentUserRoleKeysForProject } from "@/lib/session";
-import { renameProject } from "@/lib/actions";
+import { getCurrentUser, getCurrentUserRoleKeysForProject } from "@/lib/session";
+import { deleteProject, renameProject } from "@/lib/actions";
 import { GateRail } from "@/components/GateRail";
 
 const APPROVAL_BUCKET_LABELS: Record<string, string> = {
@@ -79,8 +79,12 @@ export default async function ProjectDashboardLayout({
   });
   if (!project) notFound();
 
-  const roleKeys = await getCurrentUserRoleKeysForProject(project.id);
+  const [roleKeys, currentUser] = await Promise.all([
+    getCurrentUserRoleKeysForProject(project.id),
+    getCurrentUser(),
+  ]);
   const isPM = roleKeys.includes("PM");
+  const isPlatformAdmin = currentUser?.isPlatformAdmin ?? false;
 
   const contractorAssignment = project.roleAssignments.find((a) => a.role.key === "FM_CONTRACTOR");
   const authorityAssignment = project.roleAssignments.find((a) => a.role.key === "CLIENT_AUTHORITY");
@@ -228,6 +232,30 @@ export default async function ProjectDashboardLayout({
             </form>
           )}
         </div>
+
+        {isPlatformAdmin && (
+          <div className="rounded-lg border border-dashed border-risk bg-risk/5 p-4">
+            <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-risk">Danger zone &middot; platform admin</div>
+            <p className="mb-3 text-sm text-inkmuted">
+              Permanently deletes this project and everything on it — deliverables, evidence,
+              compliance, spend, sign-offs, lessons learned. This cannot be undone.
+            </p>
+            <form
+              action={deleteProject.bind(null, project.id)}
+              className="flex flex-wrap items-center gap-2"
+            >
+              <input
+                name="confirmProjectNumber"
+                required
+                placeholder={`Type ${project.projectNumber} to confirm`}
+                className="w-full rounded border border-risk bg-bg px-2.5 py-1.5 text-sm sm:w-64"
+              />
+              <button type="submit" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
+                Delete project permanently
+              </button>
+            </form>
+          </div>
+        )}
 
         {gates.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
