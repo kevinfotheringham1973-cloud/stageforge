@@ -241,7 +241,7 @@ export default async function ProjectDashboardLayout({
             <div className="mt-3 flex flex-col gap-3 text-sm">
               <div>
                 <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Original brief</div>
-                <p className="text-ink">{project.provisioningBrief}</p>
+                <p className="font-semibold text-ink">{project.provisioningBrief}</p>
               </div>
               {project.provisioningMatchReasoning && (
                 <div>
