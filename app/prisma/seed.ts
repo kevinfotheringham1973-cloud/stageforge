@@ -1403,6 +1403,32 @@ async function main() {
     });
   }
 
+  // ── Resource/capacity view: realistic % FTE allocation per
+  // delivery-facing person across the live projects, including one
+  // deliberate over-100% case (Derek, PM/FM Contractor spread across
+  // all 5) — that flagging is the entire point of /resources, so the
+  // seed should always demonstrate it rather than leave everyone at 0%.
+  const resourceAllocations: { user: typeof derek; project: typeof project; pct: number }[] = [
+    { user: derek, project, pct: 30 }, // UPS (20456)
+    { user: derek, project: waterProject, pct: 15 }, // Calorifier (20777)
+    { user: derek, project: coldWaterProject, pct: 20 }, // Cold water tank (30001)
+    { user: derek, project: lightingProject, pct: 15 }, // LED (30002)
+    { user: derek, project: drainageProject, pct: 30 }, // Kitchen drainage (55998)
+    { user: ross, project, pct: 15 },
+    { user: ross, project: waterProject, pct: 10 },
+    { user: ross, project: lightingProject, pct: 15 },
+    { user: ross, project: drainageProject, pct: 10 },
+    { user: bob, project, pct: 20 },
+    { user: bob, project: lightingProject, pct: 20 },
+    { user: dennis, project, pct: 15 },
+    { user: dennis, project: lightingProject, pct: 25 },
+  ];
+  for (const a of resourceAllocations) {
+    await db.resourceAllocation.create({
+      data: { userId: a.user.id, projectId: a.project.id, allocationPercent: a.pct, updatedById: derek.id },
+    });
+  }
+
   // ── Portfolio view: a scheduled report demonstrating the SRO's
   // actual request (20 Aug 2026) — "every Friday to specific staff".
   await db.scheduledReport.create({
