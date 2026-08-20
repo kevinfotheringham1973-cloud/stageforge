@@ -24,15 +24,15 @@ async function main() {
   // ── Managed project-number counter (lib/projectNumber.ts) — starts a
   // fresh block at 30001, deliberately unrelated to the ad-hoc numbers
   // the first three demo projects below already carry (20456, 20777,
-  // 55998). Seeded to 30001, not 30000: the fourth demo project below
-  // is itself the real project that was issued 30001 live, so the
-  // counter has to already account for that number being taken —
-  // otherwise the next real project created after a reset would
-  // collide with it.
+  // 55998). Seeded to 30002, not 30000: the fourth and fifth demo
+  // projects below are themselves the real projects issued 30001 and
+  // 30002 live, so the counter has to already account for both numbers
+  // being taken — otherwise the next real project created after a
+  // reset would collide with one of them.
   await db.projectNumberCounter.upsert({
     where: { id: 1 },
     update: {},
-    create: { id: 1, value: 30001 },
+    create: { id: 1, value: 30002 },
   });
 
   // ── Roles (global, Phase 1's core eight, plus three project-specific
@@ -666,6 +666,117 @@ async function main() {
   ];
   await createDeliverableTemplates(coldWaterStageTemplates, coldWaterDeliverableDefsByStage);
 
+  // Lighting & Electrical Distribution Replacement — luminaire/LED
+  // retrofit, lighting circuits, and emergency/escape lighting: BS 5266
+  // (emergency lighting) and general lighting design are a genuinely
+  // different discipline from standby power (UPS/generators), so this
+  // isn't the M&E template even though both are "electrical". Added
+  // after a live LED corridor-lighting project got wrongly matched to
+  // M&E Systems Replacement for lack of anywhere better to go — its own
+  // stored reasoning says "the others are all water/drainage" (confirmed
+  // by Kevin, 20 Aug 2026). Grounded in BS 7671 (IET Wiring
+  // Regulations), BS 5266 (emergency lighting), and BS EN 12464-1
+  // (lighting of work places).
+  const lightingTemplate = await db.template.create({
+    data: {
+      key: "template.health.lighting_replacement",
+      name: "Lighting & Electrical Distribution Replacement",
+      description:
+        "Lighting and electrical distribution replacement — luminaire/LED retrofit, lighting circuits, and emergency/escape lighting, in an operational healthcare environment. Not standby power (UPS/generators) — see M&E Systems Replacement for that.",
+      matchKeywords: ["LED", "lighting", "luminaire", "light fitting", "emergency lighting", "corridor lighting", "lighting upgrade", "lighting retrofit"],
+      sectorVariantId: health.id,
+    },
+  });
+  const lightingStageTemplates = await createStageAndGateTemplates(lightingTemplate.id);
+
+  const lightingDeliverableDefsByStage: DeliverableDef[][] = [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.lighting_strategic_brief", label: "Strategic Brief — condition of existing lighting/luminaires and options appraisal" },
+      { key: "del.lighting_high_level_risk_register", label: "High-level Risk Register — means-of-escape and clinical continuity focus" },
+      { key: "del.lighting_detailed_project_plan", label: "Detailed Project Plan" },
+      { key: "del.lighting_zone_confirmation", label: "Confirmation of affected lighting circuits/emergency lighting zones against BS 5266", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.lighting_outline_business_case", label: "Outline Business Case / funding confirmation, including energy-saving case" },
+      { key: "del.lighting_stakeholder_map", label: "Initial Stakeholder Map, including Fire Safety and Estates" },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.lighting_project_brief", label: "Project Brief — full scope, constraints, success criteria, out-of-hours working rules" },
+      { key: "del.lighting_survey", label: "Complete lighting survey and existing luminaire/circuit condition report" },
+      { key: "del.lighting_preliminary_programme", label: "Preliminary Programme, including phased corridor-by-corridor working strategy" },
+      { key: "del.lighting_hs_haiscribe", label: "Initial Health & Safety Strategy and HAI-SCRIBE assessment", description: "HAI-SCRIBE (SHFN 30) infection-risk assessment for construction/refurbishment in a healthcare setting.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.lighting_expanded_risk_register", label: "Expanded Risk Register" },
+      { key: "del.lighting_detailed_project_plan_updated_briefing", label: "Updated Detailed Project Plan — full scope, methodology and resourcing" },
+      { key: "del.lighting_stakeholder_engagement_plan", label: "Stakeholder Engagement Plan and early consultation records" },
+      { key: "del.lighting_escape_continuity_confirmation", label: "Confirmation of emergency/escape lighting continuity arrangements during works", bypassAuthority: "SRO" },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.lighting_concept_design_report", label: "Concept Design Report — luminaire selection, lighting layout, control strategy" },
+      { key: "del.lighting_outline_luminaire_spec", label: "Outline LED luminaire and control gear specification" },
+      { key: "del.lighting_preliminary_method_statements", label: "Preliminary Method Statements and high-level RAMS" },
+      { key: "del.lighting_concept_layout_drawings", label: "Concept lighting layout drawings — lux levels, emergency lighting zones" },
+      { key: "del.lighting_updated_programme_sections", label: "Updated Programme showing phased corridor sections" },
+      { key: "del.lighting_stakeholder_feedback_log", label: "Stakeholder consultation feedback log" },
+      { key: "del.lighting_concept_risk_assessment", label: "Concept-level Risk Assessment" },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.lighting_coordinated_layout_drawings", label: "Coordinated lighting layout / containment drawings" },
+      { key: "del.lighting_cable_routing_containment", label: "Cable routing and containment proposals" },
+      { key: "del.lighting_access_delivery_strategy", label: "Access, delivery and temporary works strategy" },
+      { key: "del.lighting_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for cable routing penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.lighting_updated_risk_register_spatial", label: "Updated Risk Register and Method Statements reflecting spatial constraints" },
+      { key: "del.lighting_detailed_project_plan_updated_spatial", label: "Updated Detailed Project Plan reflecting spatial constraints" },
+      { key: "del.lighting_circuit_capacity_confirmation", label: "Confirmation that existing circuits/distribution boards can support new LED loads", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 4 — Technical Design
+    [
+      { key: "del.lighting_full_technical_design_package", label: "Full Technical Design Package — detailed lighting drawings, schematics, specifications" },
+      { key: "del.lighting_design_calculations", label: "Design calculations — lux levels, glare, emergency lighting duration/coverage to BS 5266" },
+      { key: "del.lighting_spec_compliant", label: "Complete luminaire and control gear specification compliant with BS 7671 and BS EN 12464-1", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.lighting_installation_method_statements", label: "Detailed Installation Method Statements and RAMS" },
+      { key: "del.lighting_compliance_matrix", label: "Compliance Matrix — mapping against BS 7671, BS 5266, BS EN 12464-1, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.lighting_pre_construction_information", label: "Pre-Construction Information (CDM)" },
+      { key: "del.lighting_procurement_package", label: "Tender or direct-award procurement package" },
+      { key: "del.lighting_updated_programme_resource_plan", label: "Updated Programme and Resource Plan" },
+      { key: "del.lighting_design_risk_assessment_signed", label: "Design Risk Assessment signed by the Designer", bypassAuthority: "SRO" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.lighting_manufacturer_drawings_cert", label: "Manufacturer drawings and product certification for luminaires/control gear" },
+      { key: "del.lighting_delivery_storage_records", label: "Delivery and secure storage records" },
+      { key: "del.lighting_construction_phase_plan", label: "Approved Construction Phase Plan / Method Statements for each corridor section" },
+      { key: "del.lighting_permit_to_work_isolation", label: "Permit-to-Work and isolation certificates for every circuit shutdown", bypassAuthority: "SRO" },
+      { key: "del.lighting_progress_test_records", label: "Daily and section progress / test records" },
+      { key: "del.lighting_temp_escape_arrangements", label: "Temporary lighting and means-of-escape arrangements during works", bypassAuthority: "SRO" },
+      { key: "del.lighting_as_installed_drawings_progressive", label: "Progressive as-installed drawings" },
+      { key: "del.lighting_emergency_test_evidence", label: "Evidence of emergency lighting duration testing before section handover", description: "Critical means-of-escape verification step — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.lighting_snagging_list", label: "Snagging list and resolution tracker" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.lighting_emergency_commissioning_cert", label: "Emergency lighting commissioning certificate — duration/illuminance test to BS 5266", bypassAuthority: "SRO" },
+      { key: "del.lighting_commissioning_validation_reports", label: "Full Commissioning and Validation Reports — lux level verification, control system testing" },
+      { key: "del.lighting_as_built_drawings", label: "As-built drawings and circuit schedules" },
+      { key: "del.lighting_om_manuals", label: "Complete Operation & Maintenance (O&M) Manuals, including lamp/luminaire replacement schedule" },
+      { key: "del.lighting_eic_certificates", label: "Electrical Installation Certificate(s) (EIC) issued under BS 7671", bypassAuthority: "SRO" },
+      { key: "del.lighting_training_records", label: "Training records for Estates staff" },
+      { key: "del.lighting_final_risk_assessment_closed", label: "Final Risk Assessment and closed-out RAMS" },
+      { key: "del.lighting_asset_data_cafm", label: "Asset data uploaded to CAFM / asset register" },
+      { key: "del.lighting_acceptance_to_service_certificate", label: 'Formal "Acceptance to Service" certificate signed by the Client Authority', bypassAuthority: "SRO" },
+      { key: "del.lighting_defects_liability_schedule", label: "Defects Liability Schedule" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.lighting_defects_monitoring_reports", label: "Defects Liability monitoring reports" },
+      { key: "del.lighting_lessons_learned_report", label: "Final Lessons Learned report" },
+      { key: "del.lighting_updated_ppm_schedules", label: "Updated Planned Preventative Maintenance (PPM) schedules, including emergency lighting testing regime" },
+      { key: "del.lighting_end_of_defects_certificate", label: "End-of-Defects Certificate (if applicable)" },
+    ],
+  ];
+  await createDeliverableTemplates(lightingStageTemplates, lightingDeliverableDefsByStage);
+
   // ── Compliance corpus: independently maintained, reused across every
   // programme type (ConfigSchema.html §04) — not authored per project.
   // Grounded in Complaince and Regulations.docx. Deliberately distinct
@@ -1159,6 +1270,67 @@ async function main() {
       sectorVariantId: health.id,
       order: i,
       stageTemplate: coldWaterStageTemplatesFull[i]!,
+    });
+  }
+
+  // ── Fifth demo project: Lighting & Electrical Distribution
+  // Replacement, originally created live via the managed project-number
+  // flow on 20 Aug 2026 as project 30002 — at the time, matched to the
+  // M&E Systems Replacement template for lack of anywhere better to go,
+  // which is exactly the gap the Lighting template above exists to
+  // close. Replayed here against the correct template, same
+  // reproducible pattern as the drainage/cold-water projects. worksType
+  // stays DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS to match what was
+  // actually selected — a like-for-like LED retrofit needs an
+  // electrician and a specialist waste-disposal contractor for the
+  // fluorescent tubes, but doesn't touch the building fabric.
+  const lightingProject = await db.project.create({
+    data: {
+      projectNumber: "30002",
+      name: "LED Upgrade Throughout Hospital Corridors and Avenues",
+      templateId: lightingTemplate.id,
+      includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8
+      tags: ["occupied_during_works"],
+      worksType: "DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS",
+      status: "ACTIVE",
+      createdById: derek.id,
+      provisioningBrief:
+        "Aligning with Net Zero, this project consists of replacing all fluorescent lights in the hospital corridors and avenues with LED alternatives.",
+      provisioningMatchReasoning:
+        "Fluorescent-to-LED retrofit is a lighting and electrical distribution problem — luminaires, lighting circuits, and emergency/escape lighting — not standby power (UPS/generators), so matches Lighting & Electrical Distribution Replacement rather than M&E Systems Replacement. Hospital corridors remain in use during works, hence occupied_during_works.",
+    },
+  });
+
+  await db.projectRoleAssignment.createMany({
+    data: [
+      { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.PM.id },
+      { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },
+      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.SPONSOR.id },
+      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
+      { projectId: lightingProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
+      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
+      { projectId: lightingProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
+      { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
+      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.AUTHORISING_ENGINEER_ELECTRICAL.id },
+    ],
+  });
+
+  await db.provisioningReview.create({
+    data: { projectId: lightingProject.id, decision: "APPROVED", reviewedById: gary.id },
+  });
+
+  const lightingStageTemplatesFull = await db.stageTemplate.findMany({
+    where: { templateId: lightingTemplate.id },
+    orderBy: { order: "asc" },
+    include: { gateTemplate: { include: { deliverableTemplates: true } } },
+  });
+  for (let i = 0; i < lightingStageTemplatesFull.length; i++) {
+    await instantiateStage(db, {
+      projectId: lightingProject.id,
+      projectTags: effectiveComplianceTags(lightingProject),
+      sectorVariantId: health.id,
+      order: i,
+      stageTemplate: lightingStageTemplatesFull[i]!,
     });
   }
 
