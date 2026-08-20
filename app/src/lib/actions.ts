@@ -14,6 +14,7 @@ import {
   canApproveSpend,
   canBypassDeliverable,
   canDecideGate,
+  canManageScheduledReports,
   canOverrideCompliance,
   canRecordLessonLearned,
   canRecordSpend,
@@ -24,6 +25,7 @@ import { instantiateStage } from "./instantiation";
 import { matchProject } from "./provisioning";
 import { effectiveComplianceTags, isCdmWorksType } from "./cdm";
 import { issueNextProjectNumber } from "./projectNumber";
+import { assignStandardTeam } from "./standardTeam";
 
 export async function setActingUser(userId: string) {
   const store = await cookies();
@@ -542,8 +544,9 @@ export async function reinstateStage(
  * PM or Compliance Officer enters a free-text project description;
  * the LLM match (§07) proposes a Template and tags; a DRAFT Project is
  * created carrying that proposal, with no Stages/Gates instantiated
- * yet. The creator becomes PM immediately (§05 open question on the
- * rest of role assignment is not solved here).
+ * yet. The standing hospital team (lib/standardTeam.ts) is assigned
+ * immediately, not just the creator as PM — role assignment isn't an
+ * open question once every project is for the same hospital.
  */
 export async function createProvisioningDraft(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -568,7 +571,6 @@ export async function createProvisioningDraft(formData: FormData) {
     include: { stageTemplates: { orderBy: { order: "asc" } } },
   });
 
-  const creator = await db.user.findUniqueOrThrow({ where: { id: userId } });
   const projectNumber = await issueNextProjectNumber();
 
   const project = await db.project.create({
@@ -589,12 +591,11 @@ export async function createProvisioningDraft(formData: FormData) {
     },
   });
 
-  if (creator.homeDepartmentId) {
-    const pmRole = await db.role.findUniqueOrThrow({ where: { key: "PM" } });
-    await db.projectRoleAssignment.create({
-      data: { projectId: project.id, departmentId: creator.homeDepartmentId, userId, roleId: pmRole.id },
-    });
-  }
+  // The standing hospital team (lib/standardTeam.ts), not just the
+  // creator as PM — a project no longer starts with every other role
+  // (Sponsor, SRO, Compliance Officer, Finance, ...) simply missing
+  // until someone notices and fills it in by hand.
+  await assignStandardTeam(project.id);
 
   await db.auditLogEntry.create({
     data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
@@ -890,4 +891,79 @@ export async function recordLessonLearned(gateId: string, projectNumber: string,
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
   revalidatePath("/lessons-learned");
+}
+
+// ── Portfolio view — scheduled reports ──────────────────────────────
+// Configuration only (label, day, recipients) — there is no email/
+// notification infrastructure in this scaffold to actually deliver
+// through. See the ScheduledReport model comment in schema.prisma.
+
+export async function createScheduledReport(formData: FormData) {
+  const label = String(formData.get("label") ?? "").trim();
+  const dayOfWeekRaw = String(formData.get("dayOfWeek") ?? "");
+  const dayOfWeek = Number(dayOfWeekRaw);
+  const recipientUserIds = formData.getAll("recipientUserIds").map(String);
+
+  if (!label) throw new Error("A label is required.");
+  if (!Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
+    throw new Error("A valid day of the week is required.");
+  }
+  if (recipientUserIds.length === 0) throw new Error("At least one recipient is required.");
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const globalRoleKeys = await getCurrentUserGlobalRoleKeys();
+  if (!canManageScheduledReports(globalRoleKeys)) {
+    throw new Error("Only an SRO, Compliance Officer, or Client Authority can set up scheduled reports.");
+  }
+
+  await db.scheduledReport.create({
+    data: { label, dayOfWeek, recipientUserIds, createdById: actorId },
+  });
+
+  revalidatePath("/");
+}
+
+export async function deleteScheduledReport(id: string) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const globalRoleKeys = await getCurrentUserGlobalRoleKeys();
+  if (!canManageScheduledReports(globalRoleKeys)) {
+    throw new Error("Only an SRO, Compliance Officer, or Client Authority can remove a scheduled report.");
+  }
+
+  await db.scheduledReport.delete({ where: { id } });
+  revalidatePath("/");
+}
+
+// ── Project ──────────────────────────────────────────────────────────
+
+/**
+ * PM-only, same authority tier as setResourceAllocation/setGateTimeline
+ * — correcting a typo or renaming a project is planning-adjacent
+ * admin, not a governance decision requiring sign-off.
+ */
+export async function renameProject(projectId: string, projectNumber: string, formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("A project name is required.");
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const roleKeys = await getCurrentUserRoleKeysForProject(projectId);
+  if (!roleKeys.includes("PM")) {
+    throw new Error("Only the Project Manager can rename this project.");
+  }
+
+  await db.$transaction([
+    db.project.update({ where: { id: projectId }, data: { name } }),
+    db.auditLogEntry.create({
+      data: { actorId, action: "project.renamed", entityType: "Project", entityId: projectId },
+    }),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath(`/projects/${projectNumber}`);
 }

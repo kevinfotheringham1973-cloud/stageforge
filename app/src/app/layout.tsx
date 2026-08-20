@@ -13,10 +13,22 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [users, currentUser] = await Promise.all([
-    db.user.findMany({ orderBy: { name: "asc" } }),
+  const [usersWithRoles, currentUser] = await Promise.all([
+    db.user.findMany({
+      orderBy: { name: "asc" },
+      include: { roleAssignments: { include: { role: true } } },
+    }),
     getCurrentUser(),
   ]);
+  // The "Acting as" switcher is project-agnostic (root layout), so this
+  // is every role a user holds anywhere, deduped — not one project's
+  // view of them. Shown so a demo audience can tell who's who (PM vs.
+  // Sponsor vs. Compliance Officer) without already knowing the cast.
+  const users = usersWithRoles.map((u) => ({
+    id: u.id,
+    name: u.name,
+    roleLabel: Array.from(new Set(u.roleAssignments.map((a) => a.role.name))).join(" · "),
+  }));
 
   return (
     <html lang="en">
@@ -45,13 +57,18 @@ export default async function RootLayout({
                 <form key={u.id} action={setActingUser.bind(null, u.id)}>
                   <button
                     type="submit"
-                    className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                    className={`flex flex-col items-center gap-0.5 rounded-lg border px-3 py-1.5 leading-none ${
                       currentUser?.id === u.id
                         ? "border-accent bg-accentsoft text-accent"
                         : "border-rule text-inkmuted hover:bg-surface2"
                     }`}
                   >
-                    {u.name}
+                    <span className="text-xs font-semibold">{u.name}</span>
+                    {u.roleLabel && (
+                      <span className="font-mono text-[9px] uppercase tracking-wide opacity-80">
+                        {u.roleLabel}
+                      </span>
+                    )}
                   </button>
                 </form>
               ))}

@@ -8,6 +8,8 @@ import {
   gateTimelineStatus,
   type GateTimelineStatus,
 } from "@/lib/permissions";
+import { getCurrentUserRoleKeysForProject } from "@/lib/session";
+import { renameProject } from "@/lib/actions";
 import { GateRail } from "@/components/GateRail";
 
 const APPROVAL_BUCKET_LABELS: Record<string, string> = {
@@ -76,6 +78,9 @@ export default async function ProjectDashboardLayout({
     },
   });
   if (!project) notFound();
+
+  const roleKeys = await getCurrentUserRoleKeysForProject(project.id);
+  const isPM = roleKeys.includes("PM");
 
   const contractorAssignment = project.roleAssignments.find((a) => a.role.key === "FM_CONTRACTOR");
   const authorityAssignment = project.roleAssignments.find((a) => a.role.key === "CLIENT_AUTHORITY");
@@ -206,6 +211,22 @@ export default async function ProjectDashboardLayout({
           <div className="font-mono text-xs uppercase tracking-wide text-inkmuted">
             Project No. {project.projectNumber}
           </div>
+          {isPM && (
+            <form
+              action={renameProject.bind(null, project.id, project.projectNumber)}
+              className="mt-2 flex flex-wrap items-center gap-1.5"
+            >
+              <input
+                name="name"
+                defaultValue={project.name}
+                required
+                className="w-full rounded border border-rule bg-bg px-2 py-1 text-sm sm:w-80"
+              />
+              <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                Rename
+              </button>
+            </form>
+          )}
         </div>
 
         {gates.length > 0 && (
