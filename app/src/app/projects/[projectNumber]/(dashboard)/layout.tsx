@@ -235,7 +235,7 @@ export default async function ProjectDashboardLayout({
 
         {project.provisioningBrief && (
           <details className="group rounded-lg border border-rule bg-surface px-4 py-3">
-            <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+            <summary className="cursor-pointer select-none font-mono text-[10px] font-bold uppercase tracking-wide text-inkmuted">
               Project brief &amp; why it was templated this way
             </summary>
             <div className="mt-3 flex flex-col gap-3 text-sm">
