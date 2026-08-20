@@ -164,6 +164,17 @@ async function main() {
       homeDepartmentId: buildCareFinance.id,
     },
   });
+  // Platform admin — deliberately not part of either company/department
+  // structure (confirmed by Kevin, 20 Aug 2026: a dedicated admin
+  // persona, not one of the project-delivery team wearing a second
+  // hat). Only this flag can delete a project.
+  const callum = await db.user.create({
+    data: {
+      name: "Callum Reid",
+      email: "callum.reid@stageforge.example",
+      isPlatformAdmin: true,
+    },
+  });
 
   // ── Stage/gate structure: RIBA Plan of Work 2020, fixed regardless of
   // project type (PRD.html §06 decided flag) — every Health-sector
@@ -1409,6 +1420,7 @@ async function main() {
   console.log(`  Authorised Person (Electrical):    ${bob.name} <${bob.email}>`);
   console.log(`  Authorising Engineer (Electrical): ${dennis.name} <${dennis.email}>`);
   console.log(`  Principal Designer:    ${ross.name} <${ross.email}>`);
+  console.log(`  Platform Admin:        ${callum.name} <${callum.email}>`);
 }
 
 main()

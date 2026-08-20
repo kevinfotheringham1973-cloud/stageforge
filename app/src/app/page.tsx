@@ -88,8 +88,8 @@ export default async function HomePage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
-      <h1 className="mb-1 text-2xl font-bold">Portfolio</h1>
-      <p className="mb-8 text-sm text-inkmuted">
+      <h1 className="mb-1 text-3xl font-bold">Portfolio</h1>
+      <p className="mb-8 text-base text-inkmuted">
         Every live project in one view — current gate, cost approved vs. recorded, and what&rsquo;s
         still outstanding. Select a project below to open its dashboard. A project drops off once
         every one of its gates is signed off.
@@ -122,55 +122,55 @@ export default async function HomePage() {
         <p className="mb-10 text-sm text-inkmuted">No live projects.</p>
       ) : (
         <div className="mb-10 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <table className="w-full min-w-[1050px] border-collapse text-sm">
+          <table className="w-full min-w-[1150px] border-collapse text-base">
             <thead>
-              <tr className="border-b border-rule text-left font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                <th className="py-2 pr-4">Project</th>
-                <th className="py-2 pr-4">Current gate</th>
-                <th className="py-2 pr-4">Timeline</th>
-                <th className="py-2 pr-4">Est. completion</th>
-                <th className="py-2 pr-4">Cost approved / total</th>
-                <th className="py-2 pr-4">Deliverables outstanding</th>
-                <th className="py-2 pr-4">Compliance outstanding</th>
+              <tr className="border-b-2 border-rule text-left font-mono text-xs font-bold uppercase tracking-wide text-ink">
+                <th className="py-3 pr-4">Project</th>
+                <th className="py-3 pr-4">Current gate</th>
+                <th className="py-3 pr-4">Timeline</th>
+                <th className="py-3 pr-4">Est. completion</th>
+                <th className="py-3 pr-4">Cost approved / total</th>
+                <th className="py-3 pr-4">Deliverables outstanding</th>
+                <th className="py-3 pr-4">Compliance outstanding</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.project.id} className="border-b border-rule">
-                  <td className="py-3 pr-4">
-                    <Link href={`/projects/${r.project.projectNumber}`} className="font-semibold text-accent hover:underline">
+                  <td className="py-4 pr-4">
+                    <Link href={`/projects/${r.project.projectNumber}`} className="text-lg font-bold text-accent hover:underline">
                       {r.project.name}
                     </Link>
                     <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
                   </td>
-                  <td className="py-3 pr-4">{r.currentGate ? r.currentGate.name : "Complete"}</td>
-                  <td className={`py-3 pr-4 font-semibold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>
+                  <td className="py-4 pr-4 font-semibold">{r.currentGate ? r.currentGate.name : "Complete"}</td>
+                  <td className={`py-4 pr-4 font-bold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>
                     {GATE_TIMELINE_LABELS[r.timeline]}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap">
+                  <td className="py-4 pr-4 whitespace-nowrap font-semibold">
                     {r.estimatedCompletion ? (
                       r.estimatedCompletion.toLocaleDateString("en-GB")
                     ) : (
-                      <span className="text-inkmuted">Not set</span>
+                      <span className="font-normal text-inkmuted">Not set</span>
                     )}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap">
-                    <span className="font-semibold text-ok">{GBP(r.approvedSpend)}</span>
+                  <td className="py-4 pr-4 whitespace-nowrap font-semibold">
+                    <span className="text-ok">{GBP(r.approvedSpend)}</span>
                     {" / "}
                     {GBP(r.totalSpend)}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-4 pr-4">
                     {r.outstandingDeliverables > 0 ? (
-                      <span className="font-semibold text-warn">{r.outstandingDeliverables}</span>
+                      <span className="text-lg font-bold text-warn">{r.outstandingDeliverables}</span>
                     ) : (
-                      <span className="text-inkmuted">0</span>
+                      <span className="font-semibold text-inkmuted">0</span>
                     )}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-4 pr-4">
                     {r.outstandingCompliance > 0 ? (
-                      <span className="font-semibold text-flag">{r.outstandingCompliance}</span>
+                      <span className="text-lg font-bold text-flag">{r.outstandingCompliance}</span>
                     ) : (
-                      <span className="text-inkmuted">0</span>
+                      <span className="font-semibold text-inkmuted">0</span>
                     )}
                   </td>
                 </tr>
