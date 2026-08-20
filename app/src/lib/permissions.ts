@@ -34,10 +34,12 @@ export const DELIVERY_FACING_ROLE_KEYS = [
 // do (bypass-wise); Compliance Officer can do anything PM can do;
 // PM is the floor. A role with no bypass standing at all (Sponsor,
 // FM Contractor, Client Authority, ...) ranks -1 and never qualifies.
+// FIRE_OFFICER is NOT part of this ladder — see canBypassDeliverable.
 const BYPASS_AUTHORITY_RANK: Record<BypassAuthority, number> = {
   PM: 0,
   COMPLIANCE_OFFICER: 1,
   SRO: 2,
+  FIRE_OFFICER: -1, // unreachable via rank comparison — always intercepted below
 };
 
 function roleKeyBypassRank(roleKey: string): number {
@@ -61,11 +63,17 @@ function roleKeyBypassRank(roleKey: string): number {
  * legal weight — that escalates to Compliance Officer or SRO. Every
  * bypass, at any authority level, requires a written reason (enforced
  * at the call site — see actions.ts — not here).
+ *
+ * FIRE_OFFICER is an exact-match requirement, not a rank on the ladder
+ * above — confirmed by Kevin, 20 Aug 2026: an SRO has no professional
+ * standing to assess fire safety, so unlike every other tier here, SRO
+ * does NOT automatically qualify for a fire-authority item.
  */
 export function canBypassDeliverable(
   actorRoleKeys: string[],
   requiredAuthority: BypassAuthority
 ): boolean {
+  if (requiredAuthority === "FIRE_OFFICER") return actorRoleKeys.includes("FIRE_OFFICER");
   const requiredRank = BYPASS_AUTHORITY_RANK[requiredAuthority];
   return actorRoleKeys.some((key) => roleKeyBypassRank(key) >= requiredRank);
 }
@@ -180,8 +188,17 @@ export function canUploadComplianceEvidence(actorRoleKeys: string[]): boolean {
  * role only (PRD.html §06) — unlike a deliverable bypass, there's no
  * Compliance Officer tier for this action, since the Compliance
  * Officer authored the rule being overridden.
+ *
+ * Exception: a requirement whose overrideAuthority is FIRE_OFFICER
+ * (see ComplianceRequirement.overrideAuthority) requires the Fire
+ * Officer role specifically — SRO does not qualify, same reasoning as
+ * canBypassDeliverable's FIRE_OFFICER case.
  */
-export function canOverrideCompliance(actorRoleKeys: string[]): boolean {
+export function canOverrideCompliance(
+  actorRoleKeys: string[],
+  requiredAuthority: BypassAuthority = "SRO"
+): boolean {
+  if (requiredAuthority === "FIRE_OFFICER") return actorRoleKeys.includes("FIRE_OFFICER");
   return actorRoleKeys.includes("SRO");
 }
 

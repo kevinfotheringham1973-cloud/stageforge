@@ -28,7 +28,10 @@ import { issueNextProjectNumber } from "./projectNumber";
 import { assignStandardTeam } from "./standardTeam";
 import { sendScheduledReport } from "./scheduledReportSender";
 
-export async function setActingUser(userId: string) {
+export async function setActingUser(formData: FormData) {
+  const userId = String(formData.get("userId") ?? "");
+  if (!userId) return;
+
   const store = await cookies();
   store.set(SESSION_COOKIE_NAME, userId, {
     path: "/",
@@ -239,13 +242,23 @@ export async function overrideCompliance(gateId: string, projectNumber: string, 
   });
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
 
-  if (!canOverrideCompliance(roleKeys)) {
-    throw new Error("Overriding compliance requirements requires SRO authority.");
-  }
-
   const outstanding = gate.complianceRequirements.filter((c) => c.blocksGate && c.status === "PENDING");
   if (outstanding.length === 0) {
     throw new Error("There are no outstanding compliance requirements on this gate to override.");
+  }
+
+  // Overriding all outstanding requirements at once only works when the
+  // actor holds authority for every one of them — a gate mixing an
+  // ordinary SRO-tier item with a fire-domain one can't be cleared by
+  // an SRO alone, since an SRO has no standing over the fire item (see
+  // canOverrideCompliance). Those have to be resolved separately by
+  // whoever actually holds each authority.
+  const requiredAuthorities = Array.from(new Set(outstanding.map((c) => c.overrideAuthority)));
+  const missingAuthorities = requiredAuthorities.filter((auth) => !canOverrideCompliance(roleKeys, auth));
+  if (missingAuthorities.length > 0) {
+    throw new Error(
+      `Overriding every outstanding item on this gate at once requires ${missingAuthorities.join(" and ")} authority — you're missing ${missingAuthorities.length > 1 ? "these" : "this"}.`
+    );
   }
 
   await db.$transaction([

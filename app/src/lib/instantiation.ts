@@ -7,7 +7,7 @@
 // time — the same "copy at instantiation, never a live join" rule
 // applies to every caller.
 
-import type { PrismaClient } from "@prisma/client";
+import type { BypassAuthority, PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "./compliance";
 
 type StageTemplateForInstantiation = {
@@ -24,7 +24,7 @@ type StageTemplateForInstantiation = {
       description: string | null;
       minFiles: number;
       blocksGate: boolean;
-      bypassAuthority: "PM" | "COMPLIANCE_OFFICER" | "SRO";
+      bypassAuthority: BypassAuthority;
     }[];
   } | null;
 };
@@ -93,6 +93,7 @@ export async function instantiateStage(
         evidenceType: rt.evidenceType,
         minFiles: rt.minFiles,
         blocksGate: rt.blocksGate,
+        overrideAuthority: rt.overrideAuthority,
         status: "PENDING" as const,
       })),
     });

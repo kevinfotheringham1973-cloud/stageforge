@@ -3,6 +3,7 @@ import "./globals.css";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { setActingUser } from "@/lib/actions";
+import { ActingAsSwitcher } from "@/components/ActingAsSwitcher";
 
 export const metadata: Metadata = {
   title: "StageForge (dev scaffold)",
@@ -22,8 +23,8 @@ export default async function RootLayout({
   ]);
   // The "Acting as" switcher is project-agnostic (root layout), so this
   // is every role a user holds anywhere, deduped — not one project's
-  // view of them. Shown so a demo audience can tell who's who (PM vs.
-  // Sponsor vs. Compliance Officer) without already knowing the cast.
+  // view of them. Shown in the dropdown (open or closed) so a demo
+  // audience can tell who's who without already knowing the cast.
   const users = usersWithRoles.map((u) => ({
     id: u.id,
     name: u.name,
@@ -48,32 +49,7 @@ export default async function RootLayout({
               Lessons learned
             </a>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-              Acting as
-            </span>
-            <div className="flex flex-wrap items-center gap-1">
-              {users.map((u) => (
-                <form key={u.id} action={setActingUser.bind(null, u.id)}>
-                  <button
-                    type="submit"
-                    className={`flex flex-col items-center gap-0.5 rounded-lg border px-3 py-1.5 leading-none ${
-                      currentUser?.id === u.id
-                        ? "border-accent bg-accentsoft text-accent"
-                        : "border-rule text-inkmuted hover:bg-surface2"
-                    }`}
-                  >
-                    <span className="text-xs font-semibold">{u.name}</span>
-                    {u.roleLabel && (
-                      <span className="font-mono text-[9px] uppercase tracking-wide opacity-80">
-                        {u.roleLabel}
-                      </span>
-                    )}
-                  </button>
-                </form>
-              ))}
-            </div>
-          </div>
+          <ActingAsSwitcher action={setActingUser} users={users} currentUserId={currentUser?.id} />
         </header>
         <main>{children}</main>
       </body>

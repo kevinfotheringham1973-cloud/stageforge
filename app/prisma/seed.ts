@@ -65,6 +65,11 @@ async function main() {
     { key: "AUTHORISING_ENGINEER_MEDICAL_GASES", name: "AE (Medical Gases)" },
     { key: "AUTHORISING_ENGINEER_VENTILATION", name: "AE (Ventilation)" },
     { key: "PRINCIPAL_DESIGNER", name: "Principal Designer" },
+    // The site NHS Fire Officer — the only authority that can approve
+    // or reject fire-related compliance (confirmed by Kevin, 20 Aug
+    // 2026: an SRO has no legal standing to assess fire safety). See
+    // BypassAuthority.FIRE_OFFICER in schema.prisma.
+    { key: "FIRE_OFFICER", name: "Fire Officer" },
   ];
   const roles = Object.fromEntries(
     await Promise.all(
@@ -139,6 +144,13 @@ async function main() {
       homeDepartmentId: stAldwynEstates.id,
     },
   });
+  const alan = await db.user.create({
+    data: {
+      name: "Alan McGeachie",
+      email: "alan.mcgeachie@staldwyn.example",
+      homeDepartmentId: stAldwynEstates.id,
+    },
+  });
   const bob = await db.user.create({
     data: {
       name: "Bob Smith",
@@ -198,7 +210,7 @@ async function main() {
     key: string;
     label: string;
     description?: string;
-    bypassAuthority?: "PM" | "COMPLIANCE_OFFICER" | "SRO";
+    bypassAuthority?: "PM" | "COMPLIANCE_OFFICER" | "SRO" | "FIRE_OFFICER";
   };
 
   async function createStageAndGateTemplates(templateId: string) {
@@ -292,7 +304,7 @@ async function main() {
       { key: "del.plant_room_drawings", label: "Coordinated plant room / location drawings" },
       { key: "del.cable_routing_containment", label: "Cable routing and containment proposals" },
       { key: "del.access_delivery_strategy", label: "Access, delivery and temporary works strategy" },
-      { key: "del.fire_compartmentation_assessment", label: "Fire compartmentation and ventilation impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.fire_compartmentation_assessment", label: "Fire compartmentation and ventilation impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.updated_risk_register_spatial", label: "Updated Risk Register and Method Statements reflecting spatial constraints" },
       { key: "del.detailed_project_plan_updated_spatial", label: "Updated Detailed Project Plan reflecting spatial constraints" },
       { key: "del.infrastructure_confirmation", label: "Confirmation that existing infrastructure can support the new units (structural, electrical, thermal)", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -404,7 +416,7 @@ async function main() {
       { key: "del.water_plant_room_riser_drawings", label: "Coordinated plant room / riser drawings" },
       { key: "del.water_pipework_routing", label: "Pipework routing and containment proposals" },
       { key: "del.water_access_delivery_strategy", label: "Access, delivery and temporary works strategy" },
-      { key: "del.water_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for pipework penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.water_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for pipework penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.water_updated_risk_register_spatial", label: "Updated Risk Register and Method Statements reflecting spatial constraints" },
       { key: "del.water_detailed_project_plan_updated_spatial", label: "Updated Detailed Project Plan reflecting spatial constraints" },
       { key: "del.water_infrastructure_confirmation", label: "Confirmation that existing plant room infrastructure can support the new units (structural, thermal, electrical supply)", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -516,7 +528,7 @@ async function main() {
       { key: "del.drainage_invert_level_drawings", label: "Coordinated below-ground drainage / invert-level drawings" },
       { key: "del.drainage_pipework_routing_falls", label: "Pipework routing, falls and containment proposals" },
       { key: "del.drainage_access_delivery_strategy", label: "Access, delivery and temporary works strategy for excavation/below-slab works" },
-      { key: "del.drainage_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for below-slab penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.drainage_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for below-slab penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.drainage_updated_risk_register_spatial", label: "Updated Risk Register and Method Statements reflecting spatial constraints" },
       { key: "del.drainage_detailed_project_plan_updated_spatial", label: "Updated Detailed Project Plan reflecting spatial constraints" },
       { key: "del.drainage_structure_confirmation", label: "Confirmation that existing structure/foundations can accommodate new drainage runs", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -628,7 +640,7 @@ async function main() {
       { key: "del.coldwater_plant_room_drawings", label: "Coordinated plant room / tank room drawings" },
       { key: "del.coldwater_pipework_routing", label: "Inlet main and distribution pipework routing proposals" },
       { key: "del.coldwater_access_delivery_strategy", label: "Access, delivery and temporary works strategy" },
-      { key: "del.coldwater_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for tank room penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.coldwater_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for tank room penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.coldwater_updated_risk_register_spatial", label: "Updated Risk Register and Method Statements reflecting spatial constraints" },
       { key: "del.coldwater_detailed_project_plan_updated_spatial", label: "Updated Detailed Project Plan reflecting spatial constraints" },
       { key: "del.coldwater_structure_confirmation", label: "Confirmation that existing plant room/structure can support the new tanks (structural loading, access)", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -739,7 +751,7 @@ async function main() {
       { key: "del.lighting_coordinated_layout_drawings", label: "Coordinated lighting layout / containment drawings" },
       { key: "del.lighting_cable_routing_containment", label: "Cable routing and containment proposals" },
       { key: "del.lighting_access_delivery_strategy", label: "Access, delivery and temporary works strategy" },
-      { key: "del.lighting_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for cable routing penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.lighting_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for cable routing penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.lighting_updated_risk_register_spatial", label: "Updated Risk Register and Method Statements reflecting spatial constraints" },
       { key: "del.lighting_detailed_project_plan_updated_spatial", label: "Updated Detailed Project Plan reflecting spatial constraints" },
       { key: "del.lighting_circuit_capacity_confirmation", label: "Confirmation that existing circuits/distribution boards can support new LED loads", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -827,6 +839,9 @@ async function main() {
         blocksGate: true,
         appliesToStageKeys: ["stage.spatial_coordination", "stage.manufacturing_construction"],
         appliesIfTags: ["occupied_during_works"],
+        // Only the site NHS Fire Officer can approve/reject fire
+        // compliance — not the SRO, unlike every other rule in this set.
+        overrideAuthority: "FIRE_OFFICER",
       },
       {
         ruleSetId: scottishHealthCompliance.id,
@@ -948,6 +963,7 @@ async function main() {
       { projectId: project.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.AUTHORISING_ENGINEER_ELECTRICAL.id },
       { projectId: project.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
       { projectId: project.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
+      { projectId: project.id, departmentId: stAldwynEstates.id, userId: alan.id, roleId: roles.FIRE_OFFICER.id },
     ],
   });
 
@@ -1040,14 +1056,14 @@ async function main() {
       }
 
       // Left PENDING deliberately — try the bypass flow against this
-      // one (needs Compliance Officer or SRO, not the PM).
+      // one (needs the Fire Officer, not the PM or even the SRO).
       await db.deliverable.create({
         data: {
           gateId: gate.id,
           key: "del.fire_compartmentation_assessment",
           label: "Fire compartmentation and ventilation impact assessment",
-          description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — cannot be bypassed at PM level.",
-          bypassAuthority: "SRO",
+          description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.",
+          bypassAuthority: "FIRE_OFFICER",
           status: "PENDING",
         },
       });
@@ -1164,6 +1180,7 @@ async function main() {
       { projectId: waterProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
       { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
       { projectId: waterProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
+      { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: alan.id, roleId: roles.FIRE_OFFICER.id },
       // Required by CDM 2015 — this project's worksType is
       // BUILDING_MODIFICATION, so a Principal Designer must be engaged.
       { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
@@ -1237,6 +1254,7 @@ async function main() {
       { projectId: drainageProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
       { projectId: drainageProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
       { projectId: drainageProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
+      { projectId: drainageProject.id, departmentId: stAldwynEstates.id, userId: alan.id, roleId: roles.FIRE_OFFICER.id },
       // Required by CDM 2015 — this project's worksType is
       // BUILDING_MODIFICATION, so a Principal Designer must be engaged.
       { projectId: drainageProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
@@ -1314,6 +1332,7 @@ async function main() {
       { projectId: coldWaterProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
       { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
       { projectId: coldWaterProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
+      { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: alan.id, roleId: roles.FIRE_OFFICER.id },
       { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
     ],
   });
@@ -1378,6 +1397,7 @@ async function main() {
       { projectId: lightingProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
       { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
       { projectId: lightingProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
+      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: alan.id, roleId: roles.FIRE_OFFICER.id },
       { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
       { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.AUTHORISING_ENGINEER_ELECTRICAL.id },
       { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },

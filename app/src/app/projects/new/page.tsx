@@ -1,5 +1,6 @@
 import { createProvisioningDraft } from "@/lib/actions";
 import { peekNextProjectNumber } from "@/lib/projectNumber";
+import { SubmitButton } from "@/components/SubmitButton";
 
 /**
  * The "Input" step of AI-assisted provisioning (ProvisioningModel.html
@@ -101,12 +102,12 @@ export default async function NewProjectPage() {
             </label>
           </div>
         </div>
-        <button
-          type="submit"
+        <SubmitButton
+          pendingText="Matching against the template library…"
           className="self-start rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white"
         >
           Match &amp; create draft
-        </button>
+        </SubmitButton>
       </form>
     </div>
   );

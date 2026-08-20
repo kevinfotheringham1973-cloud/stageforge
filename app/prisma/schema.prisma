@@ -155,10 +155,18 @@ model GateTemplate {
   deliverableTemplates DeliverableTemplate[]
 }
 
+// FIRE_OFFICER sits outside the PM < COMPLIANCE_OFFICER < SRO ladder
+// deliberately (confirmed by Kevin, 20 Aug 2026: "the SRO is not the
+// legal entity that can assess fire... the site NHS Fire Officer is
+// the only one that can approve or reject fire related compliance") —
+// it is not a rank SRO or anyone else inherits, only an exact-match
+// requirement. See BYPASS_AUTHORITY_RANK / canBypassDeliverable /
+// canOverrideCompliance in lib/permissions.ts.
 enum BypassAuthority {
   PM
   COMPLIANCE_OFFICER
   SRO
+  FIRE_OFFICER
 }
 
 // The shared checklist-item primitive (ConfigSchema.html §02), scoped
@@ -226,6 +234,11 @@ model ComplianceRuleTemplate {
   blocksGate         Boolean                 @default(true)
   appliesToStageKeys String[] // StageTemplate keys this rule can attach to
   appliesIfTags      String[] // Project.tags to match, "any match"; empty = always applies
+  // Who can override a blocked instance of this rule without evidence.
+  // SRO for almost everything (matches the historical hard-coded
+  // behaviour); FIRE_OFFICER for the fire-domain rules, since an SRO
+  // has no professional standing to wave through a fire-safety item.
+  overrideAuthority  BypassAuthority         @default(SRO)
   requirements       ComplianceRequirement[]
 
   @@unique([ruleSetId, key])
@@ -259,6 +272,9 @@ model ComplianceRequirement {
   minFiles      Int                         @default(1)
   blocksGate    Boolean                     @default(true)
   status        ComplianceRequirementStatus @default(PENDING)
+  // Copied from the template at instantiation, same "frozen, not a
+  // live join" rule as everything else here — see canOverrideCompliance.
+  overrideAuthority BypassAuthority         @default(SRO)
   evidenceFiles ComplianceEvidenceFile[]
   createdAt     DateTime                    @default(now())
 }

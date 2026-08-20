@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { DELIVERY_FACING_ROLE_KEYS } from "@/lib/permissions";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { reinstateStage, setResourceAllocation } from "@/lib/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 /**
  * The dashboard's default landing panel — everything that isn't about
@@ -79,12 +80,12 @@ export default async function ProjectOverviewPage({
                       className="w-16 rounded border border-rule bg-bg px-2 py-1 text-right text-sm"
                     />
                     <span className="text-xs text-inkmuted">%</span>
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingText="…"
                       className="rounded border border-rule px-2 py-1 text-xs font-semibold text-accent hover:bg-surface2"
                     >
                       Set
-                    </button>
+                    </SubmitButton>
                   </form>
                 ) : (
                   <span className="font-mono text-sm text-inkmuted">
@@ -112,12 +113,12 @@ export default async function ProjectOverviewPage({
                 </div>
                 {isPM ? (
                   <form action={reinstateStage.bind(null, project.id, st.id, project.projectNumber)}>
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingText="Reinstating…"
                       className="rounded-full border border-rule px-3 py-1.5 text-xs font-semibold text-accent hover:bg-surface2"
                     >
                       + Reinstate
-                    </button>
+                    </SubmitButton>
                   </form>
                 ) : (
                   <span className="rounded-full border border-rule px-3 py-1 font-mono text-[11px] uppercase tracking-wide text-inkmuted">

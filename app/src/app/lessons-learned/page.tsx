@@ -55,7 +55,7 @@ export default async function LessonsLearnedPage() {
                   <div key={l.id} className="rounded-lg border border-rule bg-surface p-4">
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">
                       <span
-                        className={`rounded px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wide ${
+                        className={`rounded px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide ${
                           l.type === "WENT_WELL" ? "bg-accentsoft text-ok" : "bg-accentsoft text-warn"
                         }`}
                       >

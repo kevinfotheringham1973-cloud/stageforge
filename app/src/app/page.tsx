@@ -9,6 +9,7 @@ import {
 } from "@/lib/permissions";
 import { getPortfolioRows } from "@/lib/portfolioReport";
 import { createScheduledReport, deleteScheduledReport, sendScheduledReportNow } from "@/lib/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const GBP = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -69,7 +70,7 @@ export default async function HomePage() {
         <p className="mb-10 text-sm text-inkmuted">No live projects.</p>
       ) : (
         <div className="mb-10 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <table className="w-full min-w-[1150px] border-collapse text-base">
+          <table className="w-full min-w-[980px] border-collapse text-base">
             <thead>
               <tr className="border-b-2 border-rule text-left font-mono text-xs font-bold uppercase tracking-wide text-ink">
                 <th className="py-3 pr-4">Project</th>
@@ -77,8 +78,7 @@ export default async function HomePage() {
                 <th className="py-3 pr-4">Timeline</th>
                 <th className="py-3 pr-4">Est. completion</th>
                 <th className="py-3 pr-4">Cost approved / total</th>
-                <th className="py-3 pr-4">Deliverables outstanding</th>
-                <th className="py-3 pr-4">Compliance outstanding</th>
+                <th className="py-3 pr-4">Outstanding</th>
               </tr>
             </thead>
             <tbody>
@@ -106,18 +106,25 @@ export default async function HomePage() {
                     {" / "}
                     {GBP(r.totalSpend)}
                   </td>
-                  <td className="py-4 pr-4">
-                    {r.outstandingDeliverables > 0 ? (
-                      <span className="text-lg font-bold text-warn">{r.outstandingDeliverables}</span>
+                  <td className="py-4 pr-4 whitespace-nowrap">
+                    {r.outstandingDeliverables === 0 && r.outstandingCompliance === 0 ? (
+                      <span className="font-semibold text-inkmuted">Clear</span>
                     ) : (
-                      <span className="font-semibold text-inkmuted">0</span>
-                    )}
-                  </td>
-                  <td className="py-4 pr-4">
-                    {r.outstandingCompliance > 0 ? (
-                      <span className="text-lg font-bold text-flag">{r.outstandingCompliance}</span>
-                    ) : (
-                      <span className="font-semibold text-inkmuted">0</span>
+                      <span className="text-sm">
+                        {r.outstandingDeliverables > 0 && (
+                          <span className="font-bold text-warn">
+                            {r.outstandingDeliverables} <span className="font-semibold">del.</span>
+                          </span>
+                        )}
+                        {r.outstandingDeliverables > 0 && r.outstandingCompliance > 0 && (
+                          <span className="text-inkmuted"> &middot; </span>
+                        )}
+                        {r.outstandingCompliance > 0 && (
+                          <span className="font-bold text-flag">
+                            {r.outstandingCompliance} <span className="font-semibold">comp.</span>
+                          </span>
+                        )}
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -158,14 +165,14 @@ export default async function HomePage() {
                 {canManage && (
                   <div className="flex items-center gap-2">
                     <form action={sendScheduledReportNow.bind(null, r.id)}>
-                      <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                      <SubmitButton pendingText="Sending…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
                         Send now
-                      </button>
+                      </SubmitButton>
                     </form>
                     <form action={deleteScheduledReport.bind(null, r.id)}>
-                      <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-risk">
+                      <SubmitButton pendingText="Removing…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-risk">
                         Remove
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                 )}
@@ -208,9 +215,9 @@ export default async function HomePage() {
                 ))}
               </div>
             </div>
-            <button type="submit" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+            <SubmitButton pendingText="Adding…" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Add schedule
-            </button>
+            </SubmitButton>
           </form>
         ) : (
           <p className="text-xs text-inkmuted">Only an SRO, Compliance Officer, or Client Authority can set up scheduled reports.</p>

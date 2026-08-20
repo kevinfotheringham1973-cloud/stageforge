@@ -11,6 +11,7 @@ import {
 import { getCurrentUser, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { deleteProject, renameProject } from "@/lib/actions";
 import { GateRail } from "@/components/GateRail";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const APPROVAL_BUCKET_LABELS: Record<string, string> = {
   LIFECYCLE_REPLACEMENT: "Lifecycle replacement",
@@ -178,14 +179,14 @@ export default async function ProjectDashboardLayout({
         <div className="flex flex-wrap items-center gap-3 border-b border-rule bg-surface2 px-4 py-4 sm:px-6 md:px-10">
           {contractorAssignment && (
             <div className="rounded-lg border border-rule bg-surface px-3.5 py-2">
-              <div className="font-mono text-[9px] uppercase tracking-wide text-inkmuted">FM Contractor</div>
+              <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">FM Contractor</div>
               <div className="text-sm font-semibold">{contractorAssignment.department.company.name}</div>
             </div>
           )}
           {contractorAssignment && authorityAssignment && <span className="text-inkmuted">&rarr;</span>}
           {authorityAssignment && (
             <div className="rounded-lg border border-rule bg-surface px-3.5 py-2">
-              <div className="font-mono text-[9px] uppercase tracking-wide text-inkmuted">Client Authority</div>
+              <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Client Authority</div>
               <div className="text-sm font-semibold">
                 {authorityAssignment.department.company.name} - {authorityAssignment.department.name}
               </div>
@@ -226,9 +227,9 @@ export default async function ProjectDashboardLayout({
                 required
                 className="w-full rounded border border-rule bg-bg px-2 py-1 text-sm sm:w-80"
               />
-              <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+              <SubmitButton pendingText="Renaming…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
                 Rename
-              </button>
+              </SubmitButton>
             </form>
           )}
         </div>
@@ -272,9 +273,9 @@ export default async function ProjectDashboardLayout({
                 placeholder={`Type ${project.projectNumber} to confirm`}
                 className="w-full rounded border border-risk bg-bg px-2.5 py-1.5 text-sm sm:w-64"
               />
-              <button type="submit" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
+              <SubmitButton pendingText="Deleting…" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
                 Delete project permanently
-              </button>
+              </SubmitButton>
             </form>
           </div>
         )}
@@ -311,7 +312,7 @@ export default async function ProjectDashboardLayout({
                   {Object.entries(spendByBucket).map(([bucket, amount]) => (
                     <span
                       key={bucket}
-                      className="rounded bg-accentsoft px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-accent"
+                      className="rounded bg-accentsoft px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent"
                     >
                       {APPROVAL_BUCKET_LABELS[bucket] ?? bucket} &middot; {GBP(amount)}
                     </span>
@@ -418,7 +419,11 @@ export default async function ProjectDashboardLayout({
                     <div className="w-44 shrink-0 truncate text-sm font-medium" title={gate.name}>
                       {gate.name}
                     </div>
-                    <div className="relative h-6 flex-1 rounded bg-surface2">
+                    <div
+                      className={`relative h-6 flex-1 rounded ${
+                        hasTarget ? "bg-surface2" : "border border-dashed border-rule bg-transparent"
+                      }`}
+                    >
                       {todayPct >= 0 && todayPct <= 100 && (
                         <div className="absolute top-0 bottom-0 w-px bg-ink/50" style={{ left: `${todayPct}%` }} />
                       )}

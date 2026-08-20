@@ -48,6 +48,10 @@ export default async function ResourcesPage() {
 
   const rows = Array.from(byUser.values()).sort((a, b) => b.total - a.total);
 
+  // A cycling palette rather than a semantic one — these colours mean
+  // "which project", not "good/bad" (that's the over-100% badge's job).
+  const SEGMENT_COLORS = ["bg-accent", "bg-ok", "bg-warn", "bg-flag", "bg-risk"];
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
       <h1 className="mb-1 text-2xl font-bold">Resource &amp; capacity</h1>
@@ -77,9 +81,37 @@ export default async function ResourcesPage() {
                     {row.total}% allocated
                   </span>
                 </div>
+                {(() => {
+                  // Track represents max(total, 100)% so an over-allocated
+                  // person's bar visibly runs past the 100% capacity line
+                  // instead of just clipping — that "how far over, and from
+                  // which project" is the whole point of this view.
+                  const trackPercent = Math.max(row.total, 100);
+                  const capacityMarkerPct = overAllocated ? (100 / trackPercent) * 100 : null;
+                  return (
+                    <div className="relative mb-3 flex h-2.5 overflow-hidden rounded bg-surface2">
+                      {row.projects.map((p, i) => (
+                        <span
+                          key={p.projectNumber}
+                          className={SEGMENT_COLORS[i % SEGMENT_COLORS.length]}
+                          style={{ width: `${(p.allocationPercent / trackPercent) * 100}%` }}
+                          title={`${p.allocationPercent}% · ${p.projectName}`}
+                        />
+                      ))}
+                      {capacityMarkerPct !== null && (
+                        <div
+                          className="absolute top-0 bottom-0 w-px bg-ink"
+                          style={{ left: `${capacityMarkerPct}%` }}
+                          title="100% capacity"
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="flex flex-col gap-1">
-                  {row.projects.map((p) => (
-                    <div key={p.projectNumber} className="font-mono text-xs text-inkmuted">
+                  {row.projects.map((p, i) => (
+                    <div key={p.projectNumber} className="flex items-center gap-1.5 font-mono text-xs text-inkmuted">
+                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEGMENT_COLORS[i % SEGMENT_COLORS.length]}`} />
                       {p.allocationPercent}% &middot; {p.projectName} (#{p.projectNumber}) &middot; {p.roleName}
                     </div>
                   ))}
