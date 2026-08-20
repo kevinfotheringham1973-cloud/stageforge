@@ -9,6 +9,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { PrismaClient } from "@prisma/client";
+import { CDM_BUILDING_MODIFICATION_TAG, CDM_PRINCIPAL_DESIGNER_TAG } from "./cdm";
 
 const MODEL = "claude-opus-5";
 
@@ -28,7 +29,12 @@ export async function matchProject(db: PrismaClient, brief: string): Promise<Pro
   }
 
   const ruleTemplates = await db.complianceRuleTemplate.findMany({ select: { appliesIfTags: true } });
-  const knownTags = Array.from(new Set(ruleTemplates.flatMap((r) => r.appliesIfTags))).sort();
+  // Excludes both CDM tags: they're driven only by the explicit
+  // worksType statutory question, never an LLM guess.
+  const CDM_TAGS: string[] = [CDM_BUILDING_MODIFICATION_TAG, CDM_PRINCIPAL_DESIGNER_TAG];
+  const knownTags = Array.from(
+    new Set(ruleTemplates.flatMap((r) => r.appliesIfTags).filter((t) => !CDM_TAGS.includes(t)))
+  ).sort();
 
   const MatchSchema = z.object({
     templateId: z.enum(templates.map((t) => t.id) as [string, ...string[]]),

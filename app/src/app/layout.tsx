@@ -21,8 +21,8 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <header className="flex items-center justify-between border-b border-rule bg-surface px-10 py-4">
-          <div className="flex items-center gap-5">
+        <header className="flex flex-col gap-3 border-b border-rule bg-surface px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between md:px-10">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <a href="/" className="font-serif text-xl font-bold text-accent">
               StageForge
             </a>
@@ -32,12 +32,15 @@ export default async function RootLayout({
             <a href="/resources" className="text-sm font-semibold text-accent hover:underline">
               Resources
             </a>
+            <a href="/lessons-learned" className="text-sm font-semibold text-accent hover:underline">
+              Lessons learned
+            </a>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
               Acting as
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               {users.map((u) => (
                 <form key={u.id} action={setActingUser.bind(null, u.id)}>
                   <button

@@ -2,7 +2,13 @@
 // DataModel.html's gate-closure diagram, made real. Deliberately has
 // no DB dependency so it stays trivially testable.
 
-import type { BypassAuthority, ComplianceRequirementStatus, DeliverableStatus, GateStatus } from "@prisma/client";
+import type {
+  BypassAuthority,
+  ComplianceRequirementStatus,
+  DeliverableStatus,
+  GateStatus,
+  SpendRecordStatus,
+} from "@prisma/client";
 
 /**
  * The roles the Resource/Capacity view tracks (ResourceCapacityModel.html
@@ -69,14 +75,17 @@ export function canDecideGate(actorRoleKeys: string[]): boolean {
 /**
  * The gate-closure AND condition: every blocking deliverable must be
  * either evidenced or bypassed, AND every blocking compliance
- * requirement must be either evidenced or overridden, before the gate
- * can move to Sponsor decision. Delivery and compliance are distinct,
- * concurrently-running checks (PRD.html §05) — both must clear, neither
- * substitutes for the other.
+ * requirement must be either evidenced or overridden, AND every
+ * blocking spend record must be approved, before the gate can move to
+ * Sponsor decision. Delivery, compliance and spend are distinct,
+ * concurrently-running checks (PRD.html §05, extended by
+ * FinancialModel.html's gate-level revision) — all three must clear,
+ * none substitutes for another.
  */
 export function isGateReadyForSponsor(
   deliverables: { status: DeliverableStatus; blocksGate: boolean }[],
-  complianceRequirements: { status: ComplianceRequirementStatus; blocksGate: boolean }[] = []
+  complianceRequirements: { status: ComplianceRequirementStatus; blocksGate: boolean }[] = [],
+  spendRecords: { status: SpendRecordStatus; blocksGate: boolean }[] = []
 ): boolean {
   const deliveryReady = deliverables.every(
     (d) => !d.blocksGate || d.status === "EVIDENCED" || d.status === "BYPASSED"
@@ -84,7 +93,45 @@ export function isGateReadyForSponsor(
   const complianceReady = complianceRequirements.every(
     (c) => !c.blocksGate || c.status === "EVIDENCED" || c.status === "OVERRIDDEN"
   );
-  return deliveryReady && complianceReady;
+  const spendReady = spendRecords.every((s) => !s.blocksGate || s.status === "APPROVED");
+  return deliveryReady && complianceReady && spendReady;
+}
+
+/**
+ * Who can record spend against a gate — locked to the Finance role,
+ * the same "domain owner enters, someone else approves" split as
+ * Compliance (Compliance Officer authors rules; PM/CO/SRO evidence
+ * them).
+ */
+export function canRecordSpend(actorRoleKeys: string[]): boolean {
+  return actorRoleKeys.includes("FINANCE");
+}
+
+/**
+ * Spend approval is Sponsor/SRO only (FinancialModel.html) — the same
+ * pair with standing to close a gate at all, since an approved spend
+ * record is now part of that closure.
+ */
+export function canApproveSpend(actorRoleKeys: string[]): boolean {
+  return actorRoleKeys.includes("SPONSOR") || actorRoleKeys.includes("SRO");
+}
+
+/**
+ * Recording a lesson learned is deliberately open to any role holder
+ * on the project — unlike every other action in this file, it's
+ * reflective knowledge capture, not a governance decision with one
+ * clear owner. The whole point is a wide range of perspectives (PM,
+ * Compliance Officer, Principal Designer, ...), so this only checks
+ * that the actor is a legitimate stakeholder on this project at all.
+ */
+export function canRecordLessonLearned(actorRoleKeys: string[]): boolean {
+  return actorRoleKeys.length > 0;
+}
+
+export function outstandingSpendCount(
+  spendRecords: { status: SpendRecordStatus; blocksGate: boolean }[]
+): number {
+  return spendRecords.filter((s) => s.blocksGate && s.status === "PENDING").length;
 }
 
 /**
@@ -150,3 +197,87 @@ export function outstandingComplianceCount(
 export function isProjectStillLive(gates: { status: GateStatus }[]): boolean {
   return gates.some((g) => g.status !== "SIGNED_OFF");
 }
+
+/**
+ * Setting a gate's planned dates is PM-only — same authority as
+ * setResourceAllocation, since this is planning input, not a
+ * governance decision requiring sign-off.
+ */
+export function canSetGateTimeline(actorRoleKeys: string[]): boolean {
+  return actorRoleKeys.includes("PM");
+}
+
+export type GateTimelineStatus =
+  | "NO_TARGET"
+  | "NOT_STARTED_ON_TRACK"
+  | "NOT_STARTED_OVERDUE"
+  | "IN_PROGRESS_ON_TRACK"
+  | "IN_PROGRESS_OVERDUE"
+  | "COMPLETED_ON_TIME"
+  | "COMPLETED_LATE";
+
+/**
+ * Planned-vs-actual health for one gate. Target dates are PM-set
+ * planning input; actual dates are stamped automatically by the app
+ * (see startGateUpdate/decide() in actions.ts), never user-entered —
+ * so comparing them is comparing plan against what really happened,
+ * not plan against a number someone typed in after the fact.
+ */
+export function gateTimelineStatus(
+  gate: {
+    status: GateStatus;
+    targetStartDate: Date | null;
+    targetEndDate: Date | null;
+    actualEndDate: Date | null;
+  },
+  now: Date = new Date()
+): GateTimelineStatus {
+  if (!gate.targetStartDate && !gate.targetEndDate) return "NO_TARGET";
+
+  if (gate.status === "SIGNED_OFF") {
+    if (!gate.targetEndDate || !gate.actualEndDate) return "NO_TARGET";
+    return gate.actualEndDate <= gate.targetEndDate ? "COMPLETED_ON_TIME" : "COMPLETED_LATE";
+  }
+
+  if (gate.status === "NOT_STARTED") {
+    return gate.targetStartDate && now > gate.targetStartDate ? "NOT_STARTED_OVERDUE" : "NOT_STARTED_ON_TRACK";
+  }
+
+  // IN_PROGRESS or AWAITING_SPONSOR
+  return gate.targetEndDate && now > gate.targetEndDate ? "IN_PROGRESS_OVERDUE" : "IN_PROGRESS_ON_TRACK";
+}
+
+export const GATE_TIMELINE_LABELS: Record<GateTimelineStatus, string> = {
+  NO_TARGET: "No target set",
+  NOT_STARTED_ON_TRACK: "Not started",
+  NOT_STARTED_OVERDUE: "Should have started",
+  IN_PROGRESS_ON_TRACK: "On track",
+  IN_PROGRESS_OVERDUE: "Overdue",
+  COMPLETED_ON_TIME: "Completed on time",
+  COMPLETED_LATE: "Completed late",
+};
+
+// Tailwind classes to render each status as an attention-appropriate
+// colour — grey for "not due yet", green for healthy, amber for a
+// completed-but-late or not-yet-started-but-should-have soft warning,
+// red for actively overdue. Matches the same ok/warn/risk vocabulary
+// used for Delivery/Compliance/Spend elsewhere on this page.
+export const GATE_TIMELINE_BAR_CLASS: Record<GateTimelineStatus, string> = {
+  NO_TARGET: "bg-rule",
+  NOT_STARTED_ON_TRACK: "bg-inkmuted/50",
+  NOT_STARTED_OVERDUE: "bg-warn",
+  IN_PROGRESS_ON_TRACK: "bg-accent",
+  IN_PROGRESS_OVERDUE: "bg-risk",
+  COMPLETED_ON_TIME: "bg-ok",
+  COMPLETED_LATE: "bg-warn",
+};
+
+export const GATE_TIMELINE_TEXT_CLASS: Record<GateTimelineStatus, string> = {
+  NO_TARGET: "text-inkmuted",
+  NOT_STARTED_ON_TRACK: "text-inkmuted",
+  NOT_STARTED_OVERDUE: "text-warn",
+  IN_PROGRESS_ON_TRACK: "text-accent",
+  IN_PROGRESS_OVERDUE: "text-risk",
+  COMPLETED_ON_TIME: "text-ok",
+  COMPLETED_LATE: "text-warn",
+};

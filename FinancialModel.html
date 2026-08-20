@@ -275,14 +275,14 @@
     <div class="stamp">Scoping — not built</div>
   </header>
 
-  <p class="lede">Working out the last unbuilt piece from the PRD's Phase 2–3 roadmap — actual spend, rolled up against a project, classified into the three Hard FM approval buckets, with a real approval step rather than passive logging.</p>
+  <p class="lede">Working out the last unbuilt piece from the PRD's Phase 2–3 roadmap — actual spend, checked and approved at each gate, classified into the three Hard FM approval buckets, with a real approval step rather than passive logging.</p>
 
   <h2><span class="num">01</span>Starting boundary</h2>
   <p>Already decided before this document, from the PRD:</p>
   <ul>
     <li><strong>Manual/invoice-level actuals only.</strong> PRD.html §06 decided flag: SAP/D365 integration is not near-term — ship with manual entry, ERP reconciliation stays a later-phase ambition.</li>
     <li><strong>Three approval buckets.</strong> Lifecycle Replacement, Small Works, Variation — a single large project can draw from more than one at once, and the view must show total spend across all buckets combined <em>and</em> broken out per bucket.</li>
-    <li><strong>Rolled up against the central project number.</strong> Project-level, not deliverable- or gate-level — matches every other PRD reference to spend tracking.</li>
+    <li><strong>Gate-level, not just project-level.</strong> Revised by Kevin, 19 Aug 2026, superseding this document's original v0.1 draft (which read spend as project-level only): spend must be <strong>checked and approved at each gate</strong>. A <code>SpendRecord</code> attaches to a <code>Gate</code> — the same shape as <code>Deliverable</code> and <code>ComplianceRequirement</code> — and an unapproved blocking record holds up that gate's Sponsor submission exactly the way an unevidenced deliverable does. A project's total is still the sum across its gates, reached via <code>Gate → Stage → Project</code>, not a direct FK.</li>
     <li><strong>The Finance role already exists</strong>, seeded, unused (<code>roleDefs</code> in <code>seed.ts</code>) — PRD.html §04: "Reconciles invoice-level actual spend against the central project number."</li>
   </ul>
   <div class="flag decided">
@@ -294,7 +294,7 @@
   <p>This is the fourth time this exact shape has been needed — <code>GateSignOff</code>, <code>ProvisioningReview</code>, and <code>ComplianceOverride</code> all follow the same pattern: a record entity, a decision-history entity shaped like it (not flat columns on the record — read the latest row instead of duplicating state), a mandatory reason on anything other than approval, and an <code>AuditLogEntry</code> alongside every action. Spend approval is the same pattern a fourth time, not a new one.</p>
   <div class="rec">
     <span class="flag-label">Net-new work</span>
-    Two entities (<code>SpendRecord</code>, <code>SpendApproval</code>), an approval-authority rule (§04 — the genuinely undecided part), three or four actions, and a view — project-level plus a portfolio-wide Finance route, mirroring <code>/resources</code>.
+    Two entities (<code>SpendRecord</code>, <code>SpendApproval</code>), an approval-authority rule (§04 — the genuinely undecided part), three actions, and a view — gate-level plus a portfolio-wide Finance route, mirroring <code>/resources</code>.
   </div>
 
   <h2><span class="num">03</span>Data model</h2>
@@ -302,7 +302,7 @@
   <table>
     <tr><th>Entity / field</th><th>Purpose</th></tr>
     <tr><td><code>ApprovalBucket</code></td><td>New enum: <code>LIFECYCLE_REPLACEMENT | SMALL_WORKS | VARIATION</code>.</td></tr>
-    <tr><td><code>SpendRecord</code></td><td><code>id, projectId, bucket, amount (Decimal), description, invoiceReference (String?), recordedById, status (PENDING | APPROVED), createdAt</code>. One row per invoice/actual, not per project — a project's total is the sum of its records.</td></tr>
+    <tr><td><code>SpendRecord</code></td><td><code>id, gateId, bucket, amount (Decimal), description, invoiceReference (String?), blocksGate (Boolean, default true), recordedById, status (PENDING | APPROVED), createdAt</code>. One row per invoice/actual, not per gate — a gate's total is the sum of its records. <code>blocksGate</code> mirrors <code>Deliverable</code>/<code>ComplianceRequirement</code>.</td></tr>
     <tr><td><code>SpendApproval</code></td><td><code>id, spendRecordId, decision (APPROVED | REJECTED), approvedById, reason (String?), createdAt</code>. Shaped exactly like <code>GateSignOff</code>/<code>ProvisioningReview</code>.</td></tr>
   </table>
   </div>
@@ -321,6 +321,10 @@
     <span class="flag-label">Recommendation</span>
     Ship v1 with a single, flat rule reusing authority the app already has: <strong>Sponsor approves</strong> (same actor who approves gates — PRD.html §06 already casts the Sponsor as the accountable approver for a project), <strong>SRO can also approve</strong> (the existing tiered-authority pattern — whoever can do more can do less), <strong>identical across all three buckets</strong>, and <strong>no amount-based threshold</strong> (every spend record needs sign-off regardless of size). This is deliberately the simplest rule that satisfies "add an approval step" without guessing at bucket- or value-specific policy that isn't written down anywhere yet.
   </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Since spend now attaches to a Gate (§01), it folds into the same closure check as everything else: <code>isGateReadyForSponsor(deliverables, complianceRequirements, spendRecords)</code> gained a third parameter — delivery, compliance, and spend are three concurrently-running checks, all three must clear, none substitutes for another. A gate with zero spend recorded against it is vacuously ready on the spend dimension, same as zero deliverables or zero compliance requirements.
+  </div>
   <div class="flag">
     <span class="flag-label">Open question</span>
     Whether Lifecycle Replacement, Small Works, and Variation should actually require different approval tiers or value thresholds in practice — the exact question the PRD already left open, still open. If Kevin's real process differs (e.g. Small Works auto-approves under some value, Lifecycle Replacement always needs SRO), that's a straightforward extension of the same rule shape once the actual numbers exist.
@@ -330,20 +334,24 @@
   <div class="table-wrap">
   <table>
     <tr><th>Action</th><th>Who</th><th>Effect</th></tr>
-    <tr><td><code>recordSpend</code></td><td>Finance (project-scoped)</td><td>Creates a <code>SpendRecord</code> — bucket, amount, description, invoice reference — status <code>PENDING</code>.</td></tr>
-    <tr><td><code>reviseSpend</code></td><td>Finance, while <code>PENDING</code></td><td>Edits amount/bucket/description/invoice reference on the same record — no re-approval needed until submitted again, since nothing's been approved yet.</td></tr>
+    <tr><td><code>recordSpend</code></td><td>Finance (gate-scoped)</td><td>Creates a <code>SpendRecord</code> against a <code>Gate</code> — bucket, amount, description, invoice reference — status <code>PENDING</code>. Flips a <code>NOT_STARTED</code> gate to <code>IN_PROGRESS</code>, same as the first evidence upload on that gate.</td></tr>
     <tr><td><code>approveSpend</code></td><td>Sponsor or SRO (§04)</td><td>Records <code>SpendApproval(APPROVED)</code>, flips <code>SpendRecord.status</code> to <code>APPROVED</code>.</td></tr>
     <tr><td><code>rejectSpend</code></td><td>Sponsor or SRO, reason required</td><td>Records <code>SpendApproval(REJECTED, reason)</code>. Record stays <code>PENDING</code> — same "return to editable state with a reason" pattern as gate rejection and provisioning revision.</td></tr>
   </table>
   </div>
-  <p>Every action also writes the usual <code>AuditLogEntry</code> — <code>spend.recorded</code>, <code>spend.revised</code>, <code>spend.approved</code>, <code>spend.rejected</code> — same append-only trail as everything else.</p>
+  <p>Every action also writes the usual <code>AuditLogEntry</code> — <code>spend.recorded</code>, <code>spend.approved</code>, <code>spend.rejected</code> — same append-only trail as everything else.</p>
+  <div class="flag">
+    <span class="flag-label">Deferred</span>
+    <code>reviseSpend</code> (editing a <code>PENDING</code> record's amount/bucket/description before approval) was in the original v1 sketch but isn't built — see §08. Today, a mistaken entry stays visible and blocking until Finance and the approver sort it out via reject-then-record-again; no data is silently lost either way.
+  </div>
 
   <h2><span class="num">06</span>The view</h2>
   <div class="table-wrap">
   <table>
     <tr><th>Where</th><th>Shows</th></tr>
-    <tr><td>Project overview page — new "Spend" section, alongside Team &amp; Capacity</td><td>Total approved, total pending, per-bucket breakdown, and a list of individual <code>SpendRecord</code>s with status — Finance's <code>recordSpend</code>/<code>reviseSpend</code> forms, Sponsor/SRO's approve/reject controls on pending records, all inline, no navigation — matching the established pattern from <code>GateDetail.tsx</code> and Team &amp; Capacity.</td></tr>
-    <tr><td>New route <code>/finance</code></td><td>Portfolio-wide, read-only: every project's approved/pending totals and per-bucket split in one place — the Finance role's equivalent of the Resource Manager's <code>/resources</code>.</td></tr>
+    <tr><td>Gate detail — new "Spend" section, alongside the Delivery checklist and Compliance sections</td><td>Every <code>SpendRecord</code> on that gate with its bucket, amount, description, invoice reference, and status — Finance's <code>recordSpend</code> form, Sponsor/SRO's approve/reject controls on pending records, decision history, all inline, no navigation — matching the established pattern from <code>GateDetail.tsx</code>.</td></tr>
+    <tr><td>Project overview — gate accordion summary line</td><td>Per-gate spend record count and outstanding count, alongside the existing delivery/compliance outstanding counts — a project-level roll-up view is not yet built (see §08).</td></tr>
+    <tr><td>New route <code>/finance</code></td><td>Portfolio-wide, read-only: every project's approved/pending totals and per-bucket split in one place — the Finance role's equivalent of the Resource Manager's <code>/resources</code>. Not yet built.</td></tr>
   </table>
   </div>
 
@@ -353,15 +361,16 @@
     <li>Amount-based approval thresholds (§04) — flat rule for v1, revisit once real threshold numbers exist.</li>
     <li>Multi-currency.</li>
     <li>Budget-vs-actual — this tracks actuals only, no budget/forecast figure to compare against. Would need its own scoping if wanted.</li>
-    <li>Deliverable- or gate-level spend attribution — project-level only, per §01.</li>
+    <li><code>reviseSpend</code> — see §05, deferred not out-of-scope.</li>
   </ul>
 
   <h2><span class="num">08</span>Open questions</h2>
   <ol class="oq">
     <li>Bucket- or value-specific approval authority (§04) — the PRD's own unresolved question, still unresolved, shipped with a deliberately simple default in the meantime.</li>
     <li>Whether Finance should be able to delete a <code>PENDING</code> record they made in error, or whether every record — even a mistaken one — stays in the audit trail forever with a note. Leaning toward the latter (matches the "no undo, ever" philosophy already established for bypasses and overrides), not decided.</li>
+    <li>A project-level (rather than per-gate) rolled-up spend total and the portfolio-wide <code>/finance</code> route are both still unbuilt — the gate-level record/approve loop is the piece that actually needed to exist for spend to be checked and approved at each gate; the read-only roll-up views are a natural next increment.</li>
   </ol>
 
-  <footer>StageForge · Financial Model draft v0.1 · scoping only, nothing in this document is built · 19 Aug 2026</footer>
+  <footer>StageForge · Financial Model draft v0.2 · gate-level record/approve loop built in <code>app/</code>, portfolio roll-up view not yet built · 19 Aug 2026</footer>
 
 </div>

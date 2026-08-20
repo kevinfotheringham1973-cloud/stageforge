@@ -13,21 +13,33 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   (`ComplianceRuleSet` → `ComplianceRuleTemplate` →
   `ComplianceRequirement` → `ComplianceOverride`), AI-assisted
   provisioning (`Project.status` DRAFT/ACTIVE, `ProvisioningReview`),
-  and the live instances (`Project` → `Stage` → `Gate` → `Deliverable`
-  / `ComplianceRequirement` → their evidence/bypass/override rows),
-  plus `GateSignOff` and an append-only `AuditLogEntry`.
+  `ResourceAllocation` (% FTE per delivery-facing role holder), gate-level
+  `SpendRecord` / `SpendApproval` (Financial View), `Gate.targetStartDate`
+  / `targetEndDate` / `actualStartDate` / `actualEndDate` (Timeline —
+  target dates are PM-set planning input, actual dates are stamped
+  automatically the moment a gate really starts/finishes, never
+  user-entered), and the live instances (`Project` → `Stage` → `Gate` →
+  `Deliverable` / `ComplianceRequirement` / `SpendRecord` → their
+  evidence/bypass/override/approval rows), plus `GateSignOff` and an
+  append-only `AuditLogEntry`.
 - **Governance logic** (`src/lib/permissions.ts`) — pure functions, no DB
   dependency: the tiered bypass-authority ladder (PM → Compliance Officer
-  → SRO), the Sponsor-only gate decision rule, and the gate-closure AND
-  condition (every blocking deliverable *and* every blocking compliance
-  requirement evidenced/bypassed/overridden).
+  → SRO), the Sponsor-only gate decision rule, the gate-closure AND
+  condition (every blocking deliverable, every blocking compliance
+  requirement, *and* every blocking spend record — evidenced/bypassed/
+  overridden/approved as applicable), and `gateTimelineStatus` — planned-
+  vs-actual health per gate (on track / overdue / completed on time or
+  late), colour-coded consistently everywhere it's shown.
 - **Server actions** (`src/lib/actions.ts`) — bypass a deliverable, upload
   or replace evidence (delivery and compliance both), submit/approve/reject
   a gate, an SRO override that clears every outstanding compliance
   requirement on a gate in one action, reinstate a previously-excluded
-  stage, and the full AI-assisted provisioning flow (`createProvisioningDraft`
-  → `reviseProvisioningBrief` / `updateProvisioningDraft` /
-  `requestProvisioningRevision` → `approveProvisioning`).
+  stage, set a team member's % FTE allocation, record/approve/reject
+  gate-level spend, set a gate's target start/end dates, and the full
+  AI-assisted provisioning flow
+  (`createProvisioningDraft` → `reviseProvisioningBrief` /
+  `updateProvisioningDraft` / `requestProvisioningRevision` →
+  `approveProvisioning`).
 - **AI-assisted provisioning** (`src/lib/provisioning.ts`) — a free-text
   project description is matched against the `Template` library via
   Claude Opus 5 with Zod-enum-constrained structured outputs (the
@@ -35,20 +47,32 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   time, so an invalid pick is structurally impossible, not just
   discouraged). See `../ProvisioningModel.html` for the full design.
   Requires `ANTHROPIC_API_KEY` — see Setup below.
-- **Screens** — a project's gate overview (`/projects/[projectNumber]`),
-  `/projects/new` (provisioning entry) and
-  `/projects/[projectNumber]/provisioning` (match review). The gate
-  overview expands every gate's full delivery + compliance checklist,
-  actions, decision history, and append-only activity log inline — no
-  page navigation to work a gate. Shared via `src/components/GateDetail.tsx`,
-  also used by a standalone `/projects/[projectNumber]/gates/[gateId]`
-  route. All wired to the real database, not mock data.
+- **Screens** — a project dashboard (`/projects/[projectNumber]`), a
+  portfolio-wide Resource/Capacity view (`/resources`), `/projects/new`
+  (provisioning entry) and `/projects/[projectNumber]/provisioning`
+  (match review). The project dashboard (confirmed by Kevin, 19 Aug
+  2026, after comparing a mockup against the original scrolling
+  accordion) is a persistent shell — `(dashboard)/layout.tsx` — with
+  three KPI cards (Cost, Gate Activity, Timeline headline) and a
+  full-width Gantt-style chart (target vs. actual per gate, colour-coded,
+  a "today" marker) always visible, and a side rail (colour-dot per
+  gate's timeline/status health) that switches the panel below between
+  "Team & scope" and each gate's full detail — real routes
+  (`/projects/[projectNumber]/gates/[gateId]`), not client tab state, so
+  every panel is its own bookmarkable/shareable URL and only that
+  panel's data is fetched. `GateRail.tsx` is the one client component in
+  the whole dashboard (just enough to highlight the active link via
+  `usePathname()`); everything else — the layout, the KPI math, the gate
+  panel itself (`src/components/GateDetail.tsx`, showing timeline +
+  delivery + compliance + spend checklists, actions, decision history,
+  append-only activity log) — is server-rendered. All wired to the real
+  database, not mock data.
 - **Seed data** (`prisma/seed.ts`) — two RIBA-aligned Templates
   (M&E Systems Replacement, Water Systems Replacement) and two demo
   projects for Serco Health : FVRH Scotland delivering work for FVRH
   NHS: **#20456**, UPS Systems Replacement — left mid-flight on Gate 3
-  (Spatial Coordination) with delivery and compliance items both
-  outstanding, so you can exercise the bypass/override flow — and
+  (Spatial Coordination) with delivery, compliance, and spend items
+  outstanding, so you can exercise the bypass/override/approve flow — and
   **#20777**, Ward 6-8 Calorifier Replacement, created live through
   the AI-assisted provisioning flow and kept as a permanent second
   example (real Claude Opus 5 match/reasoning, replayed here so the
@@ -64,8 +88,11 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   entirely before this is near a second real user.
 - **Evidence storage.** Uploads record a file *name* against a
   deliverable, not an actual file — there's no object storage wired up.
-- **Resource/Capacity view, Financial view.** Phase 2–3 per the PRD
-  roadmap. No `ResourceAllocation` / `SpendRecord` tables yet.
+- **Financial View roll-up screens.** The gate-level record/approve loop
+  is built (see `../FinancialModel.html` §06/§08); a project-level total
+  and the portfolio-wide `/finance` route (Finance's equivalent of
+  `/resources`) aren't yet. `reviseSpend` (editing a `PENDING` record
+  before approval) is also deferred, not built.
 - **Template authoring UI.** Both Templates are hand-authored in
   `seed.ts`. The Compliance Rule Set editor sketched in the design
   screens has no backing code yet — the compliance corpus is
@@ -99,9 +126,9 @@ creating/revising a provisioning draft needs it.
 
 Open http://localhost:3000. Use the "Acting as" switcher in the header to
 flip between Derek Gibb (PM), David Mackay (Sponsor), Gary Grant (Compliance
-Officer), and Mark O'Hear (SRO) — the same names used in the PRD and
-design screens — and watch what each one can and can't do, right there
-in the expanded gate row, no navigation.
+Officer), Mark O'Hear (SRO), and Priya Sharma (Finance) — the same names
+used in the PRD and design screens — and watch what each one can and
+can't do, right there in the expanded gate row, no navigation.
 
 Things worth trying, on **#20456** (UPS Systems Replacement, Gate 3 —
 Spatial Coordination):
@@ -124,6 +151,12 @@ Spatial Coordination):
 - As **Derek Gibb (PM)**, on the project overview: reinstate Gate 7 (Use),
   excluded from this project by default — it appears at the bottom, after
   every other gate, not back in its original template position.
+- As **Priya Sharma (Finance)**: record a spend entry against Gate 3 — bucket,
+  amount, description — and watch it show up as an outstanding item blocking
+  that gate's submission, alongside the delivery and compliance checklists.
+- As **David Mackay (Sponsor)** or **Mark O'Hear (SRO)**: approve or reject
+  Priya's spend entry. Rejecting requires a reason and leaves the record
+  `PENDING`, editable — same "no dead ends" pattern as everywhere else.
 
 And with an `ANTHROPIC_API_KEY` configured, try **AI-assisted
 provisioning** end to end: click "+ New project" in the header, describe

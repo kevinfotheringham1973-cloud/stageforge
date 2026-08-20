@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import type { CdmWorksType } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getCurrentUserGlobalRoleKeys, getCurrentUserId } from "@/lib/session";
 import {
@@ -7,6 +8,21 @@ import {
   reviseProvisioningBrief,
   updateProvisioningDraft,
 } from "@/lib/actions";
+
+const WORKS_TYPE_LABEL: Record<CdmWorksType, string> = {
+  DIRECT_REPLACEMENT_SINGLE_CONTRACTOR: "Direct replacement, one contractor",
+  DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS: "Direct replacement, multiple contractors",
+  BUILDING_MODIFICATION: "Building modification",
+};
+
+const WORKS_TYPE_DESCRIPTION: Record<CdmWorksType, string> = {
+  DIRECT_REPLACEMENT_SINGLE_CONTRACTOR:
+    "Like-for-like plant/equipment swap, one contractor throughout — neither CDM 2015 duty applies.",
+  DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS:
+    "Like-for-like swap, but more than one contractor on site — a Principal Designer must be engaged. No building fabric modification, so planning permission doesn't arise.",
+  BUILDING_MODIFICATION:
+    "Alters structure, layout, or fabric — a Principal Designer must be engaged and planning permission needs to be confirmed.",
+};
 
 /**
  * The "Review" step of AI-assisted provisioning (ProvisioningModel.html
@@ -41,7 +57,7 @@ export default async function ProvisioningReviewPage({
   const isComplianceOfficer = roleKeys.includes("COMPLIANCE_OFFICER");
 
   return (
-    <div className="mx-auto max-w-2xl px-10 py-10">
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
       <div className="mb-1 font-mono text-xs uppercase tracking-wide text-inkmuted">
         Project No. {project.projectNumber} &middot; Draft, awaiting review
       </div>
@@ -81,6 +97,14 @@ export default async function ProvisioningReviewPage({
         {project.provisioningMatchReasoning && (
           <p className="text-sm text-inkmuted">{project.provisioningMatchReasoning}</p>
         )}
+      </div>
+
+      <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
+        <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">CDM 2015 works type</div>
+        <div className={`mb-1 text-sm font-semibold ${project.worksType === "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" ? "" : "text-flag"}`}>
+          {WORKS_TYPE_LABEL[project.worksType]}
+        </div>
+        <p className="text-sm text-inkmuted">{WORKS_TYPE_DESCRIPTION[project.worksType]}</p>
       </div>
 
       {project.provisioningReviews.length > 0 && (
@@ -150,6 +174,19 @@ export default async function ProvisioningReviewPage({
                 className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
               />
             </div>
+            <div className="w-full basis-full">
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                CDM 2015 works type
+              </label>
+              <div className="flex flex-wrap gap-4">
+                {(Object.keys(WORKS_TYPE_LABEL) as CdmWorksType[]).map((wt) => (
+                  <label key={wt} className="flex items-center gap-1.5 text-sm">
+                    <input type="radio" name="worksType" value={wt} defaultChecked={project.worksType === wt} />
+                    {WORKS_TYPE_LABEL[wt]}
+                  </label>
+                ))}
+              </div>
+            </div>
             <button type="submit" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Update draft
             </button>
@@ -163,13 +200,13 @@ export default async function ProvisioningReviewPage({
             </form>
             <form
               action={requestProvisioningRevision.bind(null, project.id, projectNumber)}
-              className="flex items-center gap-2"
+              className="flex flex-wrap items-center gap-2"
             >
               <input
                 name="reason"
                 placeholder="Reason for sending back (required)"
                 required
-                className="w-64 rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
               />
               <button type="submit" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
                 Send back for revision
