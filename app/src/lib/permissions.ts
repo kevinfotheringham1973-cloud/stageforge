@@ -134,6 +134,27 @@ export function canRecordLessonLearned(actorRoleKeys: string[]): boolean {
   return actorRoleKeys.length > 0;
 }
 
+/**
+ * Managing the portfolio view's scheduled-report distribution lists is
+ * a governance action (it decides who gets standing visibility into
+ * every project's cost/gate/deliverable status), not a per-project
+ * one — checked against global role keys (session.ts's
+ * getCurrentUserGlobalRoleKeys), the same "holds this role anywhere"
+ * standing used for Compliance Officer authority before a project has
+ * its own role assignments. Client Authority added (confirmed by
+ * Kevin, 20 Aug 2026) — the NHS side commissioning the work has the
+ * same standing interest in who sees portfolio status as the SRO does.
+ */
+export function canManageScheduledReports(actorGlobalRoleKeys: string[]): boolean {
+  return (
+    actorGlobalRoleKeys.includes("SRO") ||
+    actorGlobalRoleKeys.includes("COMPLIANCE_OFFICER") ||
+    actorGlobalRoleKeys.includes("CLIENT_AUTHORITY")
+  );
+}
+
+export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 export function outstandingSpendCount(
   spendRecords: { status: SpendRecordStatus; blocksGate: boolean }[]
 ): number {

@@ -67,6 +67,7 @@ model User {
   recordedSpend              SpendRecord[]            @relation("SpendRecordedBy")
   spendApprovals             SpendApproval[]          @relation("SpendApprovedBy")
   lessonsLearned             LessonLearned[]
+  scheduledReports           ScheduledReport[]
   createdAt                  DateTime                 @default(now())
 }
 
@@ -644,4 +645,28 @@ model AuditLogEntry {
   entityId   String
   reason     String?
   createdAt  DateTime @default(now())
+}
+
+// A standing distribution list for the portfolio view (an SRO request,
+// 20 Aug 2026: "a way to set periodic reports... every Friday to
+// specific staff"). dayOfWeek only (0=Sunday..6=Saturday) rather than a
+// full cron expression — "periodic" in every request so far means
+// "weekly, on a named day", and a fuller schedule grammar can be added
+// if that stops being true. recipientUserIds is a scalar array, same
+// choice as Project.tags/includedStageKeys, not a join table — order
+// doesn't matter and nothing else hangs off the relationship.
+//
+// Deliberately does NOT send anything — there is no email/notification
+// infrastructure in this scaffold to send through. This table is the
+// "who gets what, how often" configuration only; wiring it to a real
+// mailer and a cron trigger is Phase 2, same "recorded, not really
+// delivered" boundary as EvidenceFile/recordEvidenceStub.
+model ScheduledReport {
+  id               String   @id @default(cuid())
+  label            String
+  dayOfWeek        Int // 0=Sunday .. 6=Saturday
+  recipientUserIds String[]
+  createdById      String
+  createdBy        User     @relation(fields: [createdById], references: [id])
+  createdAt        DateTime @default(now())
 }

@@ -247,7 +247,7 @@ async function main() {
     [
       { key: "del.strategic_brief", label: "Strategic Brief — clinical risk of existing systems and options appraisal" },
       { key: "del.high_level_risk_register", label: "High-level Risk Register — patient safety and power continuity focus" },
-      { key: "del.detailed_project_plan", label: "Detailed Project Plan" },
+      { key: "del.detailed_project_plan", label: "High Level Project Plan" },
       { key: "del.load_category_confirmation", label: "Confirmation of affected load categories against SHTM 06-01", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.outline_business_case", label: "Outline Business Case / funding confirmation" },
       { key: "del.stakeholder_map", label: "Initial Stakeholder Map" },
@@ -359,7 +359,7 @@ async function main() {
     [
       { key: "del.water_strategic_brief", label: "Strategic Brief — water safety risk of existing calorifiers/pipework and options appraisal" },
       { key: "del.water_high_level_risk_register", label: "High-level Risk Register — water safety and supply continuity focus" },
-      { key: "del.water_detailed_project_plan", label: "Detailed Project Plan" },
+      { key: "del.water_detailed_project_plan", label: "High Level Project Plan" },
       { key: "del.water_safety_zone_confirmation", label: "Confirmation of affected water safety zones against SHTM 04-01", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.water_outline_business_case", label: "Outline Business Case / funding confirmation" },
       { key: "del.water_stakeholder_map", label: "Initial Stakeholder Map, including the Water Safety Group" },
@@ -471,7 +471,7 @@ async function main() {
     [
       { key: "del.drainage_strategic_brief", label: "Strategic Brief — condition of existing drainage/foul water system and options appraisal" },
       { key: "del.drainage_high_level_risk_register", label: "High-level Risk Register — kitchen/service continuity and cross-contamination focus" },
-      { key: "del.drainage_detailed_project_plan", label: "Detailed Project Plan" },
+      { key: "del.drainage_detailed_project_plan", label: "High Level Project Plan" },
       { key: "del.drainage_flow_path_confirmation", label: "Confirmation of affected drainage zones and flow paths against BS EN 12056", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.drainage_outline_business_case", label: "Outline Business Case / funding confirmation" },
       { key: "del.drainage_stakeholder_map", label: "Initial Stakeholder Map, including Catering/Facilities and Estates" },
@@ -583,7 +583,7 @@ async function main() {
     [
       { key: "del.coldwater_strategic_brief", label: "Strategic Brief — condition of existing inlet mains/storage tanks and options appraisal" },
       { key: "del.coldwater_high_level_risk_register", label: "High-level Risk Register — water supply continuity and cross-contamination focus" },
-      { key: "del.coldwater_detailed_project_plan", label: "Detailed Project Plan" },
+      { key: "del.coldwater_detailed_project_plan", label: "High Level Project Plan" },
       { key: "del.coldwater_zone_confirmation", label: "Confirmation of affected water storage/distribution zones against SHTM 04-01 Part B", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.coldwater_outline_business_case", label: "Outline Business Case / funding confirmation" },
       { key: "del.coldwater_stakeholder_map", label: "Initial Stakeholder Map, including the Water Safety Group" },
@@ -694,7 +694,7 @@ async function main() {
     [
       { key: "del.lighting_strategic_brief", label: "Strategic Brief — condition of existing lighting/luminaires and options appraisal" },
       { key: "del.lighting_high_level_risk_register", label: "High-level Risk Register — means-of-escape and clinical continuity focus" },
-      { key: "del.lighting_detailed_project_plan", label: "Detailed Project Plan" },
+      { key: "del.lighting_detailed_project_plan", label: "High Level Project Plan" },
       { key: "del.lighting_zone_confirmation", label: "Confirmation of affected lighting circuits/emergency lighting zones against BS 5266", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.lighting_outline_business_case", label: "Outline Business Case / funding confirmation, including energy-saving case" },
       { key: "del.lighting_stakeholder_map", label: "Initial Stakeholder Map, including Fire Safety and Estates" },
@@ -955,13 +955,41 @@ async function main() {
     let gate;
     if (i === 0 || i === 1 || i === 2) {
       // Gates 0, 1 and 2: signed off — strategic case, briefing, and
-      // concept design approved (the doc's "key go/no-go point").
+      // concept design approved (the doc's "key go/no-go point"). A
+      // signed-off gate can't have gotten there with an outstanding
+      // deliverable (isGateReadyForSponsor), so every item from the
+      // template's checklist for this stage is created EVIDENCED, not
+      // left empty — the gap where these gates showed zero deliverables
+      // at all was a seed-data omission, not a real state (confirmed by
+      // Kevin, 20 Aug 2026).
       gate = await db.gate.create({
         data: { stageId: stage.id, key: def.gateKey, name: def.gateName, status: "SIGNED_OFF" },
       });
       await db.gateSignOff.create({
         data: { gateId: gate.id, decision: "APPROVED", signedOffById: david.id },
       });
+
+      for (const d of meDeliverableDefsByStage[i]!) {
+        const fileName = `${d.key.replace(/^del\./, "").replace(/_/g, "-")}.pdf`;
+        const deliverable = await db.deliverable.create({
+          data: {
+            gateId: gate.id,
+            key: d.key,
+            label: d.label,
+            description: d.description,
+            bypassAuthority: d.bypassAuthority ?? "PM",
+            status: "EVIDENCED",
+          },
+        });
+        await db.evidenceFile.create({
+          data: {
+            deliverableId: deliverable.id,
+            fileName,
+            fileRef: `local://seed/${fileName}`,
+            uploadedById: d.bypassAuthority === "COMPLIANCE_OFFICER" ? gary.id : derek.id,
+          },
+        });
+      }
     } else if (i === 3) {
       // Gate 3 — Spatial Coordination: in progress, the running
       // example from every other doc.
@@ -1042,6 +1070,28 @@ async function main() {
           status: "PENDING" as const,
         })),
       });
+
+      // Gates 0–2 are signed off, so whatever the corpus just matched
+      // for this stage can't be left PENDING either — same reasoning
+      // as the deliverables above.
+      if (i === 0 || i === 1 || i === 2) {
+        const created = await db.complianceRequirement.findMany({ where: { gateId: gate.id } });
+        for (const c of created) {
+          const fileName = `${c.key.replace(/^comp\./, "").replace(/_/g, "-")}-evidence.pdf`;
+          await db.complianceEvidenceFile.create({
+            data: {
+              complianceRequirementId: c.id,
+              fileName,
+              fileRef: `local://seed/${fileName}`,
+              uploadedById: gary.id,
+            },
+          });
+        }
+        await db.complianceRequirement.updateMany({
+          where: { gateId: gate.id },
+          data: { status: "EVIDENCED" },
+        });
+      }
     }
   }
 
@@ -1293,7 +1343,7 @@ async function main() {
       tags: ["occupied_during_works"],
       worksType: "DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS",
       status: "ACTIVE",
-      createdById: derek.id,
+      createdById: dennis.id,
       provisioningBrief:
         "Aligning with Net Zero, this project consists of replacing all fluorescent lights in the hospital corridors and avenues with LED alternatives.",
       provisioningMatchReasoning:
@@ -1303,7 +1353,11 @@ async function main() {
 
   await db.projectRoleAssignment.createMany({
     data: [
-      { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.PM.id },
+      // Dennis was "acting as" when the real project was created live —
+      // createProvisioningDraft assigns PM to the creator, not always
+      // Derek (confirmed by Kevin, 20 Aug 2026, after this gap caused
+      // canSetGateTimeline to look "broken" when acting as anyone else).
+      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.PM.id },
       { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },
       { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.SPONSOR.id },
       { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
@@ -1312,6 +1366,7 @@ async function main() {
       { projectId: lightingProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
       { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
       { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.AUTHORISING_ENGINEER_ELECTRICAL.id },
+      { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
     ],
   });
 
@@ -1333,6 +1388,17 @@ async function main() {
       stageTemplate: lightingStageTemplatesFull[i]!,
     });
   }
+
+  // ── Portfolio view: a scheduled report demonstrating the SRO's
+  // actual request (20 Aug 2026) — "every Friday to specific staff".
+  await db.scheduledReport.create({
+    data: {
+      label: "Weekly SRO portfolio summary",
+      dayOfWeek: 5, // Friday
+      recipientUserIds: [mark.id, gary.id, david.id],
+      createdById: mark.id,
+    },
+  });
 
   console.log("Seed complete.");
   console.log("Dev users — switch between them with the header switcher:");
