@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
+import { SubmitButton } from "@/components/SubmitButton";
 import {
   canApproveSpend,
   canBypassDeliverable,
@@ -168,9 +169,9 @@ export async function GateDetail({
                 className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
               />
             </div>
-            <button type="submit" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+            <SubmitButton pendingText="Setting…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Set dates
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>
@@ -265,9 +266,9 @@ export async function GateDetail({
                             required
                             className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
                           />
-                          <button className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent" type="submit">
+                          <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
                             Replace evidence
-                          </button>
+                          </SubmitButton>
                         </form>
                       )}
                     </div>
@@ -295,9 +296,9 @@ export async function GateDetail({
                             required
                             className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
                           />
-                          <button className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white" type="submit">
+                          <SubmitButton pendingText="Uploading…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
                             Upload evidence
-                          </button>
+                          </SubmitButton>
                         </form>
                       ) : (
                         <span className="text-xs text-inkmuted">Outstanding &mdash; no evidence uploaded.</span>
@@ -314,9 +315,9 @@ export async function GateDetail({
                             required
                             className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
                           />
-                          <button className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag" type="submit">
+                          <SubmitButton pendingText="Bypassing…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
                             Bypass
-                          </button>
+                          </SubmitButton>
                         </form>
                       )}
                     </div>
@@ -384,9 +385,9 @@ export async function GateDetail({
                             required
                             className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
                           />
-                          <button className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent" type="submit">
+                          <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
                             Replace evidence
-                          </button>
+                          </SubmitButton>
                         </form>
                       )}
                     </div>
@@ -414,9 +415,9 @@ export async function GateDetail({
                             required
                             className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
                           />
-                          <button className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white" type="submit">
+                          <SubmitButton pendingText="Uploading…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
                             Upload evidence
-                          </button>
+                          </SubmitButton>
                         </form>
                       ) : (
                         <span className="text-xs text-inkmuted">Outstanding &mdash; no evidence uploaded.</span>
@@ -445,9 +446,9 @@ export async function GateDetail({
                   required
                   className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-96"
                 />
-                <button className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag" type="submit">
+                <SubmitButton pendingText="Overriding…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
                   Override all outstanding
-                </button>
+                </SubmitButton>
               </form>
             </div>
           )}
@@ -501,9 +502,9 @@ export async function GateDetail({
                 {s.status === "PENDING" && canApprove && (
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <form action={approveSpend.bind(null, s.id, projectNumber, gateId)}>
-                      <button className="rounded-md bg-ok px-3 py-1.5 text-sm font-semibold text-white" type="submit">
+                      <SubmitButton pendingText="Approving…" className="rounded-md bg-ok px-3 py-1.5 text-sm font-semibold text-white">
                         Approve spend
-                      </button>
+                      </SubmitButton>
                     </form>
                     <form action={rejectSpend.bind(null, s.id, projectNumber, gateId)} className="flex flex-wrap items-center gap-2">
                       <input
@@ -512,9 +513,9 @@ export async function GateDetail({
                         required
                         className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
                       />
-                      <button className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk" type="submit">
+                      <SubmitButton pendingText="Rejecting…" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
                         Reject
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                 )}
@@ -567,12 +568,9 @@ export async function GateDetail({
                 </label>
                 <input name="description" required className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm" />
               </div>
-              <button
-                type="submit"
-                className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent"
-              >
+              <SubmitButton pendingText="Recording…" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
                 Record spend
-              </button>
+              </SubmitButton>
             </form>
           )}
         </>
@@ -600,13 +598,13 @@ export async function GateDetail({
             </span>
             {roleKeys.includes("PM") ? (
               <form action={submitForApproval.bind(null, gateId, projectNumber)}>
-                <button
+                <SubmitButton
                   disabled={!ready}
-                  className="rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-surface2 disabled:text-inkmuted"
-                  type="submit"
+                  pendingText="Submitting…"
+                  className="rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white disabled:bg-surface2 disabled:text-inkmuted"
                 >
                   Submit for Sponsor approval
-                </button>
+                </SubmitButton>
               </form>
             ) : (
               <span className="text-xs text-inkmuted">Only the PM can submit this gate.</span>
@@ -620,9 +618,9 @@ export async function GateDetail({
               <span className="text-sm text-inkmuted">Awaiting your decision as Sponsor.</span>
               <div className="flex flex-wrap items-center gap-3">
                 <form action={approveGate.bind(null, gateId, projectNumber)}>
-                  <button className="rounded-md bg-ok px-4 py-2.5 text-sm font-bold text-white" type="submit">
+                  <SubmitButton pendingText="Approving…" className="rounded-md bg-ok px-4 py-2.5 text-sm font-bold text-white">
                     Approve gate
-                  </button>
+                  </SubmitButton>
                 </form>
                 <form action={rejectGate.bind(null, gateId, projectNumber)} className="flex flex-wrap items-center gap-2">
                   <input
@@ -631,9 +629,9 @@ export async function GateDetail({
                     required
                     className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
                   />
-                  <button className="rounded-md border border-risk px-4 py-2.5 text-sm font-semibold text-risk" type="submit">
+                  <SubmitButton pendingText="Rejecting…" className="rounded-md border border-risk px-4 py-2.5 text-sm font-semibold text-risk">
                     Reject
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             </div>
@@ -713,12 +711,9 @@ export async function GateDetail({
               placeholder="What happened, and what should the next project like this do differently (or repeat)?"
               className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
             />
-            <button
-              type="submit"
-              className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent"
-            >
+            <SubmitButton pendingText="Adding…" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Add lesson
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>

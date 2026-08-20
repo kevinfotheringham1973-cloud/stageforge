@@ -9,6 +9,7 @@ import {
 } from "@/lib/permissions";
 import { getPortfolioRows } from "@/lib/portfolioReport";
 import { createScheduledReport, deleteScheduledReport, sendScheduledReportNow } from "@/lib/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const GBP = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -164,14 +165,14 @@ export default async function HomePage() {
                 {canManage && (
                   <div className="flex items-center gap-2">
                     <form action={sendScheduledReportNow.bind(null, r.id)}>
-                      <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                      <SubmitButton pendingText="Sending…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
                         Send now
-                      </button>
+                      </SubmitButton>
                     </form>
                     <form action={deleteScheduledReport.bind(null, r.id)}>
-                      <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-risk">
+                      <SubmitButton pendingText="Removing…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-risk">
                         Remove
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                 )}
@@ -214,9 +215,9 @@ export default async function HomePage() {
                 ))}
               </div>
             </div>
-            <button type="submit" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+            <SubmitButton pendingText="Adding…" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Add schedule
-            </button>
+            </SubmitButton>
           </form>
         ) : (
           <p className="text-xs text-inkmuted">Only an SRO, Compliance Officer, or Client Authority can set up scheduled reports.</p>
