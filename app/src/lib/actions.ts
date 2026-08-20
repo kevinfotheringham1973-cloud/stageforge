@@ -30,7 +30,12 @@ import { sendScheduledReport } from "./scheduledReportSender";
 
 export async function setActingUser(userId: string) {
   const store = await cookies();
-  store.set(SESSION_COOKIE_NAME, userId, { path: "/" });
+  store.set(SESSION_COOKIE_NAME, userId, {
+    path: "/",
+    httpOnly: true, // nothing client-side ever needs to read this — server-only via next/headers
+    sameSite: "lax", // top-level nav (clicking a link) still sends it; cross-site form/fetch POSTs don't
+    secure: process.env.NODE_ENV === "production", // the tunnel's public URL is HTTPS-only; local dev stays plain HTTP
+  });
   revalidatePath("/", "layout");
 }
 
