@@ -10,7 +10,26 @@ const COOKIE_NAME = "sf_user_id";
 
 export async function getCurrentUserId(): Promise<string | null> {
   const store = await cookies();
-  return store.get(COOKIE_NAME)?.value ?? null;
+  const rawId = store.get(COOKIE_NAME)?.value ?? null;
+  if (!rawId) return null;
+
+  const exists = await db.user.findUnique({ where: { id: rawId }, select: { id: true } });
+  if (!exists) {
+    // Stale cookie pointing at a user id that no longer exists (e.g.
+    // left over from a `prisma migrate reset` that regenerated every
+    // user's id) — treat it the same as signed-out instead of letting
+    // it flow into a raw FK-violation crash wherever this id gets used.
+    try {
+      store.delete(COOKIE_NAME);
+    } catch {
+      // Cookies are read-only during a Server Component render; only
+      // Server Actions/Route Handlers can clear it. Safe to ignore —
+      // the stale value gets re-checked (and cleared) on the next one.
+    }
+    return null;
+  }
+
+  return rawId;
 }
 
 export async function getCurrentUser() {
