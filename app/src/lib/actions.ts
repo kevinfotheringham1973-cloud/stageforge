@@ -28,7 +28,10 @@ import { issueNextProjectNumber } from "./projectNumber";
 import { assignStandardTeam } from "./standardTeam";
 import { sendScheduledReport } from "./scheduledReportSender";
 
-export async function setActingUser(userId: string) {
+export async function setActingUser(formData: FormData) {
+  const userId = String(formData.get("userId") ?? "");
+  if (!userId) return;
+
   const store = await cookies();
   store.set(SESSION_COOKIE_NAME, userId, {
     path: "/",
