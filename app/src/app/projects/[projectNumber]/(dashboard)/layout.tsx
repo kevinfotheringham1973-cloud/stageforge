@@ -233,6 +233,28 @@ export default async function ProjectDashboardLayout({
           )}
         </div>
 
+        {project.provisioningBrief && (
+          <details className="group rounded-lg border border-rule bg-surface px-4 py-3">
+            <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              Project brief &amp; why it was templated this way
+            </summary>
+            <div className="mt-3 flex flex-col gap-3 text-sm">
+              <div>
+                <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Original brief</div>
+                <p className="text-ink">{project.provisioningBrief}</p>
+              </div>
+              {project.provisioningMatchReasoning && (
+                <div>
+                  <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                    Why this template matched
+                  </div>
+                  <p className="text-inkmuted">{project.provisioningMatchReasoning}</p>
+                </div>
+              )}
+            </div>
+          </details>
+        )}
+
         {isPlatformAdmin && (
           <div className="rounded-lg border border-dashed border-risk bg-risk/5 p-4">
             <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-risk">Danger zone &middot; platform admin</div>
