@@ -418,7 +418,11 @@ export default async function ProjectDashboardLayout({
                     <div className="w-44 shrink-0 truncate text-sm font-medium" title={gate.name}>
                       {gate.name}
                     </div>
-                    <div className="relative h-6 flex-1 rounded bg-surface2">
+                    <div
+                      className={`relative h-6 flex-1 rounded ${
+                        hasTarget ? "bg-surface2" : "border border-dashed border-rule bg-transparent"
+                      }`}
+                    >
                       {todayPct >= 0 && todayPct <= 100 && (
                         <div className="absolute top-0 bottom-0 w-px bg-ink/50" style={{ left: `${todayPct}%` }} />
                       )}

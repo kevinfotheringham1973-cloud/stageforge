@@ -69,7 +69,7 @@ export default async function HomePage() {
         <p className="mb-10 text-sm text-inkmuted">No live projects.</p>
       ) : (
         <div className="mb-10 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <table className="w-full min-w-[1150px] border-collapse text-base">
+          <table className="w-full min-w-[980px] border-collapse text-base">
             <thead>
               <tr className="border-b-2 border-rule text-left font-mono text-xs font-bold uppercase tracking-wide text-ink">
                 <th className="py-3 pr-4">Project</th>
@@ -77,8 +77,7 @@ export default async function HomePage() {
                 <th className="py-3 pr-4">Timeline</th>
                 <th className="py-3 pr-4">Est. completion</th>
                 <th className="py-3 pr-4">Cost approved / total</th>
-                <th className="py-3 pr-4">Deliverables outstanding</th>
-                <th className="py-3 pr-4">Compliance outstanding</th>
+                <th className="py-3 pr-4">Outstanding</th>
               </tr>
             </thead>
             <tbody>
@@ -106,18 +105,25 @@ export default async function HomePage() {
                     {" / "}
                     {GBP(r.totalSpend)}
                   </td>
-                  <td className="py-4 pr-4">
-                    {r.outstandingDeliverables > 0 ? (
-                      <span className="text-lg font-bold text-warn">{r.outstandingDeliverables}</span>
+                  <td className="py-4 pr-4 whitespace-nowrap">
+                    {r.outstandingDeliverables === 0 && r.outstandingCompliance === 0 ? (
+                      <span className="font-semibold text-inkmuted">Clear</span>
                     ) : (
-                      <span className="font-semibold text-inkmuted">0</span>
-                    )}
-                  </td>
-                  <td className="py-4 pr-4">
-                    {r.outstandingCompliance > 0 ? (
-                      <span className="text-lg font-bold text-flag">{r.outstandingCompliance}</span>
-                    ) : (
-                      <span className="font-semibold text-inkmuted">0</span>
+                      <span className="text-sm">
+                        {r.outstandingDeliverables > 0 && (
+                          <span className="font-bold text-warn">
+                            {r.outstandingDeliverables} <span className="font-semibold">del.</span>
+                          </span>
+                        )}
+                        {r.outstandingDeliverables > 0 && r.outstandingCompliance > 0 && (
+                          <span className="text-inkmuted"> &middot; </span>
+                        )}
+                        {r.outstandingCompliance > 0 && (
+                          <span className="font-bold text-flag">
+                            {r.outstandingCompliance} <span className="font-semibold">comp.</span>
+                          </span>
+                        )}
+                      </span>
                     )}
                   </td>
                 </tr>

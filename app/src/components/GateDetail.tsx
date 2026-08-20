@@ -167,9 +167,35 @@ export async function GateDetail({
         )}
       </div>
 
+      {(gate.deliverables.length > 0 ||
+        gate.complianceRequirements.length > 0 ||
+        gate.spendRecords.length > 0 ||
+        canRecord) && (
+        <div className="sticky top-0 z-10 mb-6 -mx-1 flex flex-wrap gap-4 border-b border-rule bg-bg px-1 py-2 font-mono text-xs font-semibold uppercase tracking-wide">
+          {gate.deliverables.length > 0 && (
+            <a href="#deliverables" className="text-accent hover:underline">
+              Deliverables {outstanding > 0 && <span className="text-warn">({outstanding})</span>}
+            </a>
+          )}
+          {gate.complianceRequirements.length > 0 && (
+            <a href="#compliance" className="text-accent hover:underline">
+              Compliance {outstandingCompliance > 0 && <span className="text-flag">({outstandingCompliance})</span>}
+            </a>
+          )}
+          {(gate.spendRecords.length > 0 || canRecord) && (
+            <a href="#spend" className="text-accent hover:underline">
+              Spend {outstandingSpend > 0 && <span className="text-warn">({outstandingSpend})</span>}
+            </a>
+          )}
+          <a href="#lessons-learned" className="text-accent hover:underline">
+            Lessons learned
+          </a>
+        </div>
+      )}
+
       {gate.deliverables.length > 0 && (
         <>
-          <div className="mb-4 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+          <div id="deliverables" className="mb-4 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
             Delivery checklist &middot; {gate.deliverables.length - outstanding} of {gate.deliverables.length} clear
           </div>
 
@@ -179,15 +205,27 @@ export async function GateDetail({
               const canReplaceEvidence = gate.status !== "SIGNED_OFF" && canUploadEvidence(roleKeys, d.bypassAuthority);
               const canUpload = d.status === "PENDING" && canReplaceEvidence;
 
+              // Statutory ceiling gets a visibly heavier treatment than a routine
+              // Compliance-Officer-level item — an SRO-only requirement (e.g. a
+              // fire-safety duty that "cannot be bypassed at PM level") should never
+              // read the same as a document a PM can wave through themselves.
+              const cardClass =
+                d.bypassAuthority === "SRO"
+                  ? "border-2 border-risk bg-risk/5"
+                  : d.bypassAuthority === "COMPLIANCE_OFFICER"
+                    ? "border-dashed border-flag bg-surface"
+                    : "border-rule bg-surface";
+
               return (
-                <div
-                  key={d.id}
-                  className={`rounded-lg border bg-surface p-5 ${d.bypassAuthority !== "PM" ? "border-dashed border-flag" : "border-rule"}`}
-                >
+                <div key={d.id} className={`rounded-lg border p-5 ${cardClass}`}>
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <span className="font-semibold">{d.label}</span>
                     {d.bypassAuthority !== "PM" && (
-                      <span className="rounded bg-accentsoft px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-flag">
+                      <span
+                        className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide ${
+                          d.bypassAuthority === "SRO" ? "bg-risk text-white" : "bg-accentsoft text-flag"
+                        }`}
+                      >
                         Requires {d.bypassAuthority.replace("_", " ")}
                       </span>
                     )}
@@ -282,7 +320,7 @@ export async function GateDetail({
 
       {gate.complianceRequirements.length > 0 && (
         <>
-          <div className="mb-4 mt-6 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+          <div id="compliance" className="mb-4 mt-6 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
             Compliance &middot; {gate.complianceRequirements.length - outstandingCompliance} of{" "}
             {gate.complianceRequirements.length} clear
           </div>
@@ -397,7 +435,7 @@ export async function GateDetail({
 
       {(gate.spendRecords.length > 0 || canRecord) && (
         <>
-          <div className="mb-4 mt-6 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+          <div id="spend" className="mb-4 mt-6 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
             Spend &middot; {gate.spendRecords.length - outstandingSpend} of {gate.spendRecords.length} approved
           </div>
 
@@ -606,7 +644,7 @@ export async function GateDetail({
         </div>
       )}
 
-      <div className="mt-6">
+      <div id="lessons-learned" className="mt-6 scroll-mt-16">
         <div className="mb-2 flex items-center justify-between">
           <div className="font-mono text-[11px] uppercase tracking-wide text-inkmuted">
             Lessons learned{gate.lessonsLearned.length > 0 && <> &middot; {gate.lessonsLearned.length} recorded</>}
