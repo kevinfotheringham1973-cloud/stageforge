@@ -656,17 +656,18 @@ model AuditLogEntry {
 // choice as Project.tags/includedStageKeys, not a join table — order
 // doesn't matter and nothing else hangs off the relationship.
 //
-// Deliberately does NOT send anything — there is no email/notification
-// infrastructure in this scaffold to send through. This table is the
-// "who gets what, how often" configuration only; wiring it to a real
-// mailer and a cron trigger is Phase 2, same "recorded, not really
-// delivered" boundary as EvidenceFile/recordEvidenceStub.
+// Sent for real via Resend (src/lib/email.ts), triggered by a daily
+// cron (src/instrumentation.ts) that checks dayOfWeek against today,
+// or on-demand via the "send now" action. lastSentAt is best-effort
+// delivery feedback for the UI, not a delivery log — see
+// scheduledReportSender.ts for the one place that sets it.
 model ScheduledReport {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   label            String
   dayOfWeek        Int // 0=Sunday .. 6=Saturday
   recipientUserIds String[]
   createdById      String
-  createdBy        User     @relation(fields: [createdById], references: [id])
-  createdAt        DateTime @default(now())
+  createdBy        User      @relation(fields: [createdById], references: [id])
+  createdAt        DateTime  @default(now())
+  lastSentAt       DateTime?
 }

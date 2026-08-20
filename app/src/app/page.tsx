@@ -4,12 +4,11 @@ import { getCurrentUserGlobalRoleKeys } from "@/lib/session";
 import {
   canManageScheduledReports,
   DAY_NAMES,
-  gateTimelineStatus,
   GATE_TIMELINE_LABELS,
   GATE_TIMELINE_TEXT_CLASS,
-  isProjectStillLive,
 } from "@/lib/permissions";
-import { createScheduledReport, deleteScheduledReport } from "@/lib/actions";
+import { getPortfolioRows } from "@/lib/portfolioReport";
+import { createScheduledReport, deleteScheduledReport, sendScheduledReportNow } from "@/lib/actions";
 
 const GBP = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -24,65 +23,13 @@ const GBP = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigit
  * many projects at once is the whole point here.
  */
 export default async function HomePage() {
-  const [liveProjects, draftProjects, globalRoleKeys, scheduledReports, allUsers] = await Promise.all([
-    db.project.findMany({
-      where: { status: "ACTIVE" },
-      include: {
-        stages: {
-          orderBy: { order: "asc" },
-          include: {
-            gate: { include: { deliverables: true, complianceRequirements: true, spendRecords: true } },
-          },
-        },
-      },
-    }),
+  const [rows, draftProjects, globalRoleKeys, scheduledReports, allUsers] = await Promise.all([
+    getPortfolioRows(),
     db.project.findMany({ where: { status: "DRAFT" }, orderBy: { createdAt: "desc" } }),
     getCurrentUserGlobalRoleKeys(),
     db.scheduledReport.findMany({ orderBy: { dayOfWeek: "asc" }, include: { createdBy: true } }),
     db.user.findMany({ orderBy: { name: "asc" } }),
   ]);
-
-  const rows = liveProjects
-    .map((p) => {
-      const gates = p.stages.map((s) => s.gate).filter((g): g is NonNullable<typeof g> => g !== null);
-      if (!isProjectStillLive(gates)) return null;
-
-      const currentGate = gates.find((g) => g.status !== "SIGNED_OFF") ?? gates[gates.length - 1] ?? null;
-
-      const allSpend = gates.flatMap((g) => g.spendRecords);
-      const totalSpend = allSpend.reduce((sum, s) => sum + Number(s.amount), 0);
-      const approvedSpend = allSpend
-        .filter((s) => s.status === "APPROVED")
-        .reduce((sum, s) => sum + Number(s.amount), 0);
-
-      const outstandingDeliverables = gates
-        .flatMap((g) => g.deliverables)
-        .filter((d) => d.blocksGate && d.status === "PENDING").length;
-      const outstandingCompliance = gates
-        .flatMap((g) => g.complianceRequirements)
-        .filter((c) => c.blocksGate && c.status === "PENDING").length;
-
-      const timeline = currentGate ? gateTimelineStatus(currentGate) : "NO_TARGET";
-
-      // Same "furthest target end date currently set on any gate"
-      // definition the project dashboard's own KPI strip uses — the
-      // plan's projected finish line, not a statistical forecast.
-      const targetEndDates = gates.map((g) => g.targetEndDate).filter((d): d is Date => d !== null);
-      const estimatedCompletion =
-        targetEndDates.length > 0 ? new Date(Math.max(...targetEndDates.map((d) => d.getTime()))) : null;
-
-      return {
-        project: p,
-        currentGate,
-        totalSpend,
-        approvedSpend,
-        outstandingDeliverables,
-        outstandingCompliance,
-        estimatedCompletion,
-        timeline,
-      };
-    })
-    .filter((r): r is NonNullable<typeof r> => r !== null);
 
   const canManage = canManageScheduledReports(globalRoleKeys);
 
@@ -143,7 +90,7 @@ export default async function HomePage() {
                     </Link>
                     <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
                   </td>
-                  <td className="py-4 pr-4 font-semibold">{r.currentGate ? r.currentGate.name : "Complete"}</td>
+                  <td className="py-4 pr-4 font-semibold">{r.currentGateName}</td>
                   <td className={`py-4 pr-4 font-bold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>
                     {GATE_TIMELINE_LABELS[r.timeline]}
                   </td>
@@ -183,9 +130,9 @@ export default async function HomePage() {
       <div className="rounded-lg border border-rule bg-surface p-5">
         <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Scheduled reports</div>
         <p className="mb-4 text-sm text-inkmuted">
-          Configuration only — this scaffold has no email/notification infrastructure to actually
-          deliver through yet. A schedule recorded here is who should get the portfolio view and how
-          often, ready to wire up to a real mailer and a cron trigger later.
+          Emails this portfolio view to its recipients automatically at 08:00 on the day selected below.
+          Recipients are drawn from each user&rsquo;s account email — an address on a placeholder
+          (<code>.example</code>) domain will simply fail to send.
         </p>
 
         {scheduledReports.length > 0 && (
@@ -199,14 +146,28 @@ export default async function HomePage() {
                   <span className="font-semibold">{r.label}</span>{" "}
                   <span className="text-inkmuted">
                     &middot; every {DAY_NAMES[r.dayOfWeek]} &middot; {r.recipientUserIds.length} recipient(s)
+                    {r.lastSentAt && (
+                      <>
+                        {" "}
+                        &middot; last sent{" "}
+                        {r.lastSentAt.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </>
+                    )}
                   </span>
                 </div>
                 {canManage && (
-                  <form action={deleteScheduledReport.bind(null, r.id)}>
-                    <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-risk">
-                      Remove
-                    </button>
-                  </form>
+                  <div className="flex items-center gap-2">
+                    <form action={sendScheduledReportNow.bind(null, r.id)}>
+                      <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                        Send now
+                      </button>
+                    </form>
+                    <form action={deleteScheduledReport.bind(null, r.id)}>
+                      <button type="submit" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-risk">
+                        Remove
+                      </button>
+                    </form>
+                  </div>
                 )}
               </div>
             ))}

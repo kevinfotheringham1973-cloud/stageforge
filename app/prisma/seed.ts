@@ -118,7 +118,10 @@ async function main() {
   const david = await db.user.create({
     data: {
       name: "David Mackay",
-      email: "david.mackay@staldwyn.example",
+      // Real address (Kevin, 20 Aug 2026): every other seeded persona is
+      // an unroutable .example address, so this is the one demo user
+      // scheduled-report sends actually land in an inbox for.
+      email: "kevinfotheringham1973@gmail.com",
       homeDepartmentId: stAldwynEstates.id,
     },
   });
