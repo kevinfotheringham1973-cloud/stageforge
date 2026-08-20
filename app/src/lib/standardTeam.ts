@@ -31,6 +31,10 @@ const STANDARD_TEAM: { email: string; roleKey: string }[] = [
   { email: "gary.grant@buildcare.example", roleKey: "COMPLIANCE_OFFICER" },
   { email: "mark.ohear@staldwyn.example", roleKey: "SRO" },
   { email: "andrea@buildcare.example", roleKey: "FINANCE" },
+  // Fire safety oversight applies hospital-wide, same as the rest of
+  // this standing team — not discipline-specific like AP/AE/Principal
+  // Designer, which stay a manual per-project decision (see comment above).
+  { email: "alan.mcgeachie@staldwyn.example", roleKey: "FIRE_OFFICER" },
 ];
 
 /** Assigns the standing hospital team to a newly-created project. */

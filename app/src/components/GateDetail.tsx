@@ -92,7 +92,15 @@ export async function GateDetail({
     (c) => c.blocksGate && c.status === "PENDING"
   ).length;
   const outstandingSpend = gate.spendRecords.filter((s) => s.blocksGate && s.status === "PENDING").length;
-  const canOverride = canOverrideCompliance(roleKeys);
+  const outstandingComplianceItems = gate.complianceRequirements.filter((c) => c.blocksGate && c.status === "PENDING");
+  // Bulk "override all outstanding" only makes sense when the actor
+  // holds authority for every distinct authority among them — see the
+  // matching check in actions.ts#overrideCompliance.
+  const canOverride =
+    outstandingComplianceItems.length > 0 &&
+    Array.from(new Set(outstandingComplianceItems.map((c) => c.overrideAuthority))).every((auth) =>
+      canOverrideCompliance(roleKeys, auth)
+    );
   const canRecord = canRecordSpend(roleKeys);
   const canApprove = canApproveSpend(roleKeys);
   const canSetTimeline = canSetGateTimeline(roleKeys);
@@ -206,11 +214,11 @@ export async function GateDetail({
               const canUpload = d.status === "PENDING" && canReplaceEvidence;
 
               // Statutory ceiling gets a visibly heavier treatment than a routine
-              // Compliance-Officer-level item — an SRO-only requirement (e.g. a
-              // fire-safety duty that "cannot be bypassed at PM level") should never
-              // read the same as a document a PM can wave through themselves.
+              // Compliance-Officer-level item — an SRO- or Fire-Officer-only
+              // requirement should never read the same as a document a PM can
+              // wave through themselves.
               const cardClass =
-                d.bypassAuthority === "SRO"
+                d.bypassAuthority === "SRO" || d.bypassAuthority === "FIRE_OFFICER"
                   ? "border-2 border-risk bg-risk/5"
                   : d.bypassAuthority === "COMPLIANCE_OFFICER"
                     ? "border-dashed border-flag bg-surface"
@@ -223,7 +231,9 @@ export async function GateDetail({
                     {d.bypassAuthority !== "PM" && (
                       <span
                         className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide ${
-                          d.bypassAuthority === "SRO" ? "bg-risk text-white" : "bg-accentsoft text-flag"
+                          d.bypassAuthority === "SRO" || d.bypassAuthority === "FIRE_OFFICER"
+                            ? "bg-risk text-white"
+                            : "bg-accentsoft text-flag"
                         }`}
                       >
                         Requires {d.bypassAuthority.replace("_", " ")}
@@ -333,12 +343,19 @@ export async function GateDetail({
                 o.coveredRequirementIds.includes(c.id)
               );
 
+              const cardClass =
+                c.overrideAuthority === "FIRE_OFFICER" ? "border-2 border-risk bg-risk/5" : "border-dashed border-flag bg-surface";
+
               return (
-                <div key={c.id} className="rounded-lg border border-dashed border-flag bg-surface p-5">
+                <div key={c.id} className={`rounded-lg border p-5 ${cardClass}`}>
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <span className="font-semibold">{c.label}</span>
-                    <span className="rounded bg-accentsoft px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-flag">
-                      Compliance
+                    <span
+                      className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide ${
+                        c.overrideAuthority === "FIRE_OFFICER" ? "bg-risk text-white" : "bg-accentsoft text-flag"
+                      }`}
+                    >
+                      {c.overrideAuthority === "FIRE_OFFICER" ? "Requires Fire Officer" : "Compliance"}
                     </span>
                   </div>
                   {c.description && <p className="mb-1 text-sm text-inkmuted">{c.description}</p>}
@@ -414,8 +431,12 @@ export async function GateDetail({
           {outstandingCompliance > 0 && canOverride && (
             <div className="mt-3 rounded-lg border border-dashed border-flag bg-accentsoft/30 p-4">
               <div className="mb-2 text-sm text-inkmuted">
-                {outstandingCompliance} compliance requirement(s) still outstanding on this gate — an SRO
-                override clears every outstanding one at once, not item by item.
+                {outstandingCompliance} compliance requirement(s) still outstanding on this gate — one override
+                clears all of them at once, not item by item. Requires{" "}
+                {Array.from(new Set(outstandingComplianceItems.map((c) => c.overrideAuthority)))
+                  .map((a) => (a === "FIRE_OFFICER" ? "Fire Officer" : a))
+                  .join(" and ")}{" "}
+                authority.
               </div>
               <form action={overrideCompliance.bind(null, gateId, projectNumber)} className="flex flex-wrap items-center gap-2">
                 <input
