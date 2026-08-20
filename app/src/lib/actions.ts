@@ -26,6 +26,7 @@ import { matchProject } from "./provisioning";
 import { effectiveComplianceTags, isCdmWorksType } from "./cdm";
 import { issueNextProjectNumber } from "./projectNumber";
 import { assignStandardTeam } from "./standardTeam";
+import { sendScheduledReport } from "./scheduledReportSender";
 
 export async function setActingUser(userId: string) {
   const store = await cookies();
@@ -894,9 +895,11 @@ export async function recordLessonLearned(gateId: string, projectNumber: string,
 }
 
 // ── Portfolio view — scheduled reports ──────────────────────────────
-// Configuration only (label, day, recipients) — there is no email/
-// notification infrastructure in this scaffold to actually deliver
-// through. See the ScheduledReport model comment in schema.prisma.
+// Sends for real via Resend on the configured day (see
+// src/instrumentation.ts for the cron, src/lib/scheduledReportSender.ts
+// for the actual send). createScheduledReport/deleteScheduledReport
+// only manage the label/day/recipients config; sendScheduledReportNow
+// below triggers an immediate out-of-schedule send for testing.
 
 export async function createScheduledReport(formData: FormData) {
   const label = String(formData.get("label") ?? "").trim();
@@ -935,6 +938,23 @@ export async function deleteScheduledReport(id: string) {
   }
 
   await db.scheduledReport.delete({ where: { id } });
+  revalidatePath("/");
+}
+
+export async function sendScheduledReportNow(id: string) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const globalRoleKeys = await getCurrentUserGlobalRoleKeys();
+  if (!canManageScheduledReports(globalRoleKeys)) {
+    throw new Error("Only an SRO, Compliance Officer, or Client Authority can send a scheduled report.");
+  }
+
+  const result = await sendScheduledReport(id);
+  if (!result.sent) {
+    throw new Error(`Send failed: ${result.reason ?? "unknown reason"}`);
+  }
+
   revalidatePath("/");
 }
 
