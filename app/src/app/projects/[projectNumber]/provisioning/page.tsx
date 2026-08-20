@@ -8,6 +8,7 @@ import {
   reviseProvisioningBrief,
   updateProvisioningDraft,
 } from "@/lib/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const WORKS_TYPE_LABEL: Record<CdmWorksType, string> = {
   DIRECT_REPLACEMENT_SINGLE_CONTRACTOR: "Direct replacement, one contractor",
@@ -137,12 +138,12 @@ export default async function ProvisioningReviewPage({
               defaultValue={project.provisioningBrief ?? ""}
               className="w-full rounded border border-rule bg-bg px-3 py-2 text-sm"
             />
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Re-matching…"
               className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent"
             >
               Re-match
-            </button>
+            </SubmitButton>
           </form>
         </div>
       )}
@@ -187,16 +188,16 @@ export default async function ProvisioningReviewPage({
                 ))}
               </div>
             </div>
-            <button type="submit" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+            <SubmitButton pendingText="Updating…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Update draft
-            </button>
+            </SubmitButton>
           </form>
 
           <div className="flex flex-wrap items-center gap-3 border-t border-rule pt-4">
             <form action={approveProvisioning.bind(null, project.id, projectNumber)}>
-              <button type="submit" className="rounded-md bg-ok px-4 py-2.5 text-sm font-bold text-white">
+              <SubmitButton pendingText="Activating…" className="rounded-md bg-ok px-4 py-2.5 text-sm font-bold text-white">
                 Approve &amp; activate
-              </button>
+              </SubmitButton>
             </form>
             <form
               action={requestProvisioningRevision.bind(null, project.id, projectNumber)}
@@ -208,9 +209,9 @@ export default async function ProvisioningReviewPage({
                 required
                 className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
               />
-              <button type="submit" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
+              <SubmitButton pendingText="Sending…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
                 Send back for revision
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>

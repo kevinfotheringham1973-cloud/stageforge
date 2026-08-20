@@ -231,7 +231,7 @@ export async function GateDetail({
                     <span className="font-semibold">{d.label}</span>
                     {d.bypassAuthority !== "PM" && (
                       <span
-                        className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide ${
+                        className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
                           d.bypassAuthority === "SRO" || d.bypassAuthority === "FIRE_OFFICER"
                             ? "bg-risk text-white"
                             : "bg-accentsoft text-flag"
@@ -352,7 +352,7 @@ export async function GateDetail({
                   <div className="mb-1 flex flex-wrap items-center gap-2">
                     <span className="font-semibold">{c.label}</span>
                     <span
-                      className={`rounded px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide ${
+                      className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
                         c.overrideAuthority === "FIRE_OFFICER" ? "bg-risk text-white" : "bg-accentsoft text-flag"
                       }`}
                     >
@@ -471,7 +471,7 @@ export async function GateDetail({
                   <span className="font-semibold">
                     &pound;{Number(s.amount).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
                   </span>
-                  <span className="rounded bg-accentsoft px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-accent">
+                  <span className="rounded bg-accentsoft px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
                     {APPROVAL_BUCKET_LABELS[s.bucket] ?? s.bucket}
                   </span>
                   {s.status === "APPROVED" ? (
@@ -676,7 +676,7 @@ export async function GateDetail({
             {gate.lessonsLearned.map((l) => (
               <div key={l.id} className="rounded-md border border-rule bg-surface px-4 py-2.5 text-sm">
                 <span
-                  className={`mr-2 rounded px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wide ${
+                  className={`mr-2 rounded px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide ${
                     l.type === "WENT_WELL" ? "bg-accentsoft text-ok" : "bg-accentsoft text-warn"
                   }`}
                 >
