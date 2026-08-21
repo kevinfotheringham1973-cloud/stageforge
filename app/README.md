@@ -81,17 +81,22 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   spend and outstanding deliverables/compliance across every project in
   the package alongside each one's own row — "assess the full project"
   as one disruption window, not just its pieces one dashboard at a time.
-  No effect on instantiation, tags, or bypass/override authority. For
-  starting several systems at once — the actual point Kevin was making
-  (21 Aug 2026): "there are times when multiple systems... required" —
-  `/projects/new` has a second, collapsed-by-default form
-  (`createProvisioningDraftBatch`): check off however many systems
-  belong to the package, one shared description and CDM answer, and it
-  creates one DRAFT project per system in a single submission, all
-  linked to a package (mandatory here, unlike the single-project form).
+  No effect on instantiation, tags, or bypass/override authority. The
+  works-package box on `/projects/new` itself is also where you start
+  several systems at once — the actual point Kevin was making (21 Aug
+  2026): "there are times when multiple systems... required," and a
+  first cut that hid the multi-system checkboxes in a separate,
+  disconnected accordion below the package box was "useless... unless
+  it adds additional system packages." One form now: pick the primary
+  system up top as always, then in the works-package box check off
+  whichever other systems ride along in the same disruption window — a
+  package name (existing or new) becomes required the moment anything
+  extra is checked, since that's what links them. `createProvisioningDraft`
+  creates the primary project plus one DRAFT sibling per additional
+  system checked, all in the same submission and the same package.
   Each still needs its own Compliance Officer review before going live
-  — bulk-create only replaces re-filling the form once per system, not
-  the review step.
+  — bundling several systems only replaces re-filling the form once
+  per system, not the review step.
 - **Screens** — the portfolio (`/`, current gate/cost/outstanding per
   project, plus scheduled-report management), a project dashboard
   (`/projects/[projectNumber]`), a portfolio-wide Resource/Capacity view

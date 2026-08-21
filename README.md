@@ -80,10 +80,13 @@ system isolated) is precious — extra opportunistic work often bundles
 into it rather than disrupting the same space twice. **Works Packages**
 give this a home without diluting each discipline's own checklist and
 compliance rigor: a lightweight label linking otherwise-independent
-projects that share one disruption window, set at creation or after
-the fact, with a "+ Add a system" shortcut straight into the create
-flow and a combined overview page (`/works-packages/[id]`) rolling up
-spend and outstanding items across every project in the package.
+projects that share one disruption window, set at creation — where the
+same form lets you check off several systems at once and create every
+one of them, linked to the same package, in a single submission — or
+after the fact, with a "+ Add a system" shortcut straight into the
+create flow and a combined overview page (`/works-packages/[id]`)
+rolling up spend and outstanding items across every project in the
+package.
 
 A screen-by-screen UX audit (benchmarked against Linear, Asana/Monday,
 and enterprise PPM tools) drove several rounds of fixes, ending at
