@@ -338,9 +338,9 @@
     <div>
       <h1>StageForge</h1>
       <div class="doc-meta">
-        Product Requirements Document — Draft v0.11<br>
+        Product Requirements Document — Draft v0.12<br>
         Owner: Kevin Fotheringham · 21 Aug 2026<br>
-        Source: Overview.docx + Kevin's decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx; revised 20–21 Aug 2026 with the completed Hard FM Template library and the resulting provisioning/authority-model corrections (§10)
+        Source: Overview.docx + Kevin's decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx; revised 20–21 Aug 2026 with the completed Hard FM Template library, the resulting provisioning/authority-model corrections (§10), and Works Packages (§06)
       </div>
     </div>
     <div class="stamp">Draft — not signed off</div>
@@ -526,6 +526,10 @@
   <div class="flag">
     <span class="flag-label">Open question</span>
     How much PM-facing guidance the platform should surface — a one-time generated brief the PM reads at project start, versus ongoing contextual guidance resurfaced at each gate — is undefined. ProvisioningModel.html assumes a one-time brief for a first version.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Added 21 Aug 2026: Works Packages. A hospital runs 24/7, so a disruption window (an area decanted, a system isolated) is precious — Kevin's example: redesigning the main kitchen's drainage is reason enough to also upgrade its ventilation and relamp its lighting while it's cleared out. Rather than merging multiple disciplines' checklists into one project — which would blur the compliance rigor the Template model exists for, since each discipline needs its own SHTM reference, its own Authorised Person, its own sign-off chain — a project stays single-Template and fully correct, and can optionally link to a <code>WorksPackage</code>: a lightweight label grouping otherwise-independent projects sharing one disruption window. Set at creation (an existing-package dropdown or a new-package name field on <code>/projects/new</code>) or after the fact once a PM decides to fold in extra work. Shown as a small badge on the portfolio and each project's own dashboard, cross-linking to the sibling projects — no effect on instantiation, tags, or bypass/override authority.
   </div>
 
   <h3>Roles &amp; Permissions</h3>

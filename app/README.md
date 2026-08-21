@@ -62,6 +62,20 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   right template." See `../ProvisioningModel.html` for the original
   design and `../PRD.html` §10 for why the template-matching step was
   superseded. Requires `ANTHROPIC_API_KEY` — see Setup below.
+- **Works Packages** (`src/lib/worksPackages.ts`, `WorksPackage` model) —
+  a hospital runs 24/7, so a disruption window is precious; extra
+  opportunistic work often bundles into it rather than disrupting the
+  same space twice (e.g. redesigning the kitchen drainage while it's
+  cleared out is reason enough to also upgrade the ventilation and
+  relamp the lighting). A `WorksPackage` is purely an organisational
+  label linking otherwise-independent, discipline-pure projects — never
+  a merge of their checklists, which stay exactly as correct and
+  discipline-specific as a solo project's. Set on `/projects/new` (an
+  existing-package dropdown or a new-package name field) or after the
+  fact from the project dashboard (PM-only, `setProjectWorksPackage`).
+  Shown as a small badge on the portfolio and each project's dashboard,
+  cross-linking to sibling projects — no effect on instantiation, tags,
+  or bypass/override authority.
 - **Screens** — the portfolio (`/`, current gate/cost/outstanding per
   project, plus scheduled-report management), a project dashboard
   (`/projects/[projectNumber]`), a portfolio-wide Resource/Capacity view
