@@ -23,13 +23,21 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   evidence/bypass/override/approval rows), plus `GateSignOff` and an
   append-only `AuditLogEntry`.
 - **Governance logic** (`src/lib/permissions.ts`) — pure functions, no DB
-  dependency: the tiered bypass-authority ladder (PM → Compliance Officer
-  → SRO), the Sponsor-only gate decision rule, the gate-closure AND
-  condition (every blocking deliverable, every blocking compliance
-  requirement, *and* every blocking spend record — evidenced/bypassed/
-  overridden/approved as applicable), and `gateTimelineStatus` — planned-
-  vs-actual health per gate (on track / overdue / completed on time or
-  late), colour-coded consistently everywhere it's shown.
+  dependency: bypass/override authority, the Sponsor-only gate decision
+  rule, the gate-closure AND condition (every blocking deliverable, every
+  blocking compliance requirement, *and* every blocking spend record —
+  evidenced/bypassed/overridden/approved as applicable), and
+  `gateTimelineStatus` — planned-vs-actual health per gate (on track /
+  overdue / completed on time or late), colour-coded consistently
+  everywhere it's shown. Authority isn't a single PM → Compliance Officer
+  → SRO ladder: SRO is the one apex that can act at any lower tier, but
+  every other named authority — Fire Officer, each discipline's
+  Authorised Person (Electrical/Water/Ventilation/Medical Gases),
+  Clinical Safety Officer, Information Governance Officer — is an
+  *exact-match* requirement even Compliance Officer doesn't inherit into
+  (`EXACT_MATCH_AUTHORITIES`). A fire-safety item needs the Fire Officer
+  specifically; an isolation/permit item needs the relevant discipline AP
+  specifically.
 - **Server actions** (`src/lib/actions.ts`) — bypass a deliverable, upload
   or replace evidence (delivery and compliance both), submit/approve/reject
   a gate, an SRO override that clears every outstanding compliance
@@ -40,17 +48,31 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   (`createProvisioningDraft` → `reviseProvisioningBrief` /
   `updateProvisioningDraft` / `requestProvisioningRevision` →
   `approveProvisioning`).
-- **AI-assisted provisioning** (`src/lib/provisioning.ts`) — a free-text
-  project description is matched against the `Template` library via
-  Claude Opus 5 with Zod-enum-constrained structured outputs (the
-  templateId/tags enums are built fresh from the database at call
-  time, so an invalid pick is structurally impossible, not just
-  discouraged). See `../ProvisioningModel.html` for the full design.
-  Requires `ANTHROPIC_API_KEY` — see Setup below.
-- **Screens** — a project dashboard (`/projects/[projectNumber]`), a
-  portfolio-wide Resource/Capacity view (`/resources`), `/projects/new`
-  (provisioning entry) and `/projects/[projectNumber]/provisioning`
-  (match review). The project dashboard (confirmed by Kevin, 19 Aug
+- **AI-assisted provisioning** (`src/lib/provisioning.ts`) — `/projects/new`
+  has an explicit "System / Template" dropdown (`listMatchableTemplates`):
+  the PM picks the discipline directly rather than an LLM guessing it
+  from free text, which real usage showed getting it wrong on ambiguous
+  briefs. The LLM's role narrows to `matchComplianceTags` — proposing
+  which compliance tags apply (occupied/live site, National Treatment
+  Centre, etc.) for the already-chosen template — via Claude Opus 5 with
+  a Zod-enum-constrained structured output (the tag enum is built fresh
+  from the database at call time, so an invalid pick is structurally
+  impossible, not just discouraged). A Compliance Officer's review
+  correspondingly narrows to "are these tags right," not "is this the
+  right template." See `../ProvisioningModel.html` for the original
+  design and `../PRD.html` §10 for why the template-matching step was
+  superseded. Requires `ANTHROPIC_API_KEY` — see Setup below.
+- **Screens** — the portfolio (`/`, current gate/cost/outstanding per
+  project, plus scheduled-report management), a project dashboard
+  (`/projects/[projectNumber]`), a portfolio-wide Resource/Capacity view
+  (`/resources`, stacked-bar allocation with a 100%-capacity marker),
+  a portfolio-wide Lessons Learned library (`/lessons-learned`, grouped
+  by gate so a recurring mistake at the same lifecycle point is visible
+  across projects), `/projects/new` (provisioning entry, System/Template
+  dropdown) and `/projects/[projectNumber]/provisioning` (match review).
+  Every screen has real heading structure (`h1`→`h2`/`h3`) and every form
+  control a genuine programmatic label — see "Accessibility" below.
+  The project dashboard (confirmed by Kevin, 19 Aug
   2026, after comparing a mockup against the original scrolling
   accordion) is a persistent shell — `(dashboard)/layout.tsx` — with
   three KPI cards (Cost, Gate Activity, Timeline headline) and a
@@ -67,19 +89,38 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   delivery + compliance + spend checklists, actions, decision history,
   append-only activity log) — is server-rendered. All wired to the real
   database, not mock data.
-- **Seed data** (`prisma/seed.ts`) — two RIBA-aligned Templates
-  (M&E Systems Replacement, Water Systems Replacement) and two demo
-  projects for Serco Health : FVRH Scotland delivering work for FVRH
-  NHS: **#20456**, UPS Systems Replacement — left mid-flight on Gate 3
-  (Spatial Coordination) with delivery, compliance, and spend items
-  outstanding, so you can exercise the bypass/override/approve flow — and
-  **#20777**, Ward 6-8 Calorifier Replacement, created live through
-  the AI-assisted provisioning flow and kept as a permanent second
-  example (real Claude Opus 5 match/reasoning, replayed here so the
-  demo works without an API key).
+- **Seed data** (`prisma/seed.ts`) — 17 RIBA-aligned Templates covering
+  the Health reference implementation's Hard FM systems (Boiler, Steam,
+  Compressed Air, Ventilation, Medical Gases, Fire Alarm & Detection,
+  Fire Suppression, Lifts, Electrical Services, Lighting, Domestic Hot &
+  Cold Water, Chilled Water/Cooling, Above-Ground Drainage, BMS,
+  Security, Pneumatic Tube, Nurse Call), each built from Kevin's own
+  RIBA/SHTM-aligned source documents (kept in the repo root for
+  traceability), plus one retired Template (Cold Water Storage &
+  Distribution, merged into Domestic Hot & Cold Water — `matchKeywords`
+  cleared so it can't be selected again, row kept since a live project
+  still references it) and five demo projects for Serco Health : FVRH
+  Scotland delivering work for FVRH NHS: **#20456**, UPS Systems
+  Replacement — left mid-flight on Gate 3 (Spatial Coordination) with
+  delivery, compliance, and spend items outstanding, so you can exercise
+  the bypass/override/approve flow; **#20777**, Ward 6-8 Calorifier
+  Replacement (now on the merged Domestic Hot & Cold Water template),
+  created live through the AI-assisted provisioning flow and kept as a
+  permanent example; **#55998**, Main Kitchen Drainage Replacement;
+  **#30001**, Main Water Tank Replacement; and **#30002**, LED Upgrade
+  Throughout Hospital Corridors and Avenues.
 - **CI** (`../.github/workflows/ci.yml`) — typecheck and `next build`
   on every push and PR. No database service required: every route is
   dynamic (cookies()-based session), so the build never queries one.
+- **Accessibility.** WCAG contrast measured against the actual token
+  palette and corrected (`tailwind.config.ts`), every form label given a
+  real `for`/`id` (or `aria-label` on repeated per-item fields, e.g. each
+  deliverable's evidence/bypass inputs) rather than relying on
+  placeholder text or visual proximity alone, and heading structure
+  (`h1`→`h2`/`h3`) added across every screen. Verified against the live
+  Windows UI Automation tree (the actual API Narrator/NVDA/JAWS consume),
+  not just DOM inspection — see git history for the specific commit if
+  you want the measurements.
 
 ## What's deliberately stubbed, not built
 
@@ -93,14 +134,23 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   and the portfolio-wide `/finance` route (Finance's equivalent of
   `/resources`) aren't yet. `reviseSpend` (editing a `PENDING` record
   before approval) is also deferred, not built.
-- **Template authoring UI.** Both Templates are hand-authored in
+- **Template authoring UI.** All 17 Templates are hand-authored in
   `seed.ts`. The Compliance Rule Set editor sketched in the design
   screens has no backing code yet — the compliance corpus is
   hand-authored in `seed.ts` too.
-- **Provisioning role assignment.** `createProvisioningDraft` only
-  settles the creator as PM — assigning the rest of a project's roles
-  (Sponsor, SRO, FM Contractor, Client Authority) isn't wired into the
-  flow yet (`ProvisioningModel.html` §05/§08 open question).
+- **Discipline-specific role assignment.** The hospital-wide standing
+  team (PM, FM Contractor, Sponsor, Client Authority, Compliance
+  Officer, SRO, Finance, Fire Officer) is auto-assigned to every project
+  on creation (`assignStandardTeam`) — resolves the open question
+  `ProvisioningModel.html` §05/§08 originally left open. Discipline-
+  specific roles (Authorised Person per system, Authorising Engineer,
+  Principal Designer) stay a manual per-project decision, deliberately —
+  which discipline applies depends on what the project actually is. Four
+  authorities used across the Template library — AP (Ventilation), AP
+  (Medical Gases), Clinical Safety Officer, Information Governance
+  Officer — currently have no seeded user holding them; deliverables
+  gated on those authorities can be evidenced but not bypassed/overridden
+  by anyone in the demo cast as shipped.
 
 ## Setup
 
@@ -111,7 +161,7 @@ cd app
 npm install
 cp .env.example .env   # adjust DATABASE_URL if your Postgres differs
 npm run db:migrate     # creates the schema
-npm run db:seed        # loads the two Templates and two demo projects
+npm run db:seed        # loads the 17 Templates and five demo projects
 npm run dev
 ```
 
@@ -125,25 +175,38 @@ For AI-assisted provisioning (`/projects/new`) specifically, also add an
 creating/revising a provisioning draft needs it.
 
 Open http://localhost:3000. Use the "Acting as" switcher in the header to
-flip between Derek Gibb (PM), David Mackay (Sponsor), Gary Grant (Compliance
-Officer), Mark O'Hear (SRO), and Priya Sharma (Finance) — the same names
-used in the PRD and design screens — and watch what each one can and
-can't do, right there in the expanded gate row, no navigation.
+flip between Derek Gibb (PM), David Mackay (Sponsor · Client Authority),
+Gary Grant (Compliance Officer), Mark O'Hear (SRO), Alan McGeachie (Fire
+Officer), Bob Smith (AP Electrical), Claire Duncan (AP Water), and Andrea
+(Finance) — the same standing hospital team every project gets, plus
+Dennis Kelly (a second PM), Ross Blair (Principal Designer), and Callum
+Reid (platform admin, no delivery role — can delete a project) — and
+watch what each one can and can't do, right there in the expanded gate
+row, no navigation.
 
 Things worth trying, on **#20456** (UPS Systems Replacement, Gate 3 —
 Spatial Coordination):
 
-- As **Derek Gibb (PM)**: try to bypass the "Fire compartmentation" deliverable
-  or upload evidence for the compliance requirements — the bypass action isn't
-  offered at all for the deliverable, because it requires SRO authority; you
-  can still upload evidence for it, and you can evidence compliance items
-  directly since PM has that authority.
-- As **Mark O'Hear (SRO)**: bypass the deliverable, and use "Override all
-  outstanding" on the compliance section — one action clears every
-  outstanding compliance requirement on the gate at once, not item by item.
-  Neither can be undone from the UI (no "undo" concept, matching the
-  audit-trail requirement) — check the activity log at the bottom, every
-  action is recorded there, append-only.
+- As **Derek Gibb (PM)**: try to bypass the "Fire compartmentation and
+  ventilation impact assessment" deliverable — the bypass action isn't
+  offered at all, because it requires Fire Officer authority specifically,
+  not SRO (a real correctness fix: an SRO has no legal standing over fire
+  compliance). You can still upload evidence for it, and you can evidence
+  most other compliance items directly since PM has that authority.
+- As **Mark O'Hear (SRO)**: try "Override all outstanding" on the
+  compliance section — it clears the HAI-SCRIBE check (SRO authority) but
+  can't clear the fire risk assessment, because that one's Fire-Officer-only
+  and SRO doesn't inherit into it. This is deliberate, not a bug: SRO is the
+  one apex authority that reaches every *other* tier, but Fire Officer,
+  each discipline's Authorised Person, Clinical Safety Officer, and
+  Information Governance Officer are exact-match requirements even SRO
+  can't act through.
+- As **Alan McGeachie (Fire Officer)**: bypass the fire compartmentation
+  deliverable and evidence/override the fire risk assessment compliance
+  item — only role in the cast that can. Nothing here can be undone from
+  the UI (no "undo" concept, matching the audit-trail requirement) — check
+  the activity log at the bottom, every action is recorded there,
+  append-only.
 - As **Derek Gibb (PM)**, once the gate is fully clear (delivery *and*
   compliance): submit for Sponsor approval.
 - As **David Mackay (Sponsor)**: approve, or reject with a reason and watch
@@ -151,20 +214,25 @@ Spatial Coordination):
 - As **Derek Gibb (PM)**, on the project overview: reinstate Gate 7 (Use),
   excluded from this project by default — it appears at the bottom, after
   every other gate, not back in its original template position.
-- As **Priya Sharma (Finance)**: record a spend entry against Gate 3 — bucket,
+- As **Andrea (Finance)**: record a spend entry against Gate 3 — bucket,
   amount, description — and watch it show up as an outstanding item blocking
   that gate's submission, alongside the delivery and compliance checklists.
 - As **David Mackay (Sponsor)** or **Mark O'Hear (SRO)**: approve or reject
-  Priya's spend entry. Rejecting requires a reason and leaves the record
+  Andrea's spend entry. Rejecting requires a reason and leaves the record
   `PENDING`, editable — same "no dead ends" pattern as everywhere else.
 
 And with an `ANTHROPIC_API_KEY` configured, try **AI-assisted
-provisioning** end to end: click "+ New project" in the header, describe
-a piece of Hard FM work (e.g. an air handling unit or lift replacement),
-and watch it match against the Template library. Then, as **Gary Grant
-(Compliance Officer)**, review the proposed match/tags/reasoning on the
-review page — override the template or tags directly, send it back for
-revision with a reason, or approve to instantiate the project for real.
+provisioning** end to end: click "+ New project" in the header, pick a
+system from the dropdown (e.g. Ventilation & Air Handling), describe the
+works (e.g. "replace 4 AHUs serving theatres, live occupied site,
+phased weekends"), and watch the LLM propose compliance tags for it —
+`occupied_during_works` in that example. Then, as **Gary Grant
+(Compliance Officer)**, review the proposed tags on the review page —
+override the template or tags directly, send it back for revision with a
+reason, or approve to instantiate the project for real. As the drafting
+PM, you can also self-service a wrong template pick via the "Revise
+system, description & re-match tags" form, without needing the
+Compliance Officer to catch it.
 
 ## Design reference
 

@@ -338,9 +338,9 @@
     <div>
       <h1>StageForge</h1>
       <div class="doc-meta">
-        Product Requirements Document — Draft v0.10<br>
-        Owner: Kevin Fotheringham · 19 Aug 2026<br>
-        Source: Overview.docx + Kevin's decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx
+        Product Requirements Document — Draft v0.11<br>
+        Owner: Kevin Fotheringham · 21 Aug 2026<br>
+        Source: Overview.docx + Kevin's decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx; revised 20–21 Aug 2026 with the completed Hard FM Template library and the resulting provisioning/authority-model corrections (§10)
       </div>
     </div>
     <div class="stamp">Draft — not signed off</div>
@@ -513,6 +513,10 @@
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
+    Revised 21 Aug 2026, once the Template library was built out to full coverage (17 Hard FM systems, up from the two it launched with): the bullet above describing an LLM call matching the description against the Template library is superseded. Real usage surfaced repeated mismatches — the LLM guessing the wrong discipline from an ambiguous brief, caught by the Compliance Officer on review every time. Kevin's read: which Hard FM system a project is about is a closed, known set the PM already knows outright, not something worth an LLM guess. <code>/projects/new</code> now carries an explicit "System / Template" dropdown instead — the PM picks the discipline directly, and the LLM's role narrows to proposing the compliance-tag set (occupied/live site, National Treatment Centre, etc.) for that already-known system. The Compliance Officer's review correspondingly narrows from "is this even the right template" to just "are these tags right." <a href="ProvisioningModel.html">ProvisioningModel.html</a> §01/§03/§07 still describe the original LLM-matches-template design as originally scoped and built — read alongside this note, not as still-current.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
     Confirmed by Kevin, 19 Aug 2026: template-library selection, not freeform generation — an LLM matches and adapts against a human-authored template library rather than drafting checklist items from scratch, to bound the failure mode to "picked the wrong real template" rather than "hallucinated a regulatory requirement."
   </div>
   <div class="flag decided">
@@ -534,6 +538,10 @@
     <li>Every bypass and every override requires a written reason and a single sign-off — no multi-person approval chain at any level.</li>
   </ul>
   <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: role assignment happens at project/programme configuration, and permissions are required from the outset, not a later hardening pass.</div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Revised 20–21 Aug 2026, once the Template library exposed real, named Trust appointments the global role list above didn't cover: Fire Officer, Authorised Person (Electrical), Authorised Person (Water), Authorised Person (Ventilation), Authorised Person (Medical Gases), Clinical Safety Officer, Information Governance Officer, and Principal Designer are now part of the role roster — added only where a genuinely distinct, real appointment exists, never invented for an external statutory regime that doesn't correspond to one (e.g. no "Gas AP" for fuel gas, no "Lifts AP" for LOLER — those stay SRO/Compliance-Officer checkpoints). The bypass model above was also corrected from a simple PM → Compliance Officer → SRO ladder to a mixed model: SRO remains an apex that can act at any lower tier, but every other named authority — Fire Officer, each Authorised Person, Clinical Safety Officer, Information Governance Officer — is an <em>exact-match</em> requirement even Compliance Officer doesn't inherit into. A fire-safety item needs the Fire Officer specifically; an isolation/permit item needs the relevant discipline AP specifically. This closed two real bugs: fire-safety items had been escalating to SRO, who has no legal standing over fire compliance, and Compliance Officer bypass authority had been silently reaching down into ordinary PM-tier deliverables it was never tagged for.
+  </div>
 
   <h3>Resource &amp; Capacity View</h3>
   <p>Shows resource allocation and capacity, presumably per project or portfolio.</p>
@@ -633,6 +641,7 @@
     <li>Approval thresholds and workflow differences between the three spend buckets (Lifecycle Replacement, Small Works, Variation) — value ranges, bucket-specific approvers, and whether bucket is set per-deliverable or per-project.</li>
   </ol>
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (19 Aug 2026): the Health sector's standard Delivery Module template follows the RIBA Plan of Work 2020's eight stages, validated against a real worked example; the Compliance Module's grounding corpus for Scottish Health (SHTM series, Building (Scotland) Act, HAI-SCRIBE) is now documented, and the Compliance Module itself has shipped (schema, live instantiation, gate-closure enforcement, UI); AI-assisted project provisioning is scoped in full in ProvisioningModel.html — template-library matching rather than freeform generation, and a mandatory Compliance Officer review/approval step before a provisioned project goes live; the three Hard FM approval buckets (Lifecycle Replacement, Small Works, Variation) and cross-bucket spend rollup are scoped into the Financial View.</p>
+  <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (21 Aug 2026): the Template library reached full coverage for the Health reference implementation — 17 Hard FM systems (Boiler, Steam, Compressed Air, Ventilation, Medical Gases, Fire Alarm &amp; Detection, Fire Suppression, Lifts, Electrical Services, Lighting, Domestic Hot &amp; Cold Water, Chilled Water/Cooling, Above-Ground Drainage, BMS, Security, Pneumatic Tube, Nurse Call), each mapped from Kevin's own RIBA/SHTM-aligned source documents, with two authority-modeling bugs fixed along the way (isolation/permit items now require the relevant discipline Authorised Person instead of generic SRO; Compliance Officer bypass authority no longer inherits down to ordinary PM-tier deliverables outside its own remit) and new named Trust appointments added only where a genuinely distinct one exists (Electrical/Water/Ventilation/Medical Gases Authorised Persons, a Fire Officer authority tier — SRO has no legal standing over fire compliance — Clinical Safety Officer, Information Governance Officer). AI-assisted project provisioning's template-matching step is superseded by a deterministic dropdown — see the flag on §06 above. HAI-SCRIBE involvement intensity (Kevin's RIBA-stage matrix) is now operational: the five systems rated sustained High involvement get an extra compliance checkpoint at Concept Design through Handover, driven by which Template matched, not left to the LLM. A UX audit (screen-by-screen, benchmarked against Linear/Asana/enterprise PPM tools) drove several rounds of fixes, ending at 8.1/10: an accessibility pass (WCAG contrast measured and fixed, every form label given a real programmatic association with its field, heading structure added across all seven screens) verified against the live Windows accessibility tree, not just code inspection.</p>
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved in earlier rounds and reflected here: target user/buyer, role set, role-assignment model, bypass/approval permissions, audit trail &amp; versioning, tenancy model, compliance architecture direction, ERP timing, compliance-blocks-by-default with SRO override, SRO assigned per-project, SRO override requires written reason + single sign-off, PM bypass requires written reason, tenant boundary resolved via project-scoped access, legally significant deliverables escalate bypass authority to Compliance Officer/SRO, pmopassport.co.uk as sibling subdomain, SRO title, gate rejection requires written reason and returns to PM, sector priority after Health stays open.</p>
 
   <h2><span class="num">11</span>Out of scope, for now</h2>
