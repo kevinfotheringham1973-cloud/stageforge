@@ -1,16 +1,21 @@
-// CDM 2015 statutory question (Project.worksType) → compliance tag
-// bridge. Kept separate from the free-text `tags` a PM/LLM can set,
-// because these tags must be driven only by the explicit worksType
-// answer — see the schema comment on Project.worksType and the
-// exclusion of both tags from lib/provisioning.ts's LLM tag vocabulary.
+// Deterministic (never LLM-guessed) compliance-tag bridges. Kept
+// separate from the free-text `tags` a PM/LLM can set, because these
+// tags must be driven only by facts the app already knows for
+// certain — see the schema comment on Project.worksType and the
+// exclusion of these tags from lib/provisioning.ts's LLM tag
+// vocabulary. Originally CDM-only (hence the filename); the
+// HAI-SCRIBE intensity tag below follows the exact same reasoning —
+// which system a project's Template covers is a fixed fact, not
+// something that should vary by free-text description within one
+// discipline, so it isn't left to the LLM either.
 //
-// Two independent tags, not one, because CDM 2015's Principal Designer
-// duty (reg 5) and the planning-permission question are triggered by
-// different things: "more than one contractor" for the former,
-// "modifies the building" for the latter. DIRECT_REPLACEMENT_MULTIPLE_
-// CONTRACTORS gets the first tag but not the second; BUILDING_
-// MODIFICATION gets both (a building-modification job always needs
-// more than one trade in practice).
+// Two independent CDM tags, not one, because CDM 2015's Principal
+// Designer duty (reg 5) and the planning-permission question are
+// triggered by different things: "more than one contractor" for the
+// former, "modifies the building" for the latter.
+// DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS gets the first tag but not
+// the second; BUILDING_MODIFICATION gets both (a building-modification
+// job always needs more than one trade in practice).
 
 import type { CdmWorksType } from "@prisma/client";
 
@@ -27,20 +32,43 @@ export function isCdmWorksType(value: string): value is CdmWorksType {
   return (CDM_WORKS_TYPES as string[]).includes(value);
 }
 
+// The 5 systems Kevin's HAI-SCRIBE vs RIBA intensity matrix (21 Aug
+// 2026) rates "High" HAI-SCRIBE/IPC involvement across most of the
+// project lifecycle (RIBA 2–6), versus every other template's
+// Low–Medium rating. Keyed by Template.key so it's a property of the
+// discipline, not guessed per project.
+export const HAISCRIBE_HIGH_INTENSITY_TAG = "haiscribe_high_intensity_system_affected";
+const HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS = new Set([
+  "template.health.ventilation_systems_replacement",
+  "template.health.medical_gas_systems_replacement",
+  "template.health.domestic_hot_cold_water_replacement",
+  "template.health.chilled_water_cooling_replacement",
+  "template.health.above_ground_drainage_replacement",
+]);
+
 /**
  * The tag set actually used to match ComplianceRuleTemplate.appliesIfTags
  * at Stage instantiation — a project's free-text tags, plus whichever
- * CDM tags its worksType answer implies. Callers that instantiate
- * stages (approveProvisioning, reinstateStage, seed.ts) pass this
- * instead of project.tags directly.
+ * CDM tags its worksType answer implies, plus the HAI-SCRIBE
+ * high-intensity tag if its Template is one of the five. Callers that
+ * instantiate stages (approveProvisioning, reinstateStage, seed.ts)
+ * pass this instead of project.tags directly. templateKey is optional
+ * only so existing callers that haven't been threaded through yet
+ * don't break — always pass it where the Template is known.
  */
-export function effectiveComplianceTags(project: { tags: string[]; worksType: CdmWorksType }): string[] {
-  const cdmTags: string[] = [];
+export function effectiveComplianceTags(
+  project: { tags: string[]; worksType: CdmWorksType },
+  templateKey?: string
+): string[] {
+  const derivedTags: string[] = [];
   if (project.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR") {
-    cdmTags.push(CDM_PRINCIPAL_DESIGNER_TAG);
+    derivedTags.push(CDM_PRINCIPAL_DESIGNER_TAG);
   }
   if (project.worksType === "BUILDING_MODIFICATION") {
-    cdmTags.push(CDM_BUILDING_MODIFICATION_TAG);
+    derivedTags.push(CDM_BUILDING_MODIFICATION_TAG);
   }
-  return [...project.tags, ...cdmTags];
+  if (templateKey && HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS.has(templateKey)) {
+    derivedTags.push(HAISCRIBE_HIGH_INTENSITY_TAG);
+  }
+  return [...project.tags, ...derivedTags];
 }

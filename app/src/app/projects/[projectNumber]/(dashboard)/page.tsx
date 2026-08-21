@@ -54,7 +54,7 @@ export default async function ProjectOverviewPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-lg border border-rule bg-surface p-5">
-        <div className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Team &amp; capacity</div>
+        <h2 className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Team &amp; capacity</h2>
         {teamRows.length === 0 ? (
           <p className="text-sm text-inkmuted">No delivery-facing roles assigned yet.</p>
         ) : (
@@ -72,12 +72,13 @@ export default async function ProjectOverviewPage({
                   >
                     <input
                       name="allocationPercent"
+                      aria-label={`${row.name}'s allocation, percent`}
                       type="number"
                       min={0}
                       max={100}
                       defaultValue={row.allocationPercent ?? ""}
                       placeholder="%"
-                      className="w-16 rounded border border-rule bg-bg px-2 py-1 text-right text-sm"
+                      className="w-16 rounded border border-inkmuted bg-bg px-2 py-1 text-right text-sm"
                     />
                     <span className="text-xs text-inkmuted">%</span>
                     <SubmitButton
@@ -100,7 +101,7 @@ export default async function ProjectOverviewPage({
 
       {excludedTemplateStages.length > 0 && (
         <div>
-          <div className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Excluded from scope</div>
+          <h2 className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Excluded from scope</h2>
           <div className="flex flex-col gap-3">
             {excludedTemplateStages.map((st) => (
               <div

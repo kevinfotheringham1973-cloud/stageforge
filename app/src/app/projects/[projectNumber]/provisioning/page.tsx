@@ -9,6 +9,7 @@ import {
   updateProvisioningDraft,
 } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
+import { listMatchableTemplates } from "@/lib/provisioning";
 
 const WORKS_TYPE_LABEL: Record<CdmWorksType, string> = {
   DIRECT_REPLACEMENT_SINGLE_CONTRACTOR: "Direct replacement, one contractor",
@@ -52,7 +53,7 @@ export default async function ProvisioningReviewPage({
   const [userId, roleKeys, allTemplates] = await Promise.all([
     getCurrentUserId(),
     getCurrentUserGlobalRoleKeys(),
-    db.template.findMany({ where: { matchKeywords: { isEmpty: false } }, orderBy: { name: "asc" } }),
+    listMatchableTemplates(db),
   ]);
   const isCreator = userId === project.createdById;
   const isComplianceOfficer = roleKeys.includes("COMPLIANCE_OFFICER");
@@ -74,13 +75,14 @@ export default async function ProvisioningReviewPage({
       )}
 
       <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
-        <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Description</div>
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Description</h2>
         <p className="text-sm">{project.provisioningBrief}</p>
       </div>
 
       <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
-        <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Proposed match</div>
-        <div className="mb-2 text-sm font-semibold">{project.template.name}</div>
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Selected system</h2>
+        <div className="mb-3 text-sm font-semibold">{project.template.name}</div>
+        <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Proposed tags</div>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {project.tags.length > 0 ? (
             project.tags.map((t) => (
@@ -101,7 +103,7 @@ export default async function ProvisioningReviewPage({
       </div>
 
       <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
-        <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">CDM 2015 works type</div>
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">CDM 2015 works type</h2>
         <div className={`mb-1 text-sm font-semibold ${project.worksType === "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" ? "" : "text-flag"}`}>
           {WORKS_TYPE_LABEL[project.worksType]}
         </div>
@@ -110,7 +112,7 @@ export default async function ProvisioningReviewPage({
 
       {project.provisioningReviews.length > 0 && (
         <div className="mb-6">
-          <div className="mb-2 font-mono text-[11px] uppercase tracking-wide text-inkmuted">Review history</div>
+          <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wide text-inkmuted">Review history</h2>
           <div className="flex flex-col gap-2">
             {project.provisioningReviews.map((r) => (
               <div key={r.id} className="rounded-md border border-rule bg-surface px-4 py-2.5 text-sm">
@@ -127,16 +129,30 @@ export default async function ProvisioningReviewPage({
 
       {isCreator && (
         <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
-          <div className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-            Revise description &amp; re-match
-          </div>
+          <h2 className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+            Revise system, description &amp; re-match tags
+          </h2>
           <form action={reviseProvisioningBrief.bind(null, project.id, projectNumber)} className="flex flex-col gap-3">
+            <select
+              name="templateId"
+              aria-label="System / Template"
+              required
+              defaultValue={project.templateId}
+              className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
+            >
+              {allTemplates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
             <textarea
               name="brief"
+              aria-label="Description"
               required
               rows={4}
               defaultValue={project.provisioningBrief ?? ""}
-              className="w-full rounded border border-rule bg-bg px-3 py-2 text-sm"
+              className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
             />
             <SubmitButton
               pendingText="Re-matching…"
@@ -150,14 +166,14 @@ export default async function ProvisioningReviewPage({
 
       {isComplianceOfficer && (
         <div className="flex flex-col gap-4 rounded-lg border border-dashed border-flag bg-accentsoft/30 p-5">
-          <div className="font-mono text-[10px] uppercase tracking-wide text-flag">Compliance Officer review</div>
+          <h2 className="font-mono text-[10px] uppercase tracking-wide text-flag">Compliance Officer review</h2>
 
           <form action={updateProvisioningDraft.bind(null, project.id, projectNumber)} className="flex flex-wrap items-end gap-2">
             <div className="flex-1">
-              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              <label htmlFor="override-template" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                 Override template
               </label>
-              <select name="templateId" defaultValue={project.templateId} className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm">
+              <select id="override-template" name="templateId" defaultValue={project.templateId} className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
                 {allTemplates.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -166,19 +182,20 @@ export default async function ProvisioningReviewPage({
               </select>
             </div>
             <div className="flex-1">
-              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              <label htmlFor="override-tags" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                 Tags (comma-separated)
               </label>
               <input
+                id="override-tags"
                 name="tags"
                 defaultValue={project.tags.join(", ")}
-                className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
               />
             </div>
-            <div className="w-full basis-full">
-              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+            <fieldset className="w-full basis-full">
+              <legend className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                 CDM 2015 works type
-              </label>
+              </legend>
               <div className="flex flex-wrap gap-4">
                 {(Object.keys(WORKS_TYPE_LABEL) as CdmWorksType[]).map((wt) => (
                   <label key={wt} className="flex items-center gap-1.5 text-sm">
@@ -187,7 +204,7 @@ export default async function ProvisioningReviewPage({
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
             <SubmitButton pendingText="Updating…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Update draft
             </SubmitButton>
@@ -205,9 +222,10 @@ export default async function ProvisioningReviewPage({
             >
               <input
                 name="reason"
+                aria-label="Reason for sending back for revision"
                 placeholder="Reason for sending back (required)"
                 required
-                className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
+                className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-64"
               />
               <SubmitButton pendingText="Sending…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
                 Send back for revision

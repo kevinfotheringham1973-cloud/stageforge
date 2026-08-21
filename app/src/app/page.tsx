@@ -45,9 +45,9 @@ export default async function HomePage() {
 
       {draftProjects.length > 0 && (
         <div className="mb-8">
-          <div className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+          <h2 className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
             Drafts awaiting review
-          </div>
+          </h2>
           <div className="flex flex-col gap-2">
             {draftProjects.map((p) => (
               <Link
@@ -73,12 +73,12 @@ export default async function HomePage() {
           <table className="w-full min-w-[980px] border-collapse text-base">
             <thead>
               <tr className="border-b-2 border-rule text-left font-mono text-xs font-bold uppercase tracking-wide text-ink">
-                <th className="py-3 pr-4">Project</th>
-                <th className="py-3 pr-4">Current gate</th>
-                <th className="py-3 pr-4">Timeline</th>
-                <th className="py-3 pr-4">Est. completion</th>
-                <th className="py-3 pr-4">Cost approved / total</th>
-                <th className="py-3 pr-4">Outstanding</th>
+                <th scope="col" className="py-3 pr-4">Project</th>
+                <th scope="col" className="py-3 pr-4">Current gate</th>
+                <th scope="col" className="py-3 pr-4">Timeline</th>
+                <th scope="col" className="py-3 pr-4">Est. completion</th>
+                <th scope="col" className="py-3 pr-4">Cost approved / total</th>
+                <th scope="col" className="py-3 pr-4">Outstanding</th>
               </tr>
             </thead>
             <tbody>
@@ -135,7 +135,7 @@ export default async function HomePage() {
       )}
 
       <div className="rounded-lg border border-rule bg-surface p-5">
-        <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Scheduled reports</div>
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Scheduled reports</h2>
         <p className="mb-4 text-sm text-inkmuted">
           Emails this portfolio view to its recipients automatically at 08:00 on the day selected below.
           Recipients are drawn from each user&rsquo;s account email — an address on a placeholder
@@ -185,17 +185,18 @@ export default async function HomePage() {
           <form action={createScheduledReport} className="flex flex-col gap-3 rounded-lg border border-dashed border-rule p-4">
             <div className="flex flex-wrap items-end gap-3">
               <div>
-                <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Label</label>
+                <label htmlFor="report-label" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Label</label>
                 <input
+                  id="report-label"
                   name="label"
                   required
                   placeholder="e.g. Weekly SRO portfolio summary"
-                  className="w-64 rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                  className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
                 />
               </div>
               <div>
-                <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Every</label>
-                <select name="dayOfWeek" defaultValue={5} className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm">
+                <label htmlFor="report-day" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Every</label>
+                <select id="report-day" name="dayOfWeek" defaultValue={5} className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
                   {DAY_NAMES.map((d, i) => (
                     <option key={d} value={i}>
                       {d}
@@ -204,8 +205,8 @@ export default async function HomePage() {
                 </select>
               </div>
             </div>
-            <div>
-              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Recipients</label>
+            <fieldset>
+              <legend className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Recipients</legend>
               <div className="flex flex-wrap gap-3">
                 {allUsers.map((u) => (
                   <label key={u.id} className="flex items-center gap-1.5 text-sm">
@@ -214,7 +215,7 @@ export default async function HomePage() {
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
             <SubmitButton pendingText="Adding…" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Add schedule
             </SubmitButton>
