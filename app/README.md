@@ -74,8 +74,24 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   existing-package dropdown or a new-package name field) or after the
   fact from the project dashboard (PM-only, `setProjectWorksPackage`).
   Shown as a small badge on the portfolio and each project's dashboard,
-  cross-linking to sibling projects — no effect on instantiation, tags,
-  or bypass/override authority.
+  cross-linking to sibling projects, with a "+ Add a system" shortcut
+  straight into `/projects/new` with that package pre-selected
+  (`?worksPackageId=`) — no re-finding it in the dropdown. The package
+  name links to `/works-packages/[id]`, a combined overview rolling up
+  spend and outstanding deliverables/compliance across every project in
+  the package alongside each one's own row — "assess the full project"
+  as one disruption window, not just its pieces one dashboard at a time.
+  No effect on instantiation, tags, or bypass/override authority. For
+  starting several systems at once — the actual point Kevin was making
+  (21 Aug 2026): "there are times when multiple systems... required" —
+  `/projects/new` has a second, collapsed-by-default form
+  (`createProvisioningDraftBatch`): check off however many systems
+  belong to the package, one shared description and CDM answer, and it
+  creates one DRAFT project per system in a single submission, all
+  linked to a package (mandatory here, unlike the single-project form).
+  Each still needs its own Compliance Officer review before going live
+  — bulk-create only replaces re-filling the form once per system, not
+  the review step.
 - **Screens** — the portfolio (`/`, current gate/cost/outstanding per
   project, plus scheduled-report management), a project dashboard
   (`/projects/[projectNumber]`), a portfolio-wide Resource/Capacity view
@@ -83,8 +99,9 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   a portfolio-wide Lessons Learned library (`/lessons-learned`, grouped
   by gate so a recurring mistake at the same lifecycle point is visible
   across projects), `/projects/new` (provisioning entry, System/Template
-  dropdown) and `/projects/[projectNumber]/provisioning` (match review).
-  Every screen has real heading structure (`h1`→`h2`/`h3`) and every form
+  dropdown), `/projects/[projectNumber]/provisioning` (match review), and
+  `/works-packages/[id]` (combined view across a Works Package's member
+  projects). Every screen has real heading structure (`h1`→`h2`/`h3`) and every form
   control a genuine programmatic label — see "Accessibility" below.
   The project dashboard (confirmed by Kevin, 19 Aug
   2026, after comparing a mockup against the original scrolling
@@ -159,12 +176,17 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   `ProvisioningModel.html` §05/§08 originally left open. Discipline-
   specific roles (Authorised Person per system, Authorising Engineer,
   Principal Designer) stay a manual per-project decision, deliberately —
-  which discipline applies depends on what the project actually is. Four
-  authorities used across the Template library — AP (Ventilation), AP
-  (Medical Gases), Clinical Safety Officer, Information Governance
-  Officer — currently have no seeded user holding them; deliverables
-  gated on those authorities can be evidenced but not bypassed/overridden
-  by anyone in the demo cast as shipped.
+  which discipline applies depends on what the project actually is.
+  Four authorities used across the Template library — AP (Ventilation:
+  Fiona Wallace), AP (Medical Gases: Graeme Paterson), Clinical Safety
+  Officer (Sarah Chen), Information Governance Officer (Neil Forsyth) —
+  now have a named holder in the seed cast, but none of the five fixed
+  demo projects happen to gate anything on those authorities, so they
+  won't show a role label in the Acting-as dropdown (same "manual
+  per-project, only when relevant" pattern Bob/Claire/Ross already
+  follow) or have anything to bypass/override until assigned to a
+  project that actually needs them — e.g. provision one from the
+  Ventilation, Medical Gases, Nurse Call, or Security template.
 
 ## Setup
 
@@ -196,7 +218,11 @@ Officer), Bob Smith (AP Electrical), Claire Duncan (AP Water), and Andrea
 Dennis Kelly (a second PM), Ross Blair (Principal Designer), and Callum
 Reid (platform admin, no delivery role — can delete a project) — and
 watch what each one can and can't do, right there in the expanded gate
-row, no navigation.
+row, no navigation. Fiona Wallace (AP Heating & Ventilation), Graeme
+Paterson (AP Medical Gases), Sarah Chen (Clinical Safety Officer), and
+Neil Forsyth (Information Governance Officer) are also in the cast, but
+show no role label until assigned to a project that needs them — see
+"Discipline-specific role assignment" above.
 
 Things worth trying, on **#20456** (UPS Systems Replacement, Gate 3 —
 Spatial Coordination):
