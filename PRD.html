@@ -338,9 +338,9 @@
     <div>
       <h1>StageForge</h1>
       <div class="doc-meta">
-        Product Requirements Document — Draft v0.12<br>
+        Product Requirements Document — Draft v0.14<br>
         Owner: Kevin Fotheringham · 21 Aug 2026<br>
-        Source: Overview.docx + Kevin's decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx; revised 20–21 Aug 2026 with the completed Hard FM Template library, the resulting provisioning/authority-model corrections (§10), and Works Packages (§06)
+        Source: Overview.docx + Kevin's decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx; revised 20–21 Aug 2026 with the completed Hard FM Template library, the resulting provisioning/authority-model corrections (§10), Works Packages plus the Works Package overview page, and merging multi-system creation into the Works Package box (§06)
       </div>
     </div>
     <div class="stamp">Draft — not signed off</div>
@@ -530,6 +530,14 @@
   <div class="flag decided">
     <span class="flag-label">Decided</span>
     Added 21 Aug 2026: Works Packages. A hospital runs 24/7, so a disruption window (an area decanted, a system isolated) is precious — Kevin's example: redesigning the main kitchen's drainage is reason enough to also upgrade its ventilation and relamp its lighting while it's cleared out. Rather than merging multiple disciplines' checklists into one project — which would blur the compliance rigor the Template model exists for, since each discipline needs its own SHTM reference, its own Authorised Person, its own sign-off chain — a project stays single-Template and fully correct, and can optionally link to a <code>WorksPackage</code>: a lightweight label grouping otherwise-independent projects sharing one disruption window. Set at creation (an existing-package dropdown or a new-package name field on <code>/projects/new</code>) or after the fact once a PM decides to fold in extra work. Shown as a small badge on the portfolio and each project's own dashboard, cross-linking to the sibling projects — no effect on instantiation, tags, or bypass/override authority.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Refined same day, from Kevin's own first reaction to the shipped feature: linking a project to a package was a fine label, but there was no fast way to actually build the package out, and no way to look at it as one thing. Two additions, no new concepts: a "+ Add a system" shortcut wherever a package badge appears, straight into <code>/projects/new</code> with that package already selected, so adding the second or third system is one click plus picking a Template, not re-finding the package in a dropdown; and a Works Package overview page — combined spend and combined outstanding deliverables/compliance summed across every project in the package, alongside each project's own row, so a PM or SRO can "assess the full project" (Kevin's words) as a whole disruption window, not just its individual pieces one dashboard at a time.
+  </div>
+  <div class="flag decided">
+    <span class="flag-label">Decided</span>
+    Refined again same day: Kevin's actual, repeated point — "there are times when multiple systems from the 17 [templates] are required... there is no option to add those packages on the 'new project' screen right now" — was first answered with a second, separate collapsed form lower down the page for bulk-creating several systems at once, leaving the works-package box itself still a single-system tagging field. Kevin's reaction to that split — "the 'part of combined works package' window is useless as it is right now unless it adds additional system packages" — showed the two belonged together, not apart. Merged into one: the works-package box on <code>/projects/new</code> now carries the multi-system checklist directly, alongside the existing-package dropdown and new-package name field. The primary system is still picked the usual way above; any additional systems checked in the works-package box become sibling DRAFT projects created in the same submission, all linked to the same package (a package name, existing or new, becomes required the moment anything extra is checked, since that's what links them). Each sibling still needs its own Compliance Officer review before going live, same as a solo project.
   </div>
 
   <h3>Roles &amp; Permissions</h3>

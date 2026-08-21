@@ -103,7 +103,10 @@ export default async function HomePage() {
                     <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
                     {r.worksPackage && (
                       <div className="mt-0.5 text-xs text-inkmuted">
-                        Part of: <span className="font-semibold">{r.worksPackage.name}</span>
+                        Part of:{" "}
+                        <Link href={`/works-packages/${r.worksPackage.id}`} className="font-semibold text-accent hover:underline">
+                          {r.worksPackage.name}
+                        </Link>
                         {siblingsByProjectId.get(r.project.id)!.length > 0 && (
                           <>
                             {" "}
@@ -120,6 +123,10 @@ export default async function HomePage() {
                               ))}
                           </>
                         )}
+                        {" · "}
+                        <Link href={`/projects/new?worksPackageId=${r.worksPackage.id}`} className="text-accent hover:underline">
+                          + Add a system
+                        </Link>
                       </div>
                     )}
                   </td>

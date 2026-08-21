@@ -1,7 +1,7 @@
 import { createProvisioningDraft } from "@/lib/actions";
 import { peekNextProjectNumber } from "@/lib/projectNumber";
 import { listMatchableTemplates } from "@/lib/provisioning";
-import { listOpenWorksPackages } from "@/lib/worksPackages";
+import { listWorksPackages } from "@/lib/worksPackages";
 import { SubmitButton } from "@/components/SubmitButton";
 import { db } from "@/lib/db";
 
@@ -17,12 +17,20 @@ import { db } from "@/lib/db";
  * createProvisioningDraft, so it can drift if someone else submits
  * first. Fine for a single-PM-at-a-time dev scaffold.
  */
-export default async function NewProjectPage() {
+export default async function NewProjectPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ worksPackageId?: string }>;
+}) {
+  const { worksPackageId: preselectedWorksPackageId } = await searchParams;
   const nextProjectNumber = await peekNextProjectNumber();
-  const [templates, openWorksPackages] = await Promise.all([
+  const [templates, allWorksPackages] = await Promise.all([
     listMatchableTemplates(db),
-    listOpenWorksPackages(db),
+    listWorksPackages(db),
   ]);
+  const preselectedWorksPackage = preselectedWorksPackageId
+    ? allWorksPackages.find((wp) => wp.id === preselectedWorksPackageId)
+    : undefined;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
@@ -134,14 +142,21 @@ export default async function NewProjectPage() {
         </fieldset>
         <fieldset className="rounded-lg border border-dashed border-rule p-4">
           <legend className="mb-1 font-mono text-xs uppercase tracking-wide text-inkmuted">
-            Part of a combined works package? (optional)
+            Part of a combined works package? {preselectedWorksPackage ? "" : "(optional)"}
           </legend>
-          <p className="mb-3 text-sm text-inkmuted">
-            A hospital runs 24&#8209;7, so a disruption window is precious &mdash; if this project opens
-            one up (an area decanted, a system isolated) and other work is riding along with it, link
-            them here. Each project keeps its own complete, discipline-specific checklist &mdash; this
-            just labels them as one combined package on the portfolio.
-          </p>
+          {preselectedWorksPackage ? (
+            <p className="mb-3 text-sm text-inkmuted">
+              Adding a system to <span className="font-semibold text-ink">{preselectedWorksPackage.name}</span>.
+              Pick a different package below, or clear it to create this as a standalone project instead.
+            </p>
+          ) : (
+            <p className="mb-3 text-sm text-inkmuted">
+              A hospital runs 24&#8209;7, so a disruption window is precious &mdash; if this project opens
+              one up (an area decanted, a system isolated) and other work is riding along with it, link
+              them here. Each project keeps its own complete, discipline-specific checklist &mdash; this
+              just labels them as one combined package on the portfolio.
+            </p>
+          )}
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="flex-1">
               <label htmlFor="new-project-works-package" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
@@ -150,11 +165,11 @@ export default async function NewProjectPage() {
               <select
                 id="new-project-works-package"
                 name="worksPackageId"
-                defaultValue=""
+                defaultValue={preselectedWorksPackage?.id ?? ""}
                 className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
               >
                 <option value="">None</option>
-                {openWorksPackages.map((wp) => (
+                {allWorksPackages.map((wp) => (
                   <option key={wp.id} value={wp.id}>
                     {wp.name}
                   </option>
@@ -171,6 +186,24 @@ export default async function NewProjectPage() {
                 placeholder="e.g. Main Kitchen Refit"
                 className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
               />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              Also create these systems in the same package (optional)
+            </div>
+            <p className="mb-2 text-xs text-inkmuted">
+              Check every other system riding along in the same disruption window &mdash; each becomes its
+              own project with its own complete, discipline-specific checklist, created in this same
+              submission. Requires a package above (existing or newly named) to link them to.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {templates.map((t) => (
+                <label key={t.id} className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" name="additionalTemplateIds" value={t.id} className="mt-1" />
+                  {t.name}
+                </label>
+              ))}
             </div>
           </div>
         </fieldset>

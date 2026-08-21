@@ -6,9 +6,12 @@ A cloud platform giving regulated Hard FM programmes a single system of
 record for stage-gate delivery: every stage carries a deliverables
 checklist, every deliverable needs uploaded evidence, and a gate can't
 close without a Sponsor's sign-off against that evidence. Compliance runs
-as a concurrent, config-driven module alongside delivery, with a tiered
-override ladder (PM → Compliance Officer → SRO) for anything that carries
-legal weight.
+as a concurrent, config-driven module alongside delivery, with tiered
+override authority for anything that carries legal weight — SRO is the
+one apex that can act at any lower tier, but a named specialist authority
+(Fire Officer, a discipline's Authorised Person, Clinical Safety Officer,
+Information Governance Officer) is an exact-match requirement even SRO
+doesn't inherit into.
 
 Initial target: Hard FM maintenance in hospitals, starting with a single
 NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
@@ -19,7 +22,7 @@ NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
 | Path | What it is |
 | --- | --- |
 | [`Overview.docx`](Overview.docx) | The original one-page concept note this whole project expands from. |
-| [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.11) |
+| [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.13) |
 | [`DataModel.html`](DataModel.html) | Entity model — tenancy/access resolution, the gate-closure mechanism, tiered bypass/override authority. (draft v0.5) |
 | [`ConfigSchema.html`](ConfigSchema.html) | Config schema for Stage/Gate/Deliverable templates and Compliance rule sets. (draft v0.4) |
 | [`ProvisioningModel.html`](ProvisioningModel.html) | Design for AI-assisted project provisioning — the draft/review/activate flow and the LLM call itself (structured-output enforcement, model/prompt-caching design). (draft v0.3 — built in `app/`, see Status below; its template-matching step has since been superseded by a deterministic dropdown, per `PRD.html` §10) |
@@ -71,6 +74,19 @@ matched rather than left to the LLM. The Resource/Capacity view
 (`ResourceCapacityModel.html`) is built too — % FTE allocation per
 delivery-facing role holder, with a portfolio-wide over-allocation view
 — see `app/README.md` for how to run any of this yourself.
+
+A hospital runs 24/7, so a disruption window (an area decanted, a
+system isolated) is precious — extra opportunistic work often bundles
+into it rather than disrupting the same space twice. **Works Packages**
+give this a home without diluting each discipline's own checklist and
+compliance rigor: a lightweight label linking otherwise-independent
+projects that share one disruption window, set at creation — where the
+same form lets you check off several systems at once and create every
+one of them, linked to the same package, in a single submission — or
+after the fact, with a "+ Add a system" shortcut straight into the
+create flow and a combined overview page (`/works-packages/[id]`)
+rolling up spend and outstanding items across every project in the
+package.
 
 A screen-by-screen UX audit (benchmarked against Linear, Asana/Monday,
 and enterprise PPM tools) drove several rounds of fixes, ending at
