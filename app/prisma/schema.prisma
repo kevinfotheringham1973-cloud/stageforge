@@ -162,11 +162,60 @@ model GateTemplate {
 // it is not a rank SRO or anyone else inherits, only an exact-match
 // requirement. See BYPASS_AUTHORITY_RANK / canBypassDeliverable /
 // canOverrideCompliance in lib/permissions.ts.
+//
+// AUTHORISED_PERSON_ELECTRICAL / AUTHORISED_PERSON_WATER are the same
+// kind of exact-match requirement, for the same reason: confirmed by
+// Kevin, 21 Aug 2026 — a permit-to-work covering an electrical
+// isolation (a switch-out, a circuit or tank/main shutdown) needs the
+// site AP(Electrical), and evidence of disinfection/chlorination needs
+// the site AP(Water). An SRO has no more professional standing over an
+// isolation or a water-safety sign-off than they do over fire safety —
+// these deliverables were previously mis-templated as SRO-bypassable
+// (an SRO-tier generic catch-all), which is the bug this fixes.
+//
+// AUTHORISED_PERSON_VENTILATION follows the same pattern, added for
+// the Boiler & Heating Plant Replacement template (Kevin, 21 Aug
+// 2026): LTHW heating-circuit isolation and hot-tapping sit under the
+// Heating & Ventilation AP discipline, not Water AP — confirmed there
+// is no separate "Gas AP" in the SHTM/HTM scheme, since standard fuel
+// gas/oil competency comes from the external Gas Safe Register/OFTEC
+// schemes, not a Trust-appointed AP/AE (unlike Medical Gases, which
+// does have its own AP/AE appointment under SHTM/HTM 02-01).
+//
+// AUTHORISED_PERSON_MEDICAL_GASES is that AP/AE appointment, added for
+// the Medical Gas Systems Replacement template (Kevin, 21 Aug 2026):
+// isolation under the MGPS Permit-to-Work system, and the
+// identity/purity/pressure test certification patient safety depends
+// on, both sit with the site AP(MGPS) — not SRO, not Electrical AP.
+//
+// CLINICAL_SAFETY_OFFICER is a different kind of exact-match authority
+// from the AP/AE engineering disciplines above — added for the Nurse
+// Call & Staff Paging Systems Replacement template (Kevin, 21 Aug
+// 2026). Nurse call / staff alert systems are safety-related health IT
+// systems under NHS Digital's DCB0129/DCB0160 clinical risk management
+// standard, which requires a named Clinical Safety Officer sign-off —
+// a clinical governance appointment, not an engineering one, but the
+// same "no ladder, not even SRO" reasoning applies: an SRO has no more
+// clinical-safety standing than they do fire or electrical standing.
 enum BypassAuthority {
   PM
   COMPLIANCE_OFFICER
   SRO
   FIRE_OFFICER
+  AUTHORISED_PERSON_ELECTRICAL
+  AUTHORISED_PERSON_WATER
+  AUTHORISED_PERSON_VENTILATION
+  AUTHORISED_PERSON_MEDICAL_GASES
+  CLINICAL_SAFETY_OFFICER
+  // Added for the Security Systems Replacement template (Kevin, 21 Aug
+  // 2026): DPIA sign-off, data retention/destruction, and formal
+  // acceptance of CCTV/access control systems genuinely sit with a
+  // named Data Protection Officer/Caldicott Guardian appointment under
+  // UK GDPR/the Data Protection Act 2018 — a distinct discipline from
+  // Clinical Safety Officer (health IT clinical risk) or any
+  // engineering AP. Same exact-match reasoning as every other
+  // authority here.
+  INFORMATION_GOVERNANCE_OFFICER
 }
 
 // The shared checklist-item primitive (ConfigSchema.html §02), scoped

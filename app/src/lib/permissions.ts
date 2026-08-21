@@ -26,56 +26,70 @@ export const DELIVERY_FACING_ROLE_KEYS = [
   "AUTHORISING_ENGINEER_ELECTRICAL",
   "AUTHORISING_ENGINEER_MEDICAL_GASES",
   "AUTHORISING_ENGINEER_VENTILATION",
+  "CLINICAL_SAFETY_OFFICER",
+  "INFORMATION_GOVERNANCE_OFFICER",
   "PRINCIPAL_DESIGNER",
   "FM_CONTRACTOR",
 ];
 
-// Authority ladder: SRO can do anything Compliance Officer or PM can
-// do (bypass-wise); Compliance Officer can do anything PM can do;
-// PM is the floor. A role with no bypass standing at all (Sponsor,
-// FM Contractor, Client Authority, ...) ranks -1 and never qualifies.
-// FIRE_OFFICER is NOT part of this ladder — see canBypassDeliverable.
-const BYPASS_AUTHORITY_RANK: Record<BypassAuthority, number> = {
-  PM: 0,
-  COMPLIANCE_OFFICER: 1,
-  SRO: 2,
-  FIRE_OFFICER: -1, // unreachable via rank comparison — always intercepted below
-};
+// Exact-match authorities: not even SRO qualifies — only the named
+// role does. Kept as a set so canBypassDeliverable/canOverrideCompliance
+// share one place that knows which BypassAuthority values work this way.
+export const EXACT_MATCH_AUTHORITIES: BypassAuthority[] = [
+  "FIRE_OFFICER",
+  "AUTHORISED_PERSON_ELECTRICAL",
+  "AUTHORISED_PERSON_WATER",
+  "AUTHORISED_PERSON_VENTILATION",
+  "AUTHORISED_PERSON_MEDICAL_GASES",
+  "CLINICAL_SAFETY_OFFICER",
+  "INFORMATION_GOVERNANCE_OFFICER",
+];
 
-function roleKeyBypassRank(roleKey: string): number {
-  switch (roleKey) {
-    case "PM":
-      return 0;
-    case "COMPLIANCE_OFFICER":
-      return 1;
-    case "SRO":
-      return 2;
-    default:
-      return -1;
-  }
-}
+export const BYPASS_AUTHORITY_LABEL: Record<BypassAuthority, string> = {
+  PM: "PM",
+  COMPLIANCE_OFFICER: "Compliance Officer",
+  SRO: "SRO",
+  FIRE_OFFICER: "Fire Officer",
+  AUTHORISED_PERSON_ELECTRICAL: "Electrical AP",
+  AUTHORISED_PERSON_WATER: "Water AP",
+  AUTHORISED_PERSON_VENTILATION: "Heating & Ventilation AP",
+  AUTHORISED_PERSON_MEDICAL_GASES: "Medical Gases AP",
+  CLINICAL_SAFETY_OFFICER: "Clinical Safety Officer",
+  INFORMATION_GOVERNANCE_OFFICER: "Information Governance Officer",
+};
 
 /**
  * Can a user holding these roles (on this project) bypass a
  * deliverable that requires `requiredAuthority`?
  *
- * Confirmed by Kevin: a PM cannot bypass a deliverable that carries
- * legal weight — that escalates to Compliance Officer or SRO. Every
- * bypass, at any authority level, requires a written reason (enforced
- * at the call site — see actions.ts — not here).
+ * SRO is the one apex role: it can bypass a PM-tier or
+ * Compliance-Officer-tier item, same as it can override compliance.
+ * Below SRO there is deliberately no ladder — PM and Compliance
+ * Officer are two separate tiers, not one inheriting the other.
+ * Corrected by Kevin, 21 Aug 2026, after live testing on the Main
+ * Kitchen Drainage project found a Compliance Officer able to bypass
+ * ordinary PM-managed deliverables that had nothing to do with
+ * compliance: a Compliance Officer authors and evidences the
+ * compliance-flagged items, and that's the extent of their bypass
+ * standing — it does not extend to items the PM manages day to day.
+ * Every bypass, at any authority level, requires a written reason
+ * (enforced at the call site — see actions.ts — not here).
  *
- * FIRE_OFFICER is an exact-match requirement, not a rank on the ladder
- * above — confirmed by Kevin, 20 Aug 2026: an SRO has no professional
- * standing to assess fire safety, so unlike every other tier here, SRO
- * does NOT automatically qualify for a fire-authority item.
+ * FIRE_OFFICER and the AUTHORISED_PERSON_* authorities are exact-match
+ * requirements, not reachable by SRO either — confirmed by Kevin,
+ * 20 Aug 2026 (fire) and 21 Aug 2026 (electrical/water AP): an SRO has
+ * no professional standing to assess fire safety, authorise an
+ * electrical isolation, or sign off water disinfection, so unlike
+ * every other tier here, SRO does NOT automatically qualify for one of
+ * these items — only the named role does.
  */
 export function canBypassDeliverable(
   actorRoleKeys: string[],
   requiredAuthority: BypassAuthority
 ): boolean {
-  if (requiredAuthority === "FIRE_OFFICER") return actorRoleKeys.includes("FIRE_OFFICER");
-  const requiredRank = BYPASS_AUTHORITY_RANK[requiredAuthority];
-  return actorRoleKeys.some((key) => roleKeyBypassRank(key) >= requiredRank);
+  if (EXACT_MATCH_AUTHORITIES.includes(requiredAuthority)) return actorRoleKeys.includes(requiredAuthority);
+  if (requiredAuthority === "SRO") return actorRoleKeys.includes("SRO");
+  return actorRoleKeys.includes("SRO") || actorRoleKeys.includes(requiredAuthority);
 }
 
 /**
@@ -189,16 +203,17 @@ export function canUploadComplianceEvidence(actorRoleKeys: string[]): boolean {
  * Compliance Officer tier for this action, since the Compliance
  * Officer authored the rule being overridden.
  *
- * Exception: a requirement whose overrideAuthority is FIRE_OFFICER
- * (see ComplianceRequirement.overrideAuthority) requires the Fire
- * Officer role specifically — SRO does not qualify, same reasoning as
- * canBypassDeliverable's FIRE_OFFICER case.
+ * Exception: a requirement whose overrideAuthority is FIRE_OFFICER or
+ * one of the AUTHORISED_PERSON_* values (see
+ * ComplianceRequirement.overrideAuthority) requires that role
+ * specifically — SRO does not qualify, same reasoning as
+ * canBypassDeliverable's exact-match case.
  */
 export function canOverrideCompliance(
   actorRoleKeys: string[],
   requiredAuthority: BypassAuthority = "SRO"
 ): boolean {
-  if (requiredAuthority === "FIRE_OFFICER") return actorRoleKeys.includes("FIRE_OFFICER");
+  if (EXACT_MATCH_AUTHORITIES.includes(requiredAuthority)) return actorRoleKeys.includes(requiredAuthority);
   return actorRoleKeys.includes("SRO");
 }
 

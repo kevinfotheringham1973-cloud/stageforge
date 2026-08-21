@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "BypassAuthority" ADD VALUE 'CLINICAL_SAFETY_OFFICER';

@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
   // externally via the Cloudflare tunnel, it reads as a visual bug
   // to anyone viewing it, so it's off.
   devIndicators: false,
+  // Without this, Next dev blocks HMR/dev-resource requests that
+  // arrive from any origin other than localhost — the browser's dev
+  // client can't hold a working HMR connection through the tunnel
+  // domain, and repeatedly falls back to full page reloads, which
+  // wipes in-progress form input (e.g. typing on /projects/new). See
+  // the "Blocked cross-origin request" warnings this produced in the
+  // dev server log. Kevin, 21 Aug 2026.
+  allowedDevOrigins: ["stageforge.pmopassport.co.uk"],
 };
 
 export default nextConfig;
