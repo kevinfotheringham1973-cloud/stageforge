@@ -574,6 +574,16 @@ export async function createProvisioningDraft(formData: FormData) {
   const brief = String(formData.get("brief") ?? "").trim();
   const templateId = String(formData.get("templateId") ?? "").trim();
   const worksType = String(formData.get("worksType") ?? "");
+  // "There are times when multiple systems are required" (Kevin, 21 Aug
+  // 2026) — the works-package box doubles as a bundler: any additional
+  // systems checked there become sibling DRAFT projects in the same
+  // package as this one, created in the same submission. Each still
+  // goes through its own Compliance Officer review before going live —
+  // this only replaces re-filling the form once per system.
+  const additionalTemplateIds = formData
+    .getAll("additionalTemplateIds")
+    .map((v) => String(v).trim())
+    .filter((id) => id && id !== templateId);
   if (!name || !brief) {
     throw new Error("Project name and description are both required.");
   }
@@ -589,19 +599,25 @@ export async function createProvisioningDraft(formData: FormData) {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
 
+  // Works Package (Kevin, 21 Aug 2026): a hospital runs 24/7, so extra
+  // opportunistic work often bundles into the same disruption window as
+  // the project that triggered it — a purely organisational link between
+  // otherwise-independent, discipline-pure Projects, never a merge of
+  // their checklists. Optional for a solo project; mandatory the moment
+  // additional systems are being bundled in, since that's what links them.
+  const resolvedWorksPackage = await resolveWorksPackageId(db, userId, formData);
+  if (additionalTemplateIds.length > 0 && !resolvedWorksPackage) {
+    throw new Error(
+      "Bundling additional systems needs a works package name (existing or new) — that's what links them together."
+    );
+  }
+
   const template = await db.template.findUniqueOrThrow({
     where: { id: templateId },
     include: { stageTemplates: { orderBy: { order: "asc" } } },
   });
 
   const match = await matchComplianceTags(db, templateId, brief);
-
-  // Works Package (Kevin, 21 Aug 2026): a hospital runs 24/7, so extra
-  // opportunistic work often bundles into the same disruption window as
-  // the project that triggered it — a purely organisational link between
-  // otherwise-independent, discipline-pure Projects, never a merge of
-  // their checklists. Optional here — a solo project is the common case.
-  const resolvedWorksPackage = await resolveWorksPackageId(db, userId, formData);
 
   const projectNumber = await issueNextProjectNumber();
 
@@ -634,77 +650,43 @@ export async function createProvisioningDraft(formData: FormData) {
     data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
   });
 
-  redirect(`/projects/${projectNumber}/provisioning`);
-}
-
-/**
- * "There are times when multiple systems are required" (Kevin, 21 Aug
- * 2026) — creates one DRAFT project per selected Template in a single
- * submission, all linked to the same Works Package. Unlike
- * createProvisioningDraft, the package isn't optional here: bulk-
- * creating only makes sense as one named bundle. Each project still
- * goes through its own Compliance Officer review before going live —
- * this only replaces re-filling the single-project form once per
- * system, not the review step.
- */
-export async function createProvisioningDraftBatch(formData: FormData) {
-  const templateIds = formData.getAll("templateIds").map((v) => String(v).trim()).filter(Boolean);
-  const brief = String(formData.get("brief") ?? "").trim();
-  const worksType = String(formData.get("worksType") ?? "");
-  if (templateIds.length === 0) {
-    throw new Error("Select at least one system.");
-  }
-  if (!brief) {
-    throw new Error("A description is required.");
-  }
-  if (!isCdmWorksType(worksType)) {
-    throw new Error(
-      "The CDM 2015 works-type question is required: single-contractor direct replacement, multiple-contractor direct replacement, or building modification?"
-    );
-  }
-
-  const userId = await getCurrentUserId();
-  if (!userId) throw new Error("Not signed in.");
-
-  const resolvedWorksPackage = await resolveWorksPackageId(db, userId, formData);
-  if (!resolvedWorksPackage) {
-    throw new Error("A combined works package needs a name (existing or new) — that's what links these systems together.");
-  }
-
-  for (const templateId of templateIds) {
-    const template = await db.template.findUniqueOrThrow({
-      where: { id: templateId },
+  for (const extraTemplateId of additionalTemplateIds) {
+    const extraTemplate = await db.template.findUniqueOrThrow({
+      where: { id: extraTemplateId },
       include: { stageTemplates: { orderBy: { order: "asc" } } },
     });
+    const extraMatch = await matchComplianceTags(db, extraTemplateId, brief);
+    const extraProjectNumber = await issueNextProjectNumber();
 
-    const match = await matchComplianceTags(db, templateId, brief);
-    const projectNumber = await issueNextProjectNumber();
-
-    const project = await db.project.create({
+    const extraProject = await db.project.create({
       data: {
-        projectNumber,
-        name: `${resolvedWorksPackage.name} — ${template.name}`,
-        templateId: template.id,
-        worksPackageId: resolvedWorksPackage.id,
-        includedStageKeys: template.stageTemplates.map((st) => st.key),
-        tags: match.tags,
+        projectNumber: extraProjectNumber,
+        name: `${resolvedWorksPackage!.name} — ${extraTemplate.name}`,
+        templateId: extraTemplate.id,
+        worksPackageId: resolvedWorksPackage!.id,
+        includedStageKeys: extraTemplate.stageTemplates.map((st) => st.key),
+        tags: extraMatch.tags,
         worksType,
         status: "DRAFT",
         createdById: userId,
         provisioningBrief: brief,
-        provisioningMatchReasoning: match.reasoning,
+        provisioningMatchReasoning: extraMatch.reasoning,
       },
     });
 
-    await assignStandardTeam(project.id);
+    await assignStandardTeam(extraProject.id);
 
     await db.auditLogEntry.create({
-      data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
+      data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: extraProject.id },
     });
   }
 
-  revalidatePath("/");
-  redirect("/");
+  if (additionalTemplateIds.length > 0 && resolvedWorksPackage) {
+    revalidatePath("/");
+    redirect(`/works-packages/${resolvedWorksPackage.id}`);
+  }
+
+  redirect(`/projects/${projectNumber}/provisioning`);
 }
 
 /**

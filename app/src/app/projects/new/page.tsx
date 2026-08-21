@@ -1,4 +1,4 @@
-import { createProvisioningDraft, createProvisioningDraftBatch } from "@/lib/actions";
+import { createProvisioningDraft } from "@/lib/actions";
 import { peekNextProjectNumber } from "@/lib/projectNumber";
 import { listMatchableTemplates } from "@/lib/provisioning";
 import { listWorksPackages } from "@/lib/worksPackages";
@@ -188,6 +188,24 @@ export default async function NewProjectPage({
               />
             </div>
           </div>
+          <div className="mt-4">
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              Also create these systems in the same package (optional)
+            </div>
+            <p className="mb-2 text-xs text-inkmuted">
+              Check every other system riding along in the same disruption window &mdash; each becomes its
+              own project with its own complete, discipline-specific checklist, created in this same
+              submission. Requires a package above (existing or newly named) to link them to.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {templates.map((t) => (
+                <label key={t.id} className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" name="additionalTemplateIds" value={t.id} className="mt-1" />
+                  {t.name}
+                </label>
+              ))}
+            </div>
+          </div>
         </fieldset>
         <SubmitButton
           pendingText="Matching against the template library…"
@@ -196,122 +214,6 @@ export default async function NewProjectPage({
           Match &amp; create draft
         </SubmitButton>
       </form>
-
-      <details className="group mt-8 rounded-lg border border-rule bg-surface">
-        <summary className="cursor-pointer select-none px-4 py-3 font-mono text-xs font-bold uppercase tracking-wide text-accent">
-          Or, create multiple systems as one combined works package
-        </summary>
-        <div className="border-t border-rule p-4 sm:p-6">
-          <p className="mb-5 text-sm text-inkmuted">
-            For when a disruption window covers more than one system at once &mdash; e.g. the kitchen is
-            decanted for a drainage redesign, so the ventilation and lighting ride along too. Check every
-            system involved; each becomes its own project with its own complete, discipline-specific
-            checklist, all linked to the same package. One shared description and CDM answer apply to all
-            of them &mdash; each project can still be edited individually afterward.
-          </p>
-          <form action={createProvisioningDraftBatch} className="flex flex-col gap-5">
-            <fieldset>
-              <legend className="mb-2 font-mono text-xs uppercase tracking-wide text-inkmuted">
-                Systems (select two or more)
-              </legend>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {templates.map((t) => (
-                  <label key={t.id} className="flex items-start gap-2 text-sm">
-                    <input type="checkbox" name="templateIds" value={t.id} className="mt-1" />
-                    {t.name}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-            <div>
-              <label htmlFor="batch-brief" className="mb-1 block font-mono text-xs uppercase tracking-wide text-inkmuted">
-                Description (shared across every system)
-              </label>
-              <textarea
-                id="batch-brief"
-                name="brief"
-                required
-                rows={4}
-                placeholder="e.g. Main kitchen fully decanted for combined drainage, ventilation, and lighting works, phased over consecutive weekends."
-                className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
-              />
-            </div>
-            <fieldset className="rounded-lg border border-dashed border-flag bg-accentsoft/30 p-4">
-              <legend className="mb-1 font-mono text-xs uppercase tracking-wide text-flag">
-                CDM 2015 — works type (required, applies to every system)
-              </legend>
-              <div className="flex flex-col gap-2">
-                <label className="flex items-start gap-2 text-sm">
-                  <input type="radio" name="worksType" value="DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" required className="mt-1" />
-                  <span>
-                    <span className="font-semibold">Direct replacement, one contractor</span> — like-for-like
-                    plant/equipment swap, a single contractor throughout, no structural or building fabric
-                    modification. Neither CDM duty applies.
-                  </span>
-                </label>
-                <label className="flex items-start gap-2 text-sm">
-                  <input type="radio" name="worksType" value="DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS" required className="mt-1" />
-                  <span>
-                    <span className="font-semibold">Direct replacement, multiple contractors</span> —
-                    like-for-like swap, but more than one contractor on site. A Principal Designer must be
-                    engaged; no building fabric modification, so planning permission doesn&rsquo;t arise.
-                  </span>
-                </label>
-                <label className="flex items-start gap-2 text-sm">
-                  <input type="radio" name="worksType" value="BUILDING_MODIFICATION" required className="mt-1" />
-                  <span>
-                    <span className="font-semibold">Building modification</span> — alters structure, layout,
-                    or fabric (new penetrations, extensions, reconfiguration). Both duties apply: a Principal
-                    Designer must be engaged, and planning permission needs to be confirmed.
-                  </span>
-                </label>
-              </div>
-            </fieldset>
-            <fieldset className="rounded-lg border border-dashed border-rule p-4">
-              <legend className="mb-1 font-mono text-xs uppercase tracking-wide text-inkmuted">
-                Works package (required &mdash; this is what links the systems above together)
-              </legend>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="flex-1">
-                  <label htmlFor="batch-works-package" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                    Add to an existing package
-                  </label>
-                  <select
-                    id="batch-works-package"
-                    name="worksPackageId"
-                    defaultValue=""
-                    className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
-                  >
-                    <option value="">None</option>
-                    {allWorksPackages.map((wp) => (
-                      <option key={wp.id} value={wp.id}>
-                        {wp.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label htmlFor="batch-works-package-name" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                    Or name a new package
-                  </label>
-                  <input
-                    id="batch-works-package-name"
-                    name="newWorksPackageName"
-                    placeholder="e.g. Main Kitchen Refit"
-                    className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-            </fieldset>
-            <SubmitButton
-              pendingText="Creating the combined works package…"
-              className="self-start rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              Create combined works package
-            </SubmitButton>
-          </form>
-        </div>
-      </details>
     </div>
   );
 }

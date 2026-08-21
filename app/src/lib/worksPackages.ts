@@ -8,12 +8,12 @@
 import type { PrismaClient } from "@prisma/client";
 
 /**
- * Shared existing-vs-new resolution used by both createProvisioningDraft
- * (package optional) and createProvisioningDraftBatch (package
- * mandatory — the caller decides which, this just resolves whichever
- * fields are present). An existing pick takes priority over a new name
- * if a form somehow carries both. Returns null when neither field is
- * filled in.
+ * Existing-vs-new resolution used by createProvisioningDraft — a
+ * package is optional for the primary system, but becomes mandatory
+ * the moment additionalTemplateIds bundles other systems in alongside
+ * it, since the package is what links them together. An existing pick
+ * takes priority over a new name if a form somehow carries both.
+ * Returns null when neither field is filled in.
  */
 export async function resolveWorksPackageId(
   db: PrismaClient,
