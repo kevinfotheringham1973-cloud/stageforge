@@ -1,6 +1,8 @@
 import { createProvisioningDraft } from "@/lib/actions";
 import { peekNextProjectNumber } from "@/lib/projectNumber";
+import { listMatchableTemplates } from "@/lib/provisioning";
 import { SubmitButton } from "@/components/SubmitButton";
+import { db } from "@/lib/db";
 
 /**
  * The "Input" step of AI-assisted provisioning (ProvisioningModel.html
@@ -16,6 +18,7 @@ import { SubmitButton } from "@/components/SubmitButton";
  */
 export default async function NewProjectPage() {
   const nextProjectNumber = await peekNextProjectNumber();
+  const templates = await listMatchableTemplates(db);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
@@ -24,39 +27,62 @@ export default async function NewProjectPage() {
         Project No. {nextProjectNumber} &middot; assigned automatically
       </div>
       <p className="mb-8 text-sm text-inkmuted">
-        Describe the works. StageForge matches this against the Template library and proposes a
-        deliverables checklist and compliance requirements — a Compliance Officer reviews the match
-        before the project goes live.
+        Pick the system this project covers and describe the works. StageForge proposes compliance
+        tags from the description, plus the deliverables checklist and compliance requirements for
+        the selected system — a Compliance Officer reviews the tags before the project goes live.
       </p>
 
       <form action={createProvisioningDraft} className="flex flex-col gap-5">
         <div>
-          <label className="mb-1 block font-mono text-xs uppercase tracking-wide text-inkmuted">
+          <label htmlFor="new-project-name" className="mb-1 block font-mono text-xs uppercase tracking-wide text-inkmuted">
             Project name
           </label>
           <input
+            id="new-project-name"
             name="name"
             required
             placeholder="e.g. Ward 8 Ventilation Replacement"
-            className="w-full rounded border border-rule bg-bg px-3 py-2 text-sm"
+            className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
           />
         </div>
         <div>
-          <label className="mb-1 block font-mono text-xs uppercase tracking-wide text-inkmuted">
+          <label htmlFor="new-project-template" className="mb-1 block font-mono text-xs uppercase tracking-wide text-inkmuted">
+            System / Template
+          </label>
+          <select
+            id="new-project-template"
+            name="templateId"
+            required
+            defaultValue=""
+            className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
+          >
+            <option value="" disabled>
+              Select the system this project covers&hellip;
+            </option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="new-project-brief" className="mb-1 block font-mono text-xs uppercase tracking-wide text-inkmuted">
             Description
           </label>
           <textarea
+            id="new-project-brief"
             name="brief"
             required
             rows={5}
             placeholder="e.g. Replace 6 air handling units serving theatres and wards, phased over consecutive weekends, live hospital, continuous clinical use."
-            className="w-full rounded border border-rule bg-bg px-3 py-2 text-sm"
+            className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
           />
         </div>
-        <div className="rounded-lg border border-dashed border-flag bg-accentsoft/30 p-4">
-          <label className="mb-1 block font-mono text-xs uppercase tracking-wide text-flag">
+        <fieldset className="rounded-lg border border-dashed border-flag bg-accentsoft/30 p-4">
+          <legend className="mb-1 font-mono text-xs uppercase tracking-wide text-flag">
             CDM 2015 — works type (required)
-          </label>
+          </legend>
           <p className="mb-3 text-sm text-inkmuted">
             Under the Construction (Design and Management) Regulations 2015, a Principal Designer must
             be engaged whenever more than one contractor is or will be working on the project — whether
@@ -101,7 +127,7 @@ export default async function NewProjectPage() {
               </span>
             </label>
           </div>
-        </div>
+        </fieldset>
         <SubmitButton
           pendingText="Matching against the template library…"
           className="self-start rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white"

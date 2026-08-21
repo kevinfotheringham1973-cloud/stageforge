@@ -1,56 +1,64 @@
-// The LLM call (ProvisioningModel.html §07): matches a free-text project
-// description against the Template library and the known compliance-tag
-// vocabulary. Structured outputs with dynamically-built enums are what
-// actually enforce §01's "bounded failure mode" decision — an invalid
-// templateId or tag is structurally impossible to return, not just
-// discouraged by the prompt.
+// The LLM call (ProvisioningModel.html §07): proposes compliance tags
+// for a project against a free-text description, scoped to a Template
+// the PM has already explicitly picked from the dropdown (see
+// listMatchableTemplates below — matching the discipline itself is a
+// closed, known choice, not something worth an LLM guess). Structured
+// outputs with a dynamically-built enum are what actually enforce §01's
+// "bounded failure mode" decision — an invalid tag is structurally
+// impossible to return, not just discouraged by the prompt.
 
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { PrismaClient } from "@prisma/client";
-import { CDM_BUILDING_MODIFICATION_TAG, CDM_PRINCIPAL_DESIGNER_TAG } from "./cdm";
+import { CDM_BUILDING_MODIFICATION_TAG, CDM_PRINCIPAL_DESIGNER_TAG, HAISCRIBE_HIGH_INTENSITY_TAG } from "./cdm";
 
 const MODEL = "claude-opus-5";
 
 export type ProvisioningMatch = {
-  templateId: string;
   tags: string[];
   reasoning: string;
 };
 
-export async function matchProject(db: PrismaClient, brief: string): Promise<ProvisioningMatch> {
-  const templates = await db.template.findMany({
+/**
+ * Templates offered for provisioning — the same eligibility filter used
+ * by /projects/new's system dropdown, the creator's revise-draft
+ * dropdown, and the Compliance Officer's override dropdown on the
+ * review page. Clearing a Template's matchKeywords (e.g. the retired
+ * Cold Water Storage template, merged into Domestic Hot & Cold Water)
+ * is how a template is retired without deleting it.
+ */
+export async function listMatchableTemplates(db: PrismaClient) {
+  return db.template.findMany({
     where: { matchKeywords: { isEmpty: false } },
-    select: { id: true, name: true, description: true, matchKeywords: true },
+    orderBy: { name: "asc" },
   });
-  if (templates.length === 0) {
-    throw new Error("No Templates are set up for AI-assisted provisioning yet — a Compliance Officer needs to author at least one with matchKeywords.");
-  }
+}
+
+export async function matchComplianceTags(db: PrismaClient, templateId: string, brief: string): Promise<ProvisioningMatch> {
+  const template = await db.template.findUniqueOrThrow({
+    where: { id: templateId },
+    select: { name: true, description: true, matchKeywords: true },
+  });
 
   const ruleTemplates = await db.complianceRuleTemplate.findMany({ select: { appliesIfTags: true } });
-  // Excludes both CDM tags: they're driven only by the explicit
-  // worksType statutory question, never an LLM guess.
-  const CDM_TAGS: string[] = [CDM_BUILDING_MODIFICATION_TAG, CDM_PRINCIPAL_DESIGNER_TAG];
+  // Excludes the CDM tags (driven only by the explicit worksType
+  // statutory question) and the HAI-SCRIBE high-intensity tag (driven
+  // only by which Template was picked) — all three are deterministic
+  // facts the app already knows once a Template is chosen, never an
+  // LLM guess. See lib/cdm.ts's effectiveComplianceTags.
+  const DETERMINISTIC_TAGS: string[] = [CDM_BUILDING_MODIFICATION_TAG, CDM_PRINCIPAL_DESIGNER_TAG, HAISCRIBE_HIGH_INTENSITY_TAG];
   const knownTags = Array.from(
-    new Set(ruleTemplates.flatMap((r) => r.appliesIfTags).filter((t) => !CDM_TAGS.includes(t)))
+    new Set(ruleTemplates.flatMap((r) => r.appliesIfTags).filter((t) => !DETERMINISTIC_TAGS.includes(t)))
   ).sort();
 
   const MatchSchema = z.object({
-    templateId: z.enum(templates.map((t) => t.id) as [string, ...string[]]),
     tags:
       knownTags.length > 0
         ? z.array(z.enum(knownTags as [string, ...string[]]))
         : z.array(z.string()).max(0),
     reasoning: z.string(),
   });
-
-  const templateLibraryText = templates
-    .map(
-      (t) =>
-        `- id: ${t.id}\n  name: ${t.name}\n  description: ${t.description ?? "(none)"}\n  keywords: ${t.matchKeywords.join(", ") || "(none)"}`
-    )
-    .join("\n\n");
 
   const client = new Anthropic();
   const response = await client.messages.parse({
@@ -61,13 +69,14 @@ export async function matchProject(db: PrismaClient, brief: string): Promise<Pro
       {
         type: "text",
         text: [
-          "You match a free-text Hard FM capital-works project description against a library of pre-authored project templates, and against a fixed vocabulary of compliance tags.",
-          "Pick exactly one templateId from the candidates below — the closest match. Never invent a template that isn't listed.",
+          "You propose compliance tags for a Hard FM capital-works project, given its free-text description and the specific project Template it has already been assigned to (the discipline/system is fixed — do not second-guess it).",
           "Pick zero or more tags from the known tag list below — only ones that genuinely apply to this project's description (e.g. an occupied/live site, a National Treatment Centre, work affecting water systems). Never invent a tag that isn't listed.",
-          "Give a brief reasoning for your pick, for a human reviewer to check.",
+          "Give a brief reasoning for your picks, for a human reviewer to check.",
           "",
-          "Candidate templates:",
-          templateLibraryText,
+          "Assigned template:",
+          `- name: ${template.name}`,
+          `  description: ${template.description ?? "(none)"}`,
+          `  keywords: ${template.matchKeywords.join(", ") || "(none)"}`,
           "",
           `Known compliance tags: ${knownTags.join(", ") || "(none defined yet)"}`,
         ].join("\n"),
@@ -78,7 +87,7 @@ export async function matchProject(db: PrismaClient, brief: string): Promise<Pro
   });
 
   if (!response.parsed_output) {
-    throw new Error("The provisioning match didn't return a valid result — try again or rephrase the description.");
+    throw new Error("The compliance-tag proposal didn't return a valid result — try again or rephrase the description.");
   }
   return response.parsed_output;
 }

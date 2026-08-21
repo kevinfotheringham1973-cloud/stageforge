@@ -11,6 +11,7 @@ import {
   SESSION_COOKIE_NAME,
 } from "./session";
 import {
+  BYPASS_AUTHORITY_LABEL,
   canApproveSpend,
   canBypassDeliverable,
   canDecideGate,
@@ -22,7 +23,7 @@ import {
   isGateReadyForSponsor,
 } from "./permissions";
 import { instantiateStage } from "./instantiation";
-import { matchProject } from "./provisioning";
+import { matchComplianceTags } from "./provisioning";
 import { effectiveComplianceTags, isCdmWorksType } from "./cdm";
 import { issueNextProjectNumber } from "./projectNumber";
 import { assignStandardTeam } from "./standardTeam";
@@ -141,7 +142,7 @@ export async function bypassDeliverable(
 
   if (!canBypassDeliverable(roleKeys, deliverable.bypassAuthority)) {
     throw new Error(
-      `This deliverable requires ${deliverable.bypassAuthority} authority to bypass — your current roles on this project don't qualify.`
+      `This deliverable requires ${BYPASS_AUTHORITY_LABEL[deliverable.bypassAuthority]} authority to bypass — your current roles on this project don't qualify.`
     );
   }
 
@@ -257,7 +258,7 @@ export async function overrideCompliance(gateId: string, projectNumber: string, 
   const missingAuthorities = requiredAuthorities.filter((auth) => !canOverrideCompliance(roleKeys, auth));
   if (missingAuthorities.length > 0) {
     throw new Error(
-      `Overriding every outstanding item on this gate at once requires ${missingAuthorities.join(" and ")} authority — you're missing ${missingAuthorities.length > 1 ? "these" : "this"}.`
+      `Overriding every outstanding item on this gate at once requires ${missingAuthorities.map((a) => BYPASS_AUTHORITY_LABEL[a]).join(" and ")} authority — you're missing ${missingAuthorities.length > 1 ? "these" : "this"}.`
     );
   }
 
@@ -530,7 +531,7 @@ export async function reinstateStage(
 
   const { stage } = await instantiateStage(db, {
     projectId,
-    projectTags: effectiveComplianceTags(project),
+    projectTags: effectiveComplianceTags(project, stageTemplate.template.key),
     sectorVariantId: stageTemplate.template.sectorVariantId,
     order: nextOrder,
     stageTemplate,
@@ -570,9 +571,13 @@ export async function reinstateStage(
 export async function createProvisioningDraft(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const brief = String(formData.get("brief") ?? "").trim();
+  const templateId = String(formData.get("templateId") ?? "").trim();
   const worksType = String(formData.get("worksType") ?? "");
   if (!name || !brief) {
     throw new Error("Project name and description are both required.");
+  }
+  if (!templateId) {
+    throw new Error("A system/Template must be selected.");
   }
   if (!isCdmWorksType(worksType)) {
     throw new Error(
@@ -583,12 +588,12 @@ export async function createProvisioningDraft(formData: FormData) {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
 
-  const match = await matchProject(db, brief);
-
   const template = await db.template.findUniqueOrThrow({
-    where: { id: match.templateId },
+    where: { id: templateId },
     include: { stageTemplates: { orderBy: { order: "asc" } } },
   });
+
+  const match = await matchComplianceTags(db, templateId, brief);
 
   const projectNumber = await issueNextProjectNumber();
 
@@ -630,7 +635,9 @@ export async function createProvisioningDraft(formData: FormData) {
  */
 export async function reviseProvisioningBrief(projectId: string, projectNumber: string, formData: FormData) {
   const brief = String(formData.get("brief") ?? "").trim();
+  const templateId = String(formData.get("templateId") ?? "").trim();
   if (!brief) throw new Error("A description is required.");
+  if (!templateId) throw new Error("A system/Template must be selected.");
 
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
@@ -641,14 +648,14 @@ export async function reviseProvisioningBrief(projectId: string, projectNumber: 
     throw new Error("Only the project's creator can revise the description.");
   }
 
-  const match = await matchProject(db, brief);
+  const match = await matchComplianceTags(db, templateId, brief);
 
   await db.project.update({
     where: { id: projectId },
     data: {
       provisioningBrief: brief,
       provisioningMatchReasoning: match.reasoning,
-      templateId: match.templateId,
+      templateId,
       tags: match.tags,
     },
   });
@@ -769,7 +776,7 @@ export async function approveProvisioning(projectId: string, projectNumber: stri
     if (!includedStageKeys.has(stageTemplate.key)) continue;
     await instantiateStage(db, {
       projectId,
-      projectTags: effectiveComplianceTags(project),
+      projectTags: effectiveComplianceTags(project, project.template.key),
       sectorVariantId: project.template.sectorVariantId,
       order,
       stageTemplate,
