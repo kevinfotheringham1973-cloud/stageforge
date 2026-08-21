@@ -219,6 +219,46 @@ async function main() {
       isPlatformAdmin: true,
     },
   });
+  // Named holders for the four authorities that had no seeded user as
+  // of 21 Aug 2026 (Kevin: "seed a user for the missing authorities") —
+  // none of the five fixed demo projects below happen to gate anything
+  // on Ventilation/Medical Gases/Clinical Safety/Information Governance,
+  // so these are appointed but not yet assigned to a project, same
+  // "manual per-project, only when relevant" pattern Bob/Claire/Ross
+  // already follow (see the comment above roleDefs) — they won't show
+  // a role label in the Acting-as dropdown until a project that
+  // actually needs them assigns one. Engineering AP homed at the FM
+  // contractor like Bob/Claire; the two governance roles homed at the
+  // Trust like Mark/Alan, since DCB0160 clinical safety and information
+  // governance sign-off are Trust functions, not contractor ones.
+  const fiona = await db.user.create({
+    data: {
+      name: "Fiona Wallace",
+      email: "fiona.wallace@buildcare.example",
+      homeDepartmentId: buildCareNorth.id,
+    },
+  });
+  const graeme = await db.user.create({
+    data: {
+      name: "Graeme Paterson",
+      email: "graeme.paterson@buildcare.example",
+      homeDepartmentId: buildCareNorth.id,
+    },
+  });
+  const sarah = await db.user.create({
+    data: {
+      name: "Sarah Chen",
+      email: "sarah.chen@staldwyn.example",
+      homeDepartmentId: stAldwynEstates.id,
+    },
+  });
+  const neil = await db.user.create({
+    data: {
+      name: "Neil Forsyth",
+      email: "neil.forsyth@staldwyn.example",
+      homeDepartmentId: stAldwynEstates.id,
+    },
+  });
 
   // ── Stage/gate structure: RIBA Plan of Work 2020, fixed regardless of
   // project type (PRD.html §06 decided flag) — every Health-sector
