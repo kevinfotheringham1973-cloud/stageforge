@@ -19,10 +19,10 @@ NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
 | Path | What it is |
 | --- | --- |
 | [`Overview.docx`](Overview.docx) | The original one-page concept note this whole project expands from. |
-| [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.10) |
+| [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.11) |
 | [`DataModel.html`](DataModel.html) | Entity model — tenancy/access resolution, the gate-closure mechanism, tiered bypass/override authority. (draft v0.5) |
 | [`ConfigSchema.html`](ConfigSchema.html) | Config schema for Stage/Gate/Deliverable templates and Compliance rule sets. (draft v0.4) |
-| [`ProvisioningModel.html`](ProvisioningModel.html) | Design for AI-assisted project provisioning — template-library matching, the draft/review/activate flow, and the LLM call itself (structured-output enforcement, model/prompt-caching design). (draft v0.3 — built in `app/`, see Status below) |
+| [`ProvisioningModel.html`](ProvisioningModel.html) | Design for AI-assisted project provisioning — the draft/review/activate flow and the LLM call itself (structured-output enforcement, model/prompt-caching design). (draft v0.3 — built in `app/`, see Status below; its template-matching step has since been superseded by a deterministic dropdown, per `PRD.html` §10) |
 | [`ResourceCapacityModel.html`](ResourceCapacityModel.html) | Design for the Resource/Capacity view — % FTE allocation per delivery-facing role holder, current-state only, no forecasting. (draft v0.1 — built in `app/`, see Status below) |
 | [`FinancialModel.html`](FinancialModel.html) | Design for the Financial View — invoice-level spend checked and approved at each gate, classified into three Hard FM approval buckets, with a Sponsor/SRO approval step. (draft v0.2 — gate-level record/approve loop built in `app/`, see Status below) |
 | [`Complaince and Regulations.docx`](Complaince%20and%20Regulations.docx), [`Maintenance schedule - SHTM.docx`](Maintenance%20schedule%20-%20SHTM.docx), [`Example_Overview_Plan.docx`](Example_Overview_Plan.docx) | Domain reference material for Scottish NHS Hard FM — the compliance/regulatory stack, an SHTM-mapped PPM schedule by plant category, and a full worked example (Forth Valley Royal Hospital UPS replacement) the current seed data is built from. |
@@ -42,13 +42,43 @@ Phase 2's Compliance Module (config-driven rule sets, live gate-closure
 enforcement, SRO override) both have a working scaffold, verified
 end-to-end against a real database and a live browser session.
 
-AI-assisted project provisioning (`ProvisioningModel.html`) is also
-built and verified live: a free-text project description matched via
-Claude Opus 5 against the Template library, reviewed and approved by
-a Compliance Officer, instantiating a real project. The Resource/Capacity
-view (`ResourceCapacityModel.html`) is built too — % FTE allocation per
+The Template library now covers 17 Hard FM systems for the Health
+reference implementation (Boiler, Steam, Compressed Air, Ventilation,
+Medical Gases, Fire Alarm & Detection, Fire Suppression, Lifts,
+Electrical Services, Lighting, Domestic Hot & Cold Water, Chilled
+Water/Cooling, Above-Ground Drainage, BMS, Security, Pneumatic Tube,
+Nurse Call), each mapped from a real RIBA/SHTM-aligned source document.
+Building it out surfaced real authority-modelling gaps, now fixed:
+isolation/permit deliverables require the relevant discipline
+Authorised Person rather than a generic SRO sign-off, Compliance
+Officer bypass authority no longer inherits down into ordinary PM-tier
+deliverables outside its own remit, and fire-safety items require a
+dedicated Fire Officer authority tier — an SRO has no legal standing
+over fire compliance.
+
+AI-assisted project provisioning (`ProvisioningModel.html`) is built
+and verified live, though its original template-matching design has
+since been revised (`PRD.html` §10): real usage showed the LLM
+occasionally guessing the wrong discipline from an ambiguous
+description, so `/projects/new` now has an explicit Template dropdown
+— the PM picks the system directly — and the LLM's role narrows to
+proposing the compliance-tag set for it. A Compliance Officer still
+reviews and approves before the project goes live. Kevin's HAI-SCRIBE
+involvement-intensity matrix is also operational: five systems rated
+sustained High infection-control involvement get extra compliance
+checkpoints across the project lifecycle, driven by which Template
+matched rather than left to the LLM. The Resource/Capacity view
+(`ResourceCapacityModel.html`) is built too — % FTE allocation per
 delivery-facing role holder, with a portfolio-wide over-allocation view
 — see `app/README.md` for how to run any of this yourself.
+
+A screen-by-screen UX audit (benchmarked against Linear, Asana/Monday,
+and enterprise PPM tools) drove several rounds of fixes, ending at
+8.1/10 — including an accessibility pass verified against the live
+Windows accessibility tree (the same API screen readers consume, not
+just code inspection): every form label given a real programmatic
+association with its field, WCAG contrast measured and corrected, and
+heading structure added across every screen.
 
 Financial View (`FinancialModel.html`) is built too, gate-level: spend is
 recorded, checked, and approved at each gate rather than just logged

@@ -9,7 +9,8 @@ import {
   type GateTimelineStatus,
 } from "@/lib/permissions";
 import { getCurrentUser, getCurrentUserRoleKeysForProject } from "@/lib/session";
-import { deleteProject, renameProject } from "@/lib/actions";
+import { deleteProject, renameProject, setProjectWorksPackage } from "@/lib/actions";
+import { listOpenWorksPackages } from "@/lib/worksPackages";
 import { GateRail } from "@/components/GateRail";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -70,6 +71,7 @@ export default async function ProjectDashboardLayout({
     where: { projectNumber },
     include: {
       roleAssignments: { include: { role: true, department: { include: { company: true } } } },
+      worksPackage: { include: { projects: { select: { projectNumber: true, name: true } } } },
       stages: {
         orderBy: { order: "asc" },
         include: {
@@ -80,10 +82,12 @@ export default async function ProjectDashboardLayout({
   });
   if (!project) notFound();
 
-  const [roleKeys, currentUser] = await Promise.all([
+  const [roleKeys, currentUser, openWorksPackages] = await Promise.all([
     getCurrentUserRoleKeysForProject(project.id),
     getCurrentUser(),
+    listOpenWorksPackages(db),
   ]);
+  const worksPackageSiblings = project.worksPackage?.projects.filter((p) => p.projectNumber !== projectNumber) ?? [];
   const isPM = roleKeys.includes("PM");
   const isPlatformAdmin = currentUser?.isPlatformAdmin ?? false;
 
@@ -216,6 +220,25 @@ export default async function ProjectDashboardLayout({
           <div className="font-mono text-xs uppercase tracking-wide text-inkmuted">
             Project No. {project.projectNumber}
           </div>
+          {project.worksPackage && (
+            <div className="mt-1 text-sm text-inkmuted">
+              Part of: <span className="font-semibold">{project.worksPackage.name}</span>
+              {worksPackageSiblings.length > 0 && (
+                <>
+                  {" "}
+                  with{" "}
+                  {worksPackageSiblings.map((s, i, arr) => (
+                    <span key={s.projectNumber}>
+                      <a href={`/projects/${s.projectNumber}`} className="text-accent hover:underline">
+                        {s.name}
+                      </a>
+                      {i < arr.length - 1 ? ", " : ""}
+                    </span>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
           {isPM && (
             <form
               action={renameProject.bind(null, project.id, project.projectNumber)}
@@ -230,6 +253,40 @@ export default async function ProjectDashboardLayout({
               />
               <SubmitButton pendingText="Renaming…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
                 Rename
+              </SubmitButton>
+            </form>
+          )}
+          {isPM && (
+            <form
+              action={setProjectWorksPackage.bind(null, project.id, project.projectNumber)}
+              className="mt-2 flex flex-wrap items-end gap-1.5"
+            >
+              <div>
+                <label htmlFor="works-package-select" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                  Works package
+                </label>
+                <select
+                  id="works-package-select"
+                  name="worksPackageId"
+                  defaultValue={project.worksPackageId ?? ""}
+                  className="rounded border border-inkmuted bg-bg px-2 py-1 text-sm"
+                >
+                  <option value="">None</option>
+                  {openWorksPackages.map((wp) => (
+                    <option key={wp.id} value={wp.id}>
+                      {wp.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <input
+                name="newWorksPackageName"
+                aria-label="Or name a new works package"
+                placeholder="or name a new package"
+                className="rounded border border-inkmuted bg-bg px-2 py-1 text-sm"
+              />
+              <SubmitButton pendingText="Saving…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                Save
               </SubmitButton>
             </form>
           )}

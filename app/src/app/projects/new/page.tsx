@@ -1,6 +1,7 @@
 import { createProvisioningDraft } from "@/lib/actions";
 import { peekNextProjectNumber } from "@/lib/projectNumber";
 import { listMatchableTemplates } from "@/lib/provisioning";
+import { listOpenWorksPackages } from "@/lib/worksPackages";
 import { SubmitButton } from "@/components/SubmitButton";
 import { db } from "@/lib/db";
 
@@ -18,7 +19,10 @@ import { db } from "@/lib/db";
  */
 export default async function NewProjectPage() {
   const nextProjectNumber = await peekNextProjectNumber();
-  const templates = await listMatchableTemplates(db);
+  const [templates, openWorksPackages] = await Promise.all([
+    listMatchableTemplates(db),
+    listOpenWorksPackages(db),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
@@ -126,6 +130,48 @@ export default async function NewProjectPage() {
                 Designer must be engaged, and planning permission needs to be confirmed.
               </span>
             </label>
+          </div>
+        </fieldset>
+        <fieldset className="rounded-lg border border-dashed border-rule p-4">
+          <legend className="mb-1 font-mono text-xs uppercase tracking-wide text-inkmuted">
+            Part of a combined works package? (optional)
+          </legend>
+          <p className="mb-3 text-sm text-inkmuted">
+            A hospital runs 24&#8209;7, so a disruption window is precious &mdash; if this project opens
+            one up (an area decanted, a system isolated) and other work is riding along with it, link
+            them here. Each project keeps its own complete, discipline-specific checklist &mdash; this
+            just labels them as one combined package on the portfolio.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex-1">
+              <label htmlFor="new-project-works-package" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                Add to an existing package
+              </label>
+              <select
+                id="new-project-works-package"
+                name="worksPackageId"
+                defaultValue=""
+                className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
+              >
+                <option value="">None</option>
+                {openWorksPackages.map((wp) => (
+                  <option key={wp.id} value={wp.id}>
+                    {wp.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <label htmlFor="new-project-works-package-name" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                Or name a new package
+              </label>
+              <input
+                id="new-project-works-package-name"
+                name="newWorksPackageName"
+                placeholder="e.g. Main Kitchen Refit"
+                className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
+              />
+            </div>
           </div>
         </fieldset>
         <SubmitButton

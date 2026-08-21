@@ -10,6 +10,7 @@ const GBP = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigit
 
 export type PortfolioRow = {
   project: { id: string; projectNumber: string; name: string };
+  worksPackage: { id: string; name: string } | null;
   currentGateName: string;
   totalSpend: number;
   approvedSpend: number;
@@ -28,6 +29,7 @@ export async function getPortfolioRows(): Promise<PortfolioRow[]> {
   const liveProjects = await db.project.findMany({
     where: { status: "ACTIVE" },
     include: {
+      worksPackage: { select: { id: true, name: true } },
       stages: {
         orderBy: { order: "asc" },
         include: {
@@ -65,6 +67,7 @@ export async function getPortfolioRows(): Promise<PortfolioRow[]> {
 
       return {
         project: { id: p.id, projectNumber: p.projectNumber, name: p.name },
+        worksPackage: p.worksPackage,
         currentGateName: currentGate ? currentGate.name : "Complete",
         totalSpend,
         approvedSpend,
@@ -103,6 +106,7 @@ export function renderPortfolioReportHtml(rows: PortfolioRow[], baseUrl: string)
         <td style="padding:10px 12px;border-bottom:1px solid #e5e5e5;">
           <a href="${baseUrl}/projects/${r.project.projectNumber}" style="color:#2563eb;font-weight:600;text-decoration:none;">${escapeHtml(r.project.name)}</a>
           <div style="font-family:monospace;font-size:11px;color:#888;">#${r.project.projectNumber}</div>
+          ${r.worksPackage ? `<div style="font-size:11px;color:#888;">Part of: ${escapeHtml(r.worksPackage.name)}</div>` : ""}
         </td>
         <td style="padding:10px 12px;border-bottom:1px solid #e5e5e5;font-weight:600;">${escapeHtml(r.currentGateName)}</td>
         <td style="padding:10px 12px;border-bottom:1px solid #e5e5e5;font-weight:700;color:${TIMELINE_COLOR[r.timeline]};">${GATE_TIMELINE_LABELS[r.timeline]}</td>
