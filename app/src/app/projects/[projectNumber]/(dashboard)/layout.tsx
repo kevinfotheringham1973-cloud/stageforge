@@ -10,7 +10,7 @@ import {
 } from "@/lib/permissions";
 import { getCurrentUser, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { deleteProject, renameProject, setProjectWorksPackage } from "@/lib/actions";
-import { listOpenWorksPackages } from "@/lib/worksPackages";
+import { listWorksPackages } from "@/lib/worksPackages";
 import { GateRail } from "@/components/GateRail";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -82,10 +82,10 @@ export default async function ProjectDashboardLayout({
   });
   if (!project) notFound();
 
-  const [roleKeys, currentUser, openWorksPackages] = await Promise.all([
+  const [roleKeys, currentUser, allWorksPackages] = await Promise.all([
     getCurrentUserRoleKeysForProject(project.id),
     getCurrentUser(),
-    listOpenWorksPackages(db),
+    listWorksPackages(db),
   ]);
   const worksPackageSiblings = project.worksPackage?.projects.filter((p) => p.projectNumber !== projectNumber) ?? [];
   const isPM = roleKeys.includes("PM");
@@ -222,7 +222,10 @@ export default async function ProjectDashboardLayout({
           </div>
           {project.worksPackage && (
             <div className="mt-1 text-sm text-inkmuted">
-              Part of: <span className="font-semibold">{project.worksPackage.name}</span>
+              Part of:{" "}
+              <a href={`/works-packages/${project.worksPackage.id}`} className="font-semibold text-accent hover:underline">
+                {project.worksPackage.name}
+              </a>
               {worksPackageSiblings.length > 0 && (
                 <>
                   {" "}
@@ -237,6 +240,10 @@ export default async function ProjectDashboardLayout({
                   ))}
                 </>
               )}
+              {" · "}
+              <a href={`/projects/new?worksPackageId=${project.worksPackage.id}`} className="text-accent hover:underline">
+                + Add a system
+              </a>
             </div>
           )}
           {isPM && (
@@ -272,7 +279,7 @@ export default async function ProjectDashboardLayout({
                   className="rounded border border-inkmuted bg-bg px-2 py-1 text-sm"
                 >
                   <option value="">None</option>
-                  {openWorksPackages.map((wp) => (
+                  {allWorksPackages.map((wp) => (
                     <option key={wp.id} value={wp.id}>
                       {wp.name}
                     </option>

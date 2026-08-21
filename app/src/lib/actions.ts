@@ -27,6 +27,7 @@ import { matchComplianceTags } from "./provisioning";
 import { effectiveComplianceTags, isCdmWorksType } from "./cdm";
 import { issueNextProjectNumber } from "./projectNumber";
 import { assignStandardTeam } from "./standardTeam";
+import { resolveWorksPackageId } from "./worksPackages";
 import { sendScheduledReport } from "./scheduledReportSender";
 
 export async function setActingUser(formData: FormData) {
@@ -573,8 +574,6 @@ export async function createProvisioningDraft(formData: FormData) {
   const brief = String(formData.get("brief") ?? "").trim();
   const templateId = String(formData.get("templateId") ?? "").trim();
   const worksType = String(formData.get("worksType") ?? "");
-  const worksPackageId = String(formData.get("worksPackageId") ?? "").trim();
-  const newWorksPackageName = String(formData.get("newWorksPackageName") ?? "").trim();
   if (!name || !brief) {
     throw new Error("Project name and description are both required.");
   }
@@ -601,17 +600,8 @@ export async function createProvisioningDraft(formData: FormData) {
   // opportunistic work often bundles into the same disruption window as
   // the project that triggered it — a purely organisational link between
   // otherwise-independent, discipline-pure Projects, never a merge of
-  // their checklists. Picking an existing package takes priority over
-  // naming a new one if a form somehow carries both.
-  let resolvedWorksPackageId: string | null = null;
-  if (worksPackageId) {
-    resolvedWorksPackageId = worksPackageId;
-  } else if (newWorksPackageName) {
-    const created = await db.worksPackage.create({
-      data: { name: newWorksPackageName, createdById: userId },
-    });
-    resolvedWorksPackageId = created.id;
-  }
+  // their checklists. Optional here — a solo project is the common case.
+  const resolvedWorksPackage = await resolveWorksPackageId(db, userId, formData);
 
   const projectNumber = await issueNextProjectNumber();
 
@@ -620,7 +610,7 @@ export async function createProvisioningDraft(formData: FormData) {
       projectNumber,
       name,
       templateId: template.id,
-      worksPackageId: resolvedWorksPackageId,
+      worksPackageId: resolvedWorksPackage?.id ?? null,
       // Every RIBA-aligned Template shares the same stage keys (PRD.html
       // §06 decided flag) — default to all of them, per §05's "default
       // to all 8, editable later" resolution.
@@ -645,6 +635,76 @@ export async function createProvisioningDraft(formData: FormData) {
   });
 
   redirect(`/projects/${projectNumber}/provisioning`);
+}
+
+/**
+ * "There are times when multiple systems are required" (Kevin, 21 Aug
+ * 2026) — creates one DRAFT project per selected Template in a single
+ * submission, all linked to the same Works Package. Unlike
+ * createProvisioningDraft, the package isn't optional here: bulk-
+ * creating only makes sense as one named bundle. Each project still
+ * goes through its own Compliance Officer review before going live —
+ * this only replaces re-filling the single-project form once per
+ * system, not the review step.
+ */
+export async function createProvisioningDraftBatch(formData: FormData) {
+  const templateIds = formData.getAll("templateIds").map((v) => String(v).trim()).filter(Boolean);
+  const brief = String(formData.get("brief") ?? "").trim();
+  const worksType = String(formData.get("worksType") ?? "");
+  if (templateIds.length === 0) {
+    throw new Error("Select at least one system.");
+  }
+  if (!brief) {
+    throw new Error("A description is required.");
+  }
+  if (!isCdmWorksType(worksType)) {
+    throw new Error(
+      "The CDM 2015 works-type question is required: single-contractor direct replacement, multiple-contractor direct replacement, or building modification?"
+    );
+  }
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const resolvedWorksPackage = await resolveWorksPackageId(db, userId, formData);
+  if (!resolvedWorksPackage) {
+    throw new Error("A combined works package needs a name (existing or new) — that's what links these systems together.");
+  }
+
+  for (const templateId of templateIds) {
+    const template = await db.template.findUniqueOrThrow({
+      where: { id: templateId },
+      include: { stageTemplates: { orderBy: { order: "asc" } } },
+    });
+
+    const match = await matchComplianceTags(db, templateId, brief);
+    const projectNumber = await issueNextProjectNumber();
+
+    const project = await db.project.create({
+      data: {
+        projectNumber,
+        name: `${resolvedWorksPackage.name} — ${template.name}`,
+        templateId: template.id,
+        worksPackageId: resolvedWorksPackage.id,
+        includedStageKeys: template.stageTemplates.map((st) => st.key),
+        tags: match.tags,
+        worksType,
+        status: "DRAFT",
+        createdById: userId,
+        provisioningBrief: brief,
+        provisioningMatchReasoning: match.reasoning,
+      },
+    });
+
+    await assignStandardTeam(project.id);
+
+    await db.auditLogEntry.create({
+      data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
+    });
+  }
+
+  revalidatePath("/");
+  redirect("/");
 }
 
 /**
