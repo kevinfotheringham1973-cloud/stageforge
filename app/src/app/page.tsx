@@ -34,6 +34,18 @@ export default async function HomePage() {
 
   const canManage = canManageScheduledReports(globalRoleKeys);
 
+  // Works Package siblings, grouped from the same rows already fetched
+  // above — no extra query. Only rows currently on the portfolio (i.e.
+  // still live) count as "siblings" here; a package member that's
+  // already fully signed off just quietly stops showing up, same as any
+  // other completed project.
+  const siblingsByProjectId = new Map<string, { projectNumber: string; name: string }[]>();
+  for (const r of rows) {
+    if (!r.worksPackage) continue;
+    const packageMates = rows.filter((other) => other.worksPackage?.id === r.worksPackage!.id && other.project.id !== r.project.id);
+    siblingsByProjectId.set(r.project.id, packageMates.map((m) => ({ projectNumber: m.project.projectNumber, name: m.project.name })));
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
       <h1 className="mb-1 text-3xl font-bold">Portfolio</h1>
@@ -89,6 +101,27 @@ export default async function HomePage() {
                       {r.project.name}
                     </Link>
                     <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
+                    {r.worksPackage && (
+                      <div className="mt-0.5 text-xs text-inkmuted">
+                        Part of: <span className="font-semibold">{r.worksPackage.name}</span>
+                        {siblingsByProjectId.get(r.project.id)!.length > 0 && (
+                          <>
+                            {" "}
+                            with{" "}
+                            {siblingsByProjectId
+                              .get(r.project.id)!
+                              .map((s, i, arr) => (
+                                <span key={s.projectNumber}>
+                                  <Link href={`/projects/${s.projectNumber}`} className="text-accent hover:underline">
+                                    {s.name}
+                                  </Link>
+                                  {i < arr.length - 1 ? ", " : ""}
+                                </span>
+                              ))}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="py-4 pr-4 font-semibold">{r.currentGateName}</td>
                   <td className={`py-4 pr-4 font-bold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>

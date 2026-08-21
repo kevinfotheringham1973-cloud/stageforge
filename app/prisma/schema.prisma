@@ -61,6 +61,7 @@ model User {
   complianceUploads          ComplianceEvidenceFile[]
   complianceOverrides        ComplianceOverride[]
   createdProjects            Project[]                @relation("ProjectCreatedBy")
+  createdWorksPackages       WorksPackage[]           @relation("WorksPackageCreatedBy")
   provisioningReviews        ProvisioningReview[]
   resourceAllocations        ResourceAllocation[]
   resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
@@ -407,12 +408,36 @@ enum CdmWorksType {
   BUILDING_MODIFICATION
 }
 
+// A hospital runs 24/7, so a disruption window (an area decanted, a
+// system isolated) is precious — when one arises, extra opportunistic
+// work often gets bundled in rather than disrupting the same space
+// twice (Kevin, 21 Aug 2026: redesigning the kitchen drainage is reason
+// enough to also upgrade its ventilation and relamp its lighting while
+// it's cleared). Deliberately just a label linking otherwise-independent
+// Projects, not a merge of their checklists — each Template's checklist
+// stays discipline-pure (its own SHTM reference, its own Authorised
+// Person, its own sign-off chain); folding a second discipline's work
+// into one project's checklist would blur exactly the compliance rigor
+// the Template model exists for.
+model WorksPackage {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  createdById String?
+  createdBy   User?     @relation("WorksPackageCreatedBy", fields: [createdById], references: [id])
+  projects    Project[]
+  createdAt   DateTime  @default(now())
+}
+
 model Project {
   id                         String                  @id @default(cuid())
   projectNumber              String                  @unique
   name                       String
   templateId                 String
   template                   Template                @relation(fields: [templateId], references: [id])
+  // Optional — most projects are solo. See WorksPackage above.
+  worksPackageId             String?
+  worksPackage               WorksPackage?           @relation(fields: [worksPackageId], references: [id])
   // Stage scoping (ConfigSchema.html §06): which of the template's
   // stage keys this project actually uses. Editable — a PM can
   // reinstate a skipped stage later; it appends after the project's

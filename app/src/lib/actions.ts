@@ -573,6 +573,8 @@ export async function createProvisioningDraft(formData: FormData) {
   const brief = String(formData.get("brief") ?? "").trim();
   const templateId = String(formData.get("templateId") ?? "").trim();
   const worksType = String(formData.get("worksType") ?? "");
+  const worksPackageId = String(formData.get("worksPackageId") ?? "").trim();
+  const newWorksPackageName = String(formData.get("newWorksPackageName") ?? "").trim();
   if (!name || !brief) {
     throw new Error("Project name and description are both required.");
   }
@@ -595,6 +597,22 @@ export async function createProvisioningDraft(formData: FormData) {
 
   const match = await matchComplianceTags(db, templateId, brief);
 
+  // Works Package (Kevin, 21 Aug 2026): a hospital runs 24/7, so extra
+  // opportunistic work often bundles into the same disruption window as
+  // the project that triggered it — a purely organisational link between
+  // otherwise-independent, discipline-pure Projects, never a merge of
+  // their checklists. Picking an existing package takes priority over
+  // naming a new one if a form somehow carries both.
+  let resolvedWorksPackageId: string | null = null;
+  if (worksPackageId) {
+    resolvedWorksPackageId = worksPackageId;
+  } else if (newWorksPackageName) {
+    const created = await db.worksPackage.create({
+      data: { name: newWorksPackageName, createdById: userId },
+    });
+    resolvedWorksPackageId = created.id;
+  }
+
   const projectNumber = await issueNextProjectNumber();
 
   const project = await db.project.create({
@@ -602,6 +620,7 @@ export async function createProvisioningDraft(formData: FormData) {
       projectNumber,
       name,
       templateId: template.id,
+      worksPackageId: resolvedWorksPackageId,
       // Every RIBA-aligned Template shares the same stage keys (PRD.html
       // §06 decided flag) — default to all of them, per §05's "default
       // to all 8, editable later" resolution.
@@ -1006,6 +1025,47 @@ export async function renameProject(projectId: string, projectNumber: string, fo
     db.project.update({ where: { id: projectId }, data: { name } }),
     db.auditLogEntry.create({
       data: { actorId, action: "project.renamed", entityType: "Project", entityId: projectId },
+    }),
+  ]);
+
+  revalidatePath("/");
+  revalidatePath(`/projects/${projectNumber}`);
+}
+
+/**
+ * Link (or unlink) an already-underway project to a Works Package — the
+ * "actually, let's fold in the ventilation too while we're at it"
+ * scenario, decided after the first project already exists. Same
+ * PM-only authority tier as renameProject, and the same existing-vs-new
+ * resolution as createProvisioningDraft. Leaving both fields blank
+ * clears the project's package (goes back to solo).
+ */
+export async function setProjectWorksPackage(projectId: string, projectNumber: string, formData: FormData) {
+  const worksPackageId = String(formData.get("worksPackageId") ?? "").trim();
+  const newWorksPackageName = String(formData.get("newWorksPackageName") ?? "").trim();
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const roleKeys = await getCurrentUserRoleKeysForProject(projectId);
+  if (!roleKeys.includes("PM")) {
+    throw new Error("Only the Project Manager can change this project's Works Package.");
+  }
+
+  let resolvedWorksPackageId: string | null = null;
+  if (worksPackageId) {
+    resolvedWorksPackageId = worksPackageId;
+  } else if (newWorksPackageName) {
+    const created = await db.worksPackage.create({
+      data: { name: newWorksPackageName, createdById: actorId },
+    });
+    resolvedWorksPackageId = created.id;
+  }
+
+  await db.$transaction([
+    db.project.update({ where: { id: projectId }, data: { worksPackageId: resolvedWorksPackageId } }),
+    db.auditLogEntry.create({
+      data: { actorId, action: "project.works_package_changed", entityType: "Project", entityId: projectId },
     }),
   ]);
 
