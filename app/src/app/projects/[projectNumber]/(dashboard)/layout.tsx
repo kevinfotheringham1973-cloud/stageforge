@@ -223,9 +223,10 @@ export default async function ProjectDashboardLayout({
             >
               <input
                 name="name"
+                aria-label="Project name"
                 defaultValue={project.name}
                 required
-                className="w-full rounded border border-rule bg-bg px-2 py-1 text-sm sm:w-80"
+                className="w-full rounded border border-inkmuted bg-bg px-2 py-1 text-sm sm:w-80"
               />
               <SubmitButton pendingText="Renaming…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
                 Rename
@@ -258,7 +259,7 @@ export default async function ProjectDashboardLayout({
 
         {isPlatformAdmin && (
           <div className="rounded-lg border border-dashed border-risk bg-risk/5 p-4">
-            <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-risk">Danger zone &middot; platform admin</div>
+            <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-risk">Danger zone &middot; platform admin</h2>
             <p className="mb-3 text-sm text-inkmuted">
               Permanently deletes this project and everything on it — deliverables, evidence,
               compliance, spend, sign-offs, lessons learned. This cannot be undone.
@@ -287,7 +288,7 @@ export default async function ProjectDashboardLayout({
               className={`rounded-lg border bg-surface p-5 ${pendingSpendRecords.length > 0 ? "border-warn" : "border-rule"}`}
             >
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-mono text-xs font-bold uppercase tracking-wide text-ink">Cost</span>
+                <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">Cost</h2>
                 {pendingSpendRecords.length > 0 && (
                   <span className="rounded-full bg-warn px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wide text-white">
                     Needs approval
@@ -324,7 +325,7 @@ export default async function ProjectDashboardLayout({
             {/* Gate activity */}
             <div className="rounded-lg border border-rule bg-surface p-5">
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-mono text-xs font-bold uppercase tracking-wide text-ink">Gate activity</span>
+                <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">Gate activity</h2>
                 {activeGates.length > 0 && (
                   <span className="rounded-full bg-accent px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wide text-white">
                     {activeGates.length} in progress
@@ -367,7 +368,7 @@ export default async function ProjectDashboardLayout({
             {/* Timeline headline */}
             <div className={`rounded-lg border bg-surface p-5 ${timelineBorderClass}`}>
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-mono text-xs font-bold uppercase tracking-wide text-ink">Timeline</span>
+                <h2 className="font-mono text-xs font-bold uppercase tracking-wide text-ink">Timeline</h2>
                 {overdue.length > 0 && (
                   <span className="rounded-full bg-risk px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wide text-white">
                     {overdue.length} overdue
@@ -397,7 +398,7 @@ export default async function ProjectDashboardLayout({
         {hasAnyTimelineDates && (
           <div className="rounded-lg border border-rule bg-surface p-5">
             <div className="mb-4 flex items-center justify-between">
-              <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Full timeline</div>
+              <h2 className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Full timeline</h2>
               <div className="font-mono text-[10px] text-inkmuted">
                 {new Date(rangeStartMs).toLocaleDateString("en-GB")} &ndash;{" "}
                 {new Date(rangeEndMs).toLocaleDateString("en-GB")}

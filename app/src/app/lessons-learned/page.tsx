@@ -47,9 +47,9 @@ export default async function LessonsLearnedPage() {
         <div className="flex flex-col gap-8">
           {groups.map(([key, group]) => (
             <div key={key}>
-              <div className="mb-3 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+              <h2 className="mb-3 font-mono text-xs font-bold uppercase tracking-wide text-accent">
                 {group.gateName} &middot; {group.entries.length}
-              </div>
+              </h2>
               <div className="flex flex-col gap-3">
                 {group.entries.map((l) => (
                   <div key={l.id} className="rounded-lg border border-rule bg-surface p-4">

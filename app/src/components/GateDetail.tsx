@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
+  BYPASS_AUTHORITY_LABEL,
   canApproveSpend,
   canBypassDeliverable,
   canDecideGate,
@@ -11,6 +12,7 @@ import {
   canSetGateTimeline,
   canUploadComplianceEvidence,
   canUploadEvidence,
+  EXACT_MATCH_AUTHORITIES,
   GATE_TIMELINE_BAR_CLASS,
   GATE_TIMELINE_LABELS,
   gateTimelineStatus,
@@ -148,25 +150,27 @@ export async function GateDetail({
             className="mt-4 flex flex-wrap items-end gap-2 border-t border-rule pt-4"
           >
             <div>
-              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              <label htmlFor="target-start-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                 Target start
               </label>
               <input
+                id="target-start-date"
                 type="date"
                 name="targetStartDate"
                 defaultValue={toDateInputValue(gate.targetStartDate)}
-                className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              <label htmlFor="target-end-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                 Target end
               </label>
               <input
+                id="target-end-date"
                 type="date"
                 name="targetEndDate"
                 defaultValue={toDateInputValue(gate.targetEndDate)}
-                className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
               />
             </div>
             <SubmitButton pendingText="Setting…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
@@ -204,9 +208,9 @@ export async function GateDetail({
 
       {gate.deliverables.length > 0 && (
         <>
-          <div id="deliverables" className="mb-4 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+          <h3 id="deliverables" className="mb-4 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
             Delivery checklist &middot; {gate.deliverables.length - outstanding} of {gate.deliverables.length} clear
-          </div>
+          </h3>
 
           <div className="flex flex-col gap-3">
             {gate.deliverables.map((d) => {
@@ -215,15 +219,16 @@ export async function GateDetail({
               const canUpload = d.status === "PENDING" && canReplaceEvidence;
 
               // Statutory ceiling gets a visibly heavier treatment than a routine
-              // Compliance-Officer-level item — an SRO- or Fire-Officer-only
-              // requirement should never read the same as a document a PM can
-              // wave through themselves.
-              const cardClass =
-                d.bypassAuthority === "SRO" || d.bypassAuthority === "FIRE_OFFICER"
-                  ? "border-2 border-risk bg-risk/5"
-                  : d.bypassAuthority === "COMPLIANCE_OFFICER"
-                    ? "border-dashed border-flag bg-surface"
-                    : "border-rule bg-surface";
+              // Compliance-Officer-level item — an SRO-, Fire-Officer-, or
+              // Authorised-Person-only requirement should never read the same
+              // as a document a PM can wave through themselves.
+              const isHeavyAuthority =
+                d.bypassAuthority === "SRO" || EXACT_MATCH_AUTHORITIES.includes(d.bypassAuthority);
+              const cardClass = isHeavyAuthority
+                ? "border-2 border-risk bg-risk/5"
+                : d.bypassAuthority === "COMPLIANCE_OFFICER"
+                  ? "border-dashed border-flag bg-surface"
+                  : "border-rule bg-surface";
 
               return (
                 <div key={d.id} className={`rounded-lg border p-5 ${cardClass}`}>
@@ -232,12 +237,10 @@ export async function GateDetail({
                     {d.bypassAuthority !== "PM" && (
                       <span
                         className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
-                          d.bypassAuthority === "SRO" || d.bypassAuthority === "FIRE_OFFICER"
-                            ? "bg-risk text-white"
-                            : "bg-accentsoft text-flag"
+                          isHeavyAuthority ? "bg-risk text-white" : "bg-accentsoft text-flag"
                         }`}
                       >
-                        Requires {d.bypassAuthority.replace("_", " ")}
+                        Requires {BYPASS_AUTHORITY_LABEL[d.bypassAuthority]}
                       </span>
                     )}
                   </div>
@@ -262,9 +265,10 @@ export async function GateDetail({
                         >
                           <input
                             name="fileName"
+                            aria-label={`Replacement evidence filename for ${d.label}`}
                             placeholder="replacement-filename.pdf"
                             required
-                            className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
                           />
                           <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
                             Replace evidence
@@ -292,9 +296,10 @@ export async function GateDetail({
                         >
                           <input
                             name="fileName"
+                            aria-label={`Evidence filename for ${d.label}`}
                             placeholder="filename.pdf"
                             required
-                            className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
                           />
                           <SubmitButton pendingText="Uploading…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
                             Upload evidence
@@ -311,9 +316,10 @@ export async function GateDetail({
                         >
                           <input
                             name="reason"
+                            aria-label={`Reason for bypassing ${d.label}`}
                             placeholder="Reason for bypass (required)"
                             required
-                            className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
+                            className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-64"
                           />
                           <SubmitButton pendingText="Bypassing…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
                             Bypass
@@ -331,10 +337,10 @@ export async function GateDetail({
 
       {gate.complianceRequirements.length > 0 && (
         <>
-          <div id="compliance" className="mb-4 mt-6 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+          <h3 id="compliance" className="mb-4 mt-6 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
             Compliance &middot; {gate.complianceRequirements.length - outstandingCompliance} of{" "}
             {gate.complianceRequirements.length} clear
-          </div>
+          </h3>
 
           <div className="flex flex-col gap-3">
             {gate.complianceRequirements.map((c) => {
@@ -344,8 +350,8 @@ export async function GateDetail({
                 o.coveredRequirementIds.includes(c.id)
               );
 
-              const cardClass =
-                c.overrideAuthority === "FIRE_OFFICER" ? "border-2 border-risk bg-risk/5" : "border-dashed border-flag bg-surface";
+              const isExactMatchOverride = EXACT_MATCH_AUTHORITIES.includes(c.overrideAuthority);
+              const cardClass = isExactMatchOverride ? "border-2 border-risk bg-risk/5" : "border-dashed border-flag bg-surface";
 
               return (
                 <div key={c.id} className={`rounded-lg border p-5 ${cardClass}`}>
@@ -353,10 +359,10 @@ export async function GateDetail({
                     <span className="font-semibold">{c.label}</span>
                     <span
                       className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
-                        c.overrideAuthority === "FIRE_OFFICER" ? "bg-risk text-white" : "bg-accentsoft text-flag"
+                        isExactMatchOverride ? "bg-risk text-white" : "bg-accentsoft text-flag"
                       }`}
                     >
-                      {c.overrideAuthority === "FIRE_OFFICER" ? "Requires Fire Officer" : "Compliance"}
+                      {isExactMatchOverride ? `Requires ${BYPASS_AUTHORITY_LABEL[c.overrideAuthority]}` : "Compliance"}
                     </span>
                   </div>
                   {c.description && <p className="mb-1 text-sm text-inkmuted">{c.description}</p>}
@@ -381,9 +387,10 @@ export async function GateDetail({
                         >
                           <input
                             name="fileName"
+                            aria-label={`Replacement evidence filename for ${c.label}`}
                             placeholder="replacement-filename.pdf"
                             required
-                            className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
                           />
                           <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
                             Replace evidence
@@ -411,9 +418,10 @@ export async function GateDetail({
                         >
                           <input
                             name="fileName"
+                            aria-label={`Evidence filename for ${c.label}`}
                             placeholder="filename.pdf"
                             required
-                            className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
                           />
                           <SubmitButton pendingText="Uploading…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
                             Upload evidence
@@ -435,16 +443,17 @@ export async function GateDetail({
                 {outstandingCompliance} compliance requirement(s) still outstanding on this gate — one override
                 clears all of them at once, not item by item. Requires{" "}
                 {Array.from(new Set(outstandingComplianceItems.map((c) => c.overrideAuthority)))
-                  .map((a) => (a === "FIRE_OFFICER" ? "Fire Officer" : a))
+                  .map((a) => BYPASS_AUTHORITY_LABEL[a])
                   .join(" and ")}{" "}
                 authority.
               </div>
               <form action={overrideCompliance.bind(null, gateId, projectNumber)} className="flex flex-wrap items-center gap-2">
                 <input
                   name="reason"
+                  aria-label="Reason for overriding all outstanding compliance requirements"
                   placeholder="Reason for overriding all outstanding compliance requirements (required)"
                   required
-                  className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-96"
+                  className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-96"
                 />
                 <SubmitButton pendingText="Overriding…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
                   Override all outstanding
@@ -457,9 +466,9 @@ export async function GateDetail({
 
       {(gate.spendRecords.length > 0 || canRecord) && (
         <>
-          <div id="spend" className="mb-4 mt-6 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
+          <h3 id="spend" className="mb-4 mt-6 scroll-mt-16 font-mono text-xs font-bold uppercase tracking-wide text-accent">
             Spend &middot; {gate.spendRecords.length - outstandingSpend} of {gate.spendRecords.length} approved
-          </div>
+          </h3>
 
           <div className="flex flex-col gap-3">
             {gate.spendRecords.map((s) => (
@@ -509,9 +518,10 @@ export async function GateDetail({
                     <form action={rejectSpend.bind(null, s.id, projectNumber, gateId)} className="flex flex-wrap items-center gap-2">
                       <input
                         name="reason"
+                        aria-label={`Reason for rejecting the £${Number(s.amount).toLocaleString("en-GB", { minimumFractionDigits: 2 })} spend record`}
                         placeholder="Reason for rejection (required)"
                         required
-                        className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
+                        className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-64"
                       />
                       <SubmitButton pendingText="Rejecting…" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
                         Reject
@@ -533,40 +543,41 @@ export async function GateDetail({
             >
               <div className="flex flex-wrap items-end gap-2">
                 <div>
-                  <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                  <label htmlFor="spend-bucket" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                     Bucket
                   </label>
-                  <select name="bucket" className="rounded border border-rule bg-bg px-2.5 py-1.5 text-sm">
+                  <select id="spend-bucket" name="bucket" className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
                     <option value="LIFECYCLE_REPLACEMENT">Lifecycle replacement</option>
                     <option value="SMALL_WORKS">Small works</option>
                     <option value="VARIATION">Variation</option>
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                  <label htmlFor="spend-amount" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                     Amount (&pound;)
                   </label>
                   <input
+                    id="spend-amount"
                     name="amount"
                     type="number"
                     step="0.01"
                     min="0.01"
                     required
-                    className="w-32 rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+                    className="w-32 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                  <label htmlFor="spend-invoice-ref" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                     Invoice ref
                   </label>
-                  <input name="invoiceReference" className="w-32 rounded border border-rule bg-bg px-2.5 py-1.5 text-sm" />
+                  <input id="spend-invoice-ref" name="invoiceReference" className="w-32 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm" />
                 </div>
               </div>
               <div>
-                <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                <label htmlFor="spend-description" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                   Description
                 </label>
-                <input name="description" required className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm" />
+                <input id="spend-description" name="description" required className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm" />
               </div>
               <SubmitButton pendingText="Recording…" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
                 Record spend
@@ -625,9 +636,10 @@ export async function GateDetail({
                 <form action={rejectGate.bind(null, gateId, projectNumber)} className="flex flex-wrap items-center gap-2">
                   <input
                     name="reason"
+                    aria-label="Reason for rejecting this gate"
                     placeholder="Reason for rejection (required)"
                     required
-                    className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm sm:w-64"
+                    className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-64"
                   />
                   <SubmitButton pendingText="Rejecting…" className="rounded-md border border-risk px-4 py-2.5 text-sm font-semibold text-risk">
                     Reject
@@ -665,9 +677,9 @@ export async function GateDetail({
 
       <div id="lessons-learned" className="mt-6 scroll-mt-16">
         <div className="mb-2 flex items-center justify-between">
-          <div className="font-mono text-[11px] uppercase tracking-wide text-inkmuted">
+          <h3 className="font-mono text-[11px] uppercase tracking-wide text-inkmuted">
             Lessons learned{gate.lessonsLearned.length > 0 && <> &middot; {gate.lessonsLearned.length} recorded</>}
-          </div>
+          </h3>
           <span className="text-xs text-inkmuted">Shared across every project on this gate type &rarr; /lessons-learned</span>
         </div>
 
@@ -706,10 +718,11 @@ export async function GateDetail({
             </div>
             <textarea
               name="text"
+              aria-label="Lesson details"
               required
               rows={2}
               placeholder="What happened, and what should the next project like this do differently (or repeat)?"
-              className="w-full rounded border border-rule bg-bg px-2.5 py-1.5 text-sm"
+              className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
             />
             <SubmitButton pendingText="Adding…" className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
               Add lesson
