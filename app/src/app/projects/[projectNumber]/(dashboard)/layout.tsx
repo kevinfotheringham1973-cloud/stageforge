@@ -70,7 +70,7 @@ export default async function ProjectDashboardLayout({
   const project = await db.project.findUnique({
     where: { projectNumber },
     include: {
-      roleAssignments: { include: { role: true, department: { include: { company: true } } } },
+      roleAssignments: { include: { role: true, user: true, department: { include: { company: true } } } },
       worksPackage: { include: { projects: { select: { projectNumber: true, name: true } } } },
       stages: {
         orderBy: { order: "asc" },
@@ -93,6 +93,18 @@ export default async function ProjectDashboardLayout({
 
   const contractorAssignment = project.roleAssignments.find((a) => a.role.key === "FM_CONTRACTOR");
   const authorityAssignment = project.roleAssignments.find((a) => a.role.key === "CLIENT_AUTHORITY");
+
+  // Roles are assigned per project, not globally — the same person can be
+  // PM on one project and hold no role at all on another (e.g. a project
+  // created live by a different PM). The Acting-as switcher's role label
+  // is a global summary, so it can't warn about this; this banner checks
+  // the actual per-project assignment and, if the acting-as user holds
+  // none, tells them who does — otherwise every action on this project
+  // looks unexplainably unavailable.
+  const hasNoRoleHere = currentUser !== null && roleKeys.length === 0;
+  const roleHoldersHere = Array.from(
+    new Map(project.roleAssignments.map((a) => [`${a.role.name}:${a.user.name}`, a])).values()
+  ).sort((a, b) => a.role.name.localeCompare(b.role.name));
 
   const gates = project.stages.map((s) => s.gate).filter((g): g is NonNullable<typeof g> => g !== null);
 
@@ -200,6 +212,21 @@ export default async function ProjectDashboardLayout({
       )}
 
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 md:px-10 md:py-8">
+        {hasNoRoleHere && (
+          <div className="rounded-lg border border-dashed border-flag bg-accentsoft/40 px-4 py-3 text-sm">
+            <span className="font-semibold">{currentUser!.name} has no role on this project.</span> Roles
+            here are assigned per project, not globally — a role shown in the &ldquo;Acting as&rdquo;
+            dropdown (e.g. &ldquo;PM&rdquo;) only applies on projects that person is actually assigned to,
+            so nothing here will be available to act on. Switch &ldquo;Acting as&rdquo; above to one of:{" "}
+            {roleHoldersHere.map((a, i) => (
+              <span key={`${a.roleId}:${a.userId}`}>
+                <span className="font-semibold">{a.user.name}</span> ({a.role.name})
+                {i < roleHoldersHere.length - 1 ? ", " : ""}
+              </span>
+            ))}
+            .
+          </div>
+        )}
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold">{project.name}</h1>
@@ -296,6 +323,11 @@ export default async function ProjectDashboardLayout({
                 Save
               </SubmitButton>
             </form>
+          )}
+          {!isPM && !hasNoRoleHere && (
+            <p className="mt-2 text-xs text-inkmuted">
+              Only the PM can rename this project or change its works package.
+            </p>
           )}
         </div>
 

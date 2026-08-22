@@ -209,6 +209,11 @@ export async function GateDetail({
             </SubmitButton>
           </form>
         )}
+        {!canSetTimeline && (
+          <p className="mt-3 border-t border-rule pt-3 text-xs text-inkmuted">
+            Only the PM sets target dates on this project.
+          </p>
+        )}
       </div>
 
       {(gate.deliverables.length > 0 ||
@@ -468,7 +473,7 @@ export async function GateDetail({
             })}
           </div>
 
-          {outstandingCompliance > 0 && canOverride && (
+          {outstandingCompliance > 0 && (
             <div className="mt-3 rounded-lg border border-dashed border-flag bg-accentsoft/30 p-4">
               <div className="mb-2 text-sm text-inkmuted">
                 {outstandingCompliance} compliance requirement(s) still outstanding on this gate — one override
@@ -478,18 +483,25 @@ export async function GateDetail({
                   .join(" and ")}{" "}
                 authority.
               </div>
-              <form action={overrideCompliance.bind(null, gateId, projectNumber)} className="flex flex-wrap items-center gap-2">
-                <input
-                  name="reason"
-                  aria-label="Reason for overriding all outstanding compliance requirements"
-                  placeholder="Reason for overriding all outstanding compliance requirements (required)"
-                  required
-                  className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-96"
-                />
-                <SubmitButton pendingText="Overriding…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
-                  Override all outstanding
-                </SubmitButton>
-              </form>
+              {canOverride ? (
+                <form action={overrideCompliance.bind(null, gateId, projectNumber)} className="flex flex-wrap items-center gap-2">
+                  <input
+                    name="reason"
+                    aria-label="Reason for overriding all outstanding compliance requirements"
+                    placeholder="Reason for overriding all outstanding compliance requirements (required)"
+                    required
+                    className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-96"
+                  />
+                  <SubmitButton pendingText="Overriding…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
+                    Override all outstanding
+                  </SubmitButton>
+                </form>
+              ) : (
+                <p className="text-xs text-inkmuted">
+                  You don&rsquo;t hold that authority, so you can&rsquo;t use this — evidence each item
+                  individually above instead, or ask someone with the right authority to override.
+                </p>
+              )}
             </div>
           )}
         </>
@@ -730,6 +742,9 @@ export async function GateDetail({
                 Record spend
               </SubmitButton>
             </form>
+          )}
+          {!canRecord && gate.spendRecords.length > 0 && (
+            <p className="mt-3 text-xs text-inkmuted">Only a PM or SRO can record new spend on this gate.</p>
           )}
         </>
       )}
