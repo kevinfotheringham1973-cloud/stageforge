@@ -46,6 +46,57 @@ export default async function HomePage() {
     siblingsByProjectId.set(r.project.id, packageMates.map((m) => ({ projectNumber: m.project.projectNumber, name: m.project.name })));
   }
 
+  const worksPackageInfo = (r: (typeof rows)[number]) =>
+    r.worksPackage && (
+      <div className="mt-0.5 text-xs text-inkmuted">
+        Part of:{" "}
+        <Link href={`/works-packages/${r.worksPackage.id}`} className="font-semibold text-accent hover:underline">
+          {r.worksPackage.name}
+        </Link>
+        {siblingsByProjectId.get(r.project.id)!.length > 0 && (
+          <>
+            {" "}
+            with{" "}
+            {siblingsByProjectId
+              .get(r.project.id)!
+              .map((s, i, arr) => (
+                <span key={s.projectNumber}>
+                  <Link href={`/projects/${s.projectNumber}`} className="text-accent hover:underline">
+                    {s.name}
+                  </Link>
+                  {i < arr.length - 1 ? ", " : ""}
+                </span>
+              ))}
+          </>
+        )}
+        {" · "}
+        <Link href={`/projects/new?worksPackageId=${r.worksPackage.id}`} className="text-accent hover:underline">
+          + Add a system
+        </Link>
+      </div>
+    );
+
+  const outstandingInfo = (r: (typeof rows)[number]) =>
+    r.outstandingDeliverables === 0 && r.outstandingCompliance === 0 ? (
+      <span className="font-semibold text-inkmuted">Clear</span>
+    ) : (
+      <span className="text-sm">
+        {r.outstandingDeliverables > 0 && (
+          <span className="font-bold text-warn">
+            {r.outstandingDeliverables} <span className="font-semibold">del.</span>
+          </span>
+        )}
+        {r.outstandingDeliverables > 0 && r.outstandingCompliance > 0 && (
+          <span className="text-inkmuted"> &middot; </span>
+        )}
+        {r.outstandingCompliance > 0 && (
+          <span className="font-bold text-flag">
+            {r.outstandingCompliance} <span className="font-semibold">comp.</span>
+          </span>
+        )}
+      </span>
+    );
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
       <h1 className="mb-1 text-3xl font-bold">Portfolio</h1>
@@ -60,12 +111,12 @@ export default async function HomePage() {
           <h2 className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
             Drafts awaiting review
           </h2>
-          <div className="flex flex-col gap-2">
+          <div className="-mx-4 flex flex-col gap-2 sm:mx-0">
             {draftProjects.map((p) => (
               <Link
                 key={p.id}
                 href={`/projects/${p.projectNumber}/provisioning`}
-                className="flex items-center justify-between rounded-lg border border-dashed border-flag bg-accentsoft/30 px-4 py-3 hover:border-accent"
+                className="flex items-center justify-between border-y border-dashed border-flag bg-accentsoft/30 px-4 py-3 hover:border-accent sm:rounded-lg sm:border"
               >
                 <div>
                   <span className="font-semibold">{p.name}</span>{" "}
@@ -81,97 +132,101 @@ export default async function HomePage() {
       {rows.length === 0 ? (
         <p className="mb-10 text-sm text-inkmuted">No live projects.</p>
       ) : (
-        <div className="mb-10 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <table className="w-full min-w-[980px] border-collapse text-base">
-            <thead>
-              <tr className="border-b-2 border-rule text-left font-mono text-xs font-bold uppercase tracking-wide text-ink">
-                <th scope="col" className="py-3 pr-4">Project</th>
-                <th scope="col" className="py-3 pr-4">Current gate</th>
-                <th scope="col" className="py-3 pr-4">Timeline</th>
-                <th scope="col" className="py-3 pr-4">Est. completion</th>
-                <th scope="col" className="py-3 pr-4">Cost approved / total</th>
-                <th scope="col" className="py-3 pr-4">Outstanding</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.project.id} className="border-b border-rule">
-                  <td className="py-4 pr-4">
-                    <Link href={`/projects/${r.project.projectNumber}`} className="text-lg font-bold text-accent hover:underline">
-                      {r.project.name}
-                    </Link>
-                    <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
-                    {r.worksPackage && (
-                      <div className="mt-0.5 text-xs text-inkmuted">
-                        Part of:{" "}
-                        <Link href={`/works-packages/${r.worksPackage.id}`} className="font-semibold text-accent hover:underline">
-                          {r.worksPackage.name}
-                        </Link>
-                        {siblingsByProjectId.get(r.project.id)!.length > 0 && (
-                          <>
-                            {" "}
-                            with{" "}
-                            {siblingsByProjectId
-                              .get(r.project.id)!
-                              .map((s, i, arr) => (
-                                <span key={s.projectNumber}>
-                                  <Link href={`/projects/${s.projectNumber}`} className="text-accent hover:underline">
-                                    {s.name}
-                                  </Link>
-                                  {i < arr.length - 1 ? ", " : ""}
-                                </span>
-                              ))}
-                          </>
-                        )}
-                        {" · "}
-                        <Link href={`/projects/new?worksPackageId=${r.worksPackage.id}`} className="text-accent hover:underline">
-                          + Add a system
-                        </Link>
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-4 pr-4 font-semibold">{r.currentGateName}</td>
-                  <td className={`py-4 pr-4 font-bold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>
-                    {GATE_TIMELINE_LABELS[r.timeline]}
-                  </td>
-                  <td className="py-4 pr-4 whitespace-nowrap font-semibold">
-                    {r.estimatedCompletion ? (
-                      r.estimatedCompletion.toLocaleDateString("en-GB")
-                    ) : (
-                      <span className="font-normal text-inkmuted">Not set</span>
-                    )}
-                  </td>
-                  <td className="py-4 pr-4 whitespace-nowrap font-semibold">
-                    <span className="text-ok">{GBP(r.approvedSpend)}</span>
-                    {" / "}
-                    {GBP(r.totalSpend)}
-                  </td>
-                  <td className="py-4 pr-4 whitespace-nowrap">
-                    {r.outstandingDeliverables === 0 && r.outstandingCompliance === 0 ? (
-                      <span className="font-semibold text-inkmuted">Clear</span>
-                    ) : (
-                      <span className="text-sm">
-                        {r.outstandingDeliverables > 0 && (
-                          <span className="font-bold text-warn">
-                            {r.outstandingDeliverables} <span className="font-semibold">del.</span>
-                          </span>
-                        )}
-                        {r.outstandingDeliverables > 0 && r.outstandingCompliance > 0 && (
-                          <span className="text-inkmuted"> &middot; </span>
-                        )}
-                        {r.outstandingCompliance > 0 && (
-                          <span className="font-bold text-flag">
-                            {r.outstandingCompliance} <span className="font-semibold">comp.</span>
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </td>
+        <>
+          {/* Boxed cards below sm: a table's row lines are too faint to track by touch/scroll on a phone.
+              Full-bleed to the screen edge (negative margin cancels the page's own px-4) rather than
+              floating boxes with margin either side. */}
+          <div className="-mx-4 mb-10 flex flex-col gap-2 sm:hidden">
+            {rows.map((r) => (
+              <div key={r.project.id} className="border-y border-rule bg-surface p-4 shadow-sm">
+                <Link href={`/projects/${r.project.projectNumber}`} className="text-lg font-bold text-accent hover:underline">
+                  {r.project.name}
+                </Link>
+                <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
+                {worksPackageInfo(r)}
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Current gate</div>
+                    <div className="font-semibold">{r.currentGateName}</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Timeline</div>
+                    <div className={`font-bold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>{GATE_TIMELINE_LABELS[r.timeline]}</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Est. completion</div>
+                    <div className="font-semibold">
+                      {r.estimatedCompletion ? (
+                        r.estimatedCompletion.toLocaleDateString("en-GB")
+                      ) : (
+                        <span className="font-normal text-inkmuted">Not set</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Cost approved / total</div>
+                    <div className="whitespace-nowrap font-semibold">
+                      <span className="text-ok">{GBP(r.approvedSpend)}</span>
+                      {" / "}
+                      {GBP(r.totalSpend)}
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Outstanding</div>
+                    {outstandingInfo(r)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mb-10 hidden -mx-4 overflow-x-auto px-4 sm:block sm:mx-0 sm:px-0">
+            <table className="w-full min-w-[980px] border-separate border-spacing-y-2 text-base">
+              <thead>
+                <tr className="text-left font-mono text-xs font-bold uppercase tracking-wide text-ink">
+                  <th scope="col" className="py-2 pr-4">Project</th>
+                  <th scope="col" className="py-2 pr-4">Current gate</th>
+                  <th scope="col" className="py-2 pr-4">Timeline</th>
+                  <th scope="col" className="py-2 pr-4">Est. completion</th>
+                  <th scope="col" className="py-2 pr-4">Cost approved / total</th>
+                  <th scope="col" className="py-2 pr-4">Outstanding</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.project.id} className="align-top">
+                    <td className="rounded-l-lg border-y border-l border-rule bg-surface py-4 pl-4 pr-4">
+                      <Link href={`/projects/${r.project.projectNumber}`} className="text-lg font-bold text-accent hover:underline">
+                        {r.project.name}
+                      </Link>
+                      <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
+                      {worksPackageInfo(r)}
+                    </td>
+                    <td className="border-y border-rule bg-surface py-4 pr-4 font-semibold">{r.currentGateName}</td>
+                    <td className={`border-y border-rule bg-surface py-4 pr-4 font-bold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>
+                      {GATE_TIMELINE_LABELS[r.timeline]}
+                    </td>
+                    <td className="border-y border-rule bg-surface py-4 pr-4 whitespace-nowrap font-semibold">
+                      {r.estimatedCompletion ? (
+                        r.estimatedCompletion.toLocaleDateString("en-GB")
+                      ) : (
+                        <span className="font-normal text-inkmuted">Not set</span>
+                      )}
+                    </td>
+                    <td className="border-y border-rule bg-surface py-4 pr-4 whitespace-nowrap font-semibold">
+                      <span className="text-ok">{GBP(r.approvedSpend)}</span>
+                      {" / "}
+                      {GBP(r.totalSpend)}
+                    </td>
+                    <td className="rounded-r-lg border-y border-r border-rule bg-surface py-4 pr-4 whitespace-nowrap">
+                      {outstandingInfo(r)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <div className="rounded-lg border border-rule bg-surface p-5">
