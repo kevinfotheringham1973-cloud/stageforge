@@ -86,9 +86,9 @@ export const BYPASS_AUTHORITY_LABEL: Record<BypassAuthority, string> = {
  * PM-tier (ordinary, non-compliance-significant) deliverables only:
  * holding PM on ANY project also qualifies, not just this one —
  * confirmed 22 Aug 2026, "PM" is a professional authority a person
- * holds, not a per-project seating arrangement; it was "crazy" (Kevin's
- * word) for someone who is a PM to be locked out of ordinary delivery
- * bypass just because this particular project's PM assignment went to
+ * holds, not a per-project seating arrangement; it was "crazy" for
+ * someone who is a PM to be locked out of ordinary delivery bypass
+ * just because this particular project's PM assignment went to
  * someone else (e.g. whoever happened to be acting-as when the project
  * was created). Every other tier here — Compliance Officer, SRO, Fire
  * Officer, each Authorised Person — stays strictly per-project: those
