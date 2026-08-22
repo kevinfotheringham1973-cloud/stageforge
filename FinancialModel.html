@@ -341,12 +341,13 @@
     <tr><td><code>recordSpend</code></td><td>PM or SRO (gate-scoped)</td><td>Creates a <code>SpendRecord</code> against a <code>Gate</code> — bucket, amount, description, invoice reference — status <code>PENDING</code>. Flips a <code>NOT_STARTED</code> gate to <code>IN_PROGRESS</code>, same as the first evidence upload on that gate.</td></tr>
     <tr><td><code>approveSpend</code></td><td>Finance or SRO (§04)</td><td>Records <code>SpendApproval(APPROVED)</code>, flips <code>SpendRecord.status</code> to <code>APPROVED</code>.</td></tr>
     <tr><td><code>rejectSpend</code></td><td>Finance or SRO, reason required</td><td>Records <code>SpendApproval(REJECTED, reason)</code>. Record stays <code>PENDING</code> — same "return to editable state with a reason" pattern as gate rejection and provisioning revision.</td></tr>
+    <tr><td><code>reviseSpend</code></td><td>PM or SRO, <code>PENDING</code> only</td><td>Edits amount/bucket/description/invoice reference on a <code>PENDING</code> record in place. Refuses once the record is <code>APPROVED</code>.</td></tr>
   </table>
   </div>
-  <p>Every action also writes the usual <code>AuditLogEntry</code> — <code>spend.recorded</code>, <code>spend.approved</code>, <code>spend.rejected</code> — same append-only trail as everything else.</p>
-  <div class="flag">
-    <span class="flag-label">Deferred</span>
-    <code>reviseSpend</code> (editing a <code>PENDING</code> record's amount/bucket/description before approval) was in the original v1 sketch but isn't built — see §08. Today, a mistaken entry stays visible and blocking until Finance and the approver sort it out via reject-then-record-again; no data is silently lost either way.
+  <p>Every action also writes the usual <code>AuditLogEntry</code> — <code>spend.recorded</code>, <code>spend.approved</code>, <code>spend.rejected</code>, <code>spend.revised</code> — same append-only trail as everything else.</p>
+  <div class="flag decided">
+    <span class="flag-label">Built (22 Aug 2026)</span>
+    <code>reviseSpend</code> — editing a <code>PENDING</code> record's amount/bucket/description/invoice reference in place, same PM/SRO authority as recording it. Once <code>APPROVED</code> a record is locked (revising a figure that's already been signed off would silently invalidate that sign-off) — reject-then-record-again is still how you correct an already-approved mistake.
   </div>
 
   <h2><span class="num">06</span>The view</h2>
@@ -355,7 +356,7 @@
     <tr><th>Where</th><th>Shows</th></tr>
     <tr><td>Gate detail — new "Spend" section, alongside the Delivery checklist and Compliance sections</td><td>Every <code>SpendRecord</code> on that gate with its bucket, amount, description, invoice reference, and status — the PM's <code>recordSpend</code> form, Finance/SRO's approve/reject controls on pending records, decision history, all inline, no navigation — matching the established pattern from <code>GateDetail.tsx</code>.</td></tr>
     <tr><td>Project overview — gate accordion summary line</td><td>Per-gate spend record count and outstanding count, alongside the existing delivery/compliance outstanding counts — a project-level roll-up view is not yet built (see §08).</td></tr>
-    <tr><td>New route <code>/finance</code></td><td>Portfolio-wide, read-only: every project's approved/pending totals and per-bucket split in one place — the Finance role's equivalent of the Resource Manager's <code>/resources</code>. Not yet built.</td></tr>
+    <tr><td>New route <code>/finance</code></td><td>Portfolio-wide, read-only: every project's approved/pending totals and per-bucket split in one place, plus every pending record across the whole portfolio with a direct link to its gate — the Finance role's equivalent of the Resource Manager's <code>/resources</code>. Built 22 Aug 2026.</td></tr>
   </table>
   </div>
 
@@ -365,16 +366,15 @@
     <li>Amount-based approval thresholds (§04) — flat rule for v1, revisit once real threshold numbers exist.</li>
     <li>Multi-currency.</li>
     <li>Budget-vs-actual — this tracks actuals only, no budget/forecast figure to compare against. Would need its own scoping if wanted.</li>
-    <li><code>reviseSpend</code> — see §05, deferred not out-of-scope.</li>
   </ul>
 
   <h2><span class="num">08</span>Open questions</h2>
   <ol class="oq">
     <li>Bucket- or value-specific approval authority (§04) — the PRD's own unresolved question, still unresolved, shipped with a deliberately simple default in the meantime.</li>
     <li>Whether Finance should be able to delete a <code>PENDING</code> record they made in error, or whether every record — even a mistaken one — stays in the audit trail forever with a note. Leaning toward the latter (matches the "no undo, ever" philosophy already established for bypasses and overrides), not decided.</li>
-    <li>A project-level (rather than per-gate) rolled-up spend total and the portfolio-wide <code>/finance</code> route are both still unbuilt — the gate-level record/approve loop is the piece that actually needed to exist for spend to be checked and approved at each gate; the read-only roll-up views are a natural next increment.</li>
+    <li>The portfolio-wide <code>/finance</code> route is now built (22 Aug 2026) — every live project's total/approved/pending spend and per-bucket split, plus a portfolio-wide "needs approval" list linking straight to each pending record's gate. A project-level (rather than per-gate) rolled-up spend total shown on the project dashboard itself is a smaller possible follow-up, not yet done.</li>
   </ol>
 
-  <footer>StageForge · Financial Model draft v0.2 · gate-level record/approve loop built in <code>app/</code>, portfolio roll-up view not yet built · approval authority revised (PM records, Finance approves) 22 Aug 2026</footer>
+  <footer>StageForge · Financial Model draft v0.2 · gate-level record/approve loop built in <code>app/</code> · approval authority revised (PM records, Finance approves) 22 Aug 2026 · portfolio-wide <code>/finance</code> view built 22 Aug 2026</footer>
 
 </div>

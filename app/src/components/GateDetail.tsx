@@ -29,6 +29,7 @@ import {
   recordSpend,
   rejectGate,
   rejectSpend,
+  reviseSpend,
   setGateTimeline,
   submitForApproval,
 } from "@/lib/actions";
@@ -531,6 +532,92 @@ export async function GateDetail({
                 )}
                 {s.status === "PENDING" && !canApprove && (
                   <span className="mt-2 block text-xs text-inkmuted">Awaiting Finance/SRO approval.</span>
+                )}
+
+                {s.status === "PENDING" && canRecord && (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-wide text-accent">
+                      Revise
+                    </summary>
+                    <form
+                      action={reviseSpend.bind(null, s.id, projectNumber, gateId)}
+                      className="mt-2 flex flex-col gap-2 rounded-lg border border-dashed border-rule bg-bg p-3"
+                    >
+                      <div className="flex flex-wrap items-end gap-2">
+                        <div>
+                          <label
+                            htmlFor={`revise-bucket-${s.id}`}
+                            className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted"
+                          >
+                            Bucket
+                          </label>
+                          <select
+                            id={`revise-bucket-${s.id}`}
+                            name="bucket"
+                            defaultValue={s.bucket}
+                            className="rounded border border-inkmuted bg-surface px-2.5 py-1.5 text-sm"
+                          >
+                            <option value="LIFECYCLE_REPLACEMENT">Lifecycle replacement</option>
+                            <option value="SMALL_WORKS">Small works</option>
+                            <option value="VARIATION">Variation</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`revise-amount-${s.id}`}
+                            className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted"
+                          >
+                            Amount (&pound;)
+                          </label>
+                          <input
+                            id={`revise-amount-${s.id}`}
+                            name="amount"
+                            type="number"
+                            step="0.01"
+                            min="0.01"
+                            required
+                            defaultValue={Number(s.amount)}
+                            className="w-32 rounded border border-inkmuted bg-surface px-2.5 py-1.5 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`revise-invoice-ref-${s.id}`}
+                            className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted"
+                          >
+                            Invoice ref
+                          </label>
+                          <input
+                            id={`revise-invoice-ref-${s.id}`}
+                            name="invoiceReference"
+                            defaultValue={s.invoiceReference ?? ""}
+                            className="w-32 rounded border border-inkmuted bg-surface px-2.5 py-1.5 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor={`revise-description-${s.id}`}
+                          className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted"
+                        >
+                          Description
+                        </label>
+                        <input
+                          id={`revise-description-${s.id}`}
+                          name="description"
+                          required
+                          defaultValue={s.description}
+                          className="w-full rounded border border-inkmuted bg-surface px-2.5 py-1.5 text-sm"
+                        />
+                      </div>
+                      <SubmitButton
+                        pendingText="Saving…"
+                        className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent"
+                      >
+                        Save revision
+                      </SubmitButton>
+                    </form>
+                  </details>
                 )}
               </div>
             ))}

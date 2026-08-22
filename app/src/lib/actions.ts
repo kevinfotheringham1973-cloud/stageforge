@@ -334,6 +334,7 @@ export async function recordSpend(gateId: string, projectNumber: string, formDat
 
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+  revalidatePath("/finance");
 }
 
 async function decideSpend(
@@ -383,6 +384,7 @@ async function decideSpend(
 
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+  revalidatePath("/finance");
 }
 
 export async function approveSpend(spendRecordId: string, projectNumber: string, gateId: string) {
@@ -392,6 +394,65 @@ export async function approveSpend(spendRecordId: string, projectNumber: string,
 export async function rejectSpend(spendRecordId: string, projectNumber: string, gateId: string, formData: FormData) {
   const reason = String(formData.get("reason") ?? "").trim();
   await decideSpend(spendRecordId, projectNumber, gateId, "REJECTED", reason);
+}
+
+/**
+ * Edits a PENDING spend record's amount/bucket/description/invoice
+ * reference in place — the alternative to reject-then-record-again for
+ * a mistaken entry (FinancialModel.html §05, "deferred" item, now
+ * built). Same PM/SRO authority as recording it in the first place —
+ * not scoped to whoever originally recorded it, same as every other
+ * "domain owner acts" permission in this app. Once a record is
+ * APPROVED it's locked — revising an approved figure without a fresh
+ * approval would silently invalidate that sign-off, so this only ever
+ * touches PENDING rows.
+ */
+export async function reviseSpend(spendRecordId: string, projectNumber: string, gateId: string, formData: FormData) {
+  const bucket = String(formData.get("bucket") ?? "");
+  const amount = String(formData.get("amount") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const invoiceReference = String(formData.get("invoiceReference") ?? "").trim();
+  if (!["LIFECYCLE_REPLACEMENT", "SMALL_WORKS", "VARIATION"].includes(bucket)) {
+    throw new Error("A valid approval bucket is required.");
+  }
+  if (!amount || Number.isNaN(Number(amount)) || Number(amount) <= 0) {
+    throw new Error("A positive amount is required.");
+  }
+  if (!description) throw new Error("A description is required.");
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const spendRecord = await db.spendRecord.findUniqueOrThrow({
+    where: { id: spendRecordId },
+    include: { gate: { include: { stage: true } } },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(spendRecord.gate.stage.projectId);
+  if (!canRecordSpend(roleKeys)) {
+    throw new Error("Revising spend requires the Project Manager or SRO role.");
+  }
+  if (spendRecord.status !== "PENDING") {
+    throw new Error("Only a pending spend record can be revised — an approved one is locked.");
+  }
+
+  await db.$transaction([
+    db.spendRecord.update({
+      where: { id: spendRecordId },
+      data: {
+        bucket: bucket as "LIFECYCLE_REPLACEMENT" | "SMALL_WORKS" | "VARIATION",
+        amount,
+        description,
+        invoiceReference: invoiceReference || null,
+      },
+    }),
+    db.auditLogEntry.create({
+      data: { actorId: userId, action: "spend.revised", gateId, entityType: "SpendRecord", entityId: spendRecordId },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+  revalidatePath("/finance");
 }
 
 export async function submitForApproval(gateId: string, projectNumber: string) {
