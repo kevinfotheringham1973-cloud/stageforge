@@ -455,6 +455,64 @@ export async function reviseSpend(spendRecordId: string, projectNumber: string, 
   revalidatePath("/finance");
 }
 
+/**
+ * Removes a PENDING spend record entirely — the "delete a mistaken
+ * entry" option FinancialModel.html §08 left open, decided (Kevin, 22
+ * Aug 2026) in favour of allowing it rather than forcing reviseSpend
+ * or reject-then-record-again for a record that should never have
+ * existed at all. Same PM/SRO authority and PENDING-only restriction
+ * as reviseSpend — once APPROVED, a record is locked, full stop.
+ * Not a soft delete: follows deleteProject's exact shape (the one
+ * other genuine hard-delete in this app) — the record's own prior
+ * audit trail (spend.recorded, any spend.revised/rejected entries) is
+ * removed with it rather than left dangling against a row that no
+ * longer exists, and replaced with one new `spend.deleted` entry that
+ * captures what was removed and the reason, so there's still exactly
+ * one forensic breadcrumb rather than either silent removal or a pile
+ * of orphaned history about a thing that isn't there any more.
+ */
+export async function deleteSpendRecord(spendRecordId: string, projectNumber: string, gateId: string, formData: FormData) {
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) throw new Error("A reason is required to delete a spend record.");
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const spendRecord = await db.spendRecord.findUniqueOrThrow({
+    where: { id: spendRecordId },
+    include: { gate: { include: { stage: true } } },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(spendRecord.gate.stage.projectId);
+  if (!canRecordSpend(roleKeys)) {
+    throw new Error("Deleting a spend record requires the Project Manager or SRO role.");
+  }
+  if (spendRecord.status !== "PENDING") {
+    throw new Error("Only a pending spend record can be deleted — an approved one is locked, same as revising it.");
+  }
+
+  const amountLabel = `£${Number(spendRecord.amount).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
+
+  await db.$transaction([
+    db.spendApproval.deleteMany({ where: { spendRecordId } }),
+    db.auditLogEntry.deleteMany({ where: { entityType: "SpendRecord", entityId: spendRecordId } }),
+    db.spendRecord.delete({ where: { id: spendRecordId } }),
+    db.auditLogEntry.create({
+      data: {
+        actorId: userId,
+        action: "spend.deleted",
+        gateId,
+        entityType: "SpendRecord",
+        entityId: spendRecordId,
+        reason: `${amountLabel} (${spendRecord.bucket}) "${spendRecord.description}" — ${reason}`,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+  revalidatePath("/finance");
+}
+
 export async function submitForApproval(gateId: string, projectNumber: string) {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");

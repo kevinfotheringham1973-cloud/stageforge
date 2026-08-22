@@ -22,6 +22,7 @@ import {
   approveGate,
   approveSpend,
   bypassDeliverable,
+  deleteSpendRecord,
   overrideCompliance,
   recordComplianceEvidenceStub,
   recordEvidenceStub,
@@ -615,6 +616,29 @@ export async function GateDetail({
                         className="self-start rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent"
                       >
                         Save revision
+                      </SubmitButton>
+                    </form>
+                  </details>
+                )}
+
+                {s.status === "PENDING" && canRecord && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-wide text-risk">
+                      Delete
+                    </summary>
+                    <form
+                      action={deleteSpendRecord.bind(null, s.id, projectNumber, gateId)}
+                      className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-risk bg-bg p-3"
+                    >
+                      <input
+                        name="reason"
+                        aria-label={`Reason for deleting the £${Number(s.amount).toLocaleString("en-GB", { minimumFractionDigits: 2 })} spend record`}
+                        placeholder="Reason for deleting (required)"
+                        required
+                        className="w-full rounded border border-inkmuted bg-surface px-2.5 py-1.5 text-sm sm:w-64"
+                      />
+                      <SubmitButton pendingText="Deleting…" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
+                        Delete permanently
                       </SubmitButton>
                     </form>
                   </details>
