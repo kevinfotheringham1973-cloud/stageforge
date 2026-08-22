@@ -2686,6 +2686,347 @@ async function main() {
   ];
   await createDeliverableTemplates(compressedAirStageTemplates, compressedAirDeliverableDefsByStage);
 
+  // ── 20th–22nd Templates: Room or Ward Refresh, Mental Health Unit
+  // Ligature & Room Refresh, and Theatre Refresh — split from a single
+  // "Room, Ward or Theatre Refresh" template (Kevin, 22 Aug 2026,
+  // after that first draft was already built and briefly live-tested)
+  // once it was clear the source document itself ("Room,Ward or
+  // Theatre Refresh.docx" — supplied but not flagged until after that
+  // first draft existed) names three genuinely distinct project types,
+  // not one: "Safe ligature improvements... Standard room refreshes...
+  // Theatre refreshes". Kept as one merged template, a plain ward
+  // repaint would show ligature risk assessments and SRO-tiered
+  // ligature/tool-control sign-offs that have nothing to do with it —
+  // exactly the "don't show irrelevant items" problem already being
+  // designed out elsewhere in this session (see the New Project form's
+  // dynamic bundling checkboxes). Splitting also means the PM picks the
+  // right one directly from the System/Template dropdown, the same way
+  // every other discipline in this library works — not something the
+  // LLM has to disambiguate between three similarly-worded options
+  // after the fact. All three share the same base structure (RIBA
+  // gates, fire compartmentation as Gate 3 standing practice, HAI-SCRIBE
+  // reuse) and all three are in HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS
+  // (lib/cdm.ts) — the source document's "HAI-SCRIBE must be applied
+  // rigorously (High involvement expected)" is stated as a blanket
+  // principle covering all three project types, not just the ligature
+  // one. Only the Mental Health Unit template carries: the ligature
+  // risk assessment (Gate 1), the ligature safety verification/clinical
+  // sign-off (Gate 6, SRO — same "life-safety, cannot be bypassed at PM
+  // level" tier as pressure/LOLER-adjacent items elsewhere), and the
+  // Gate 5 tool-control/room-security item Kevin added directly (22 Aug
+  // 2026, beyond the source document): rooms actively being worked on
+  // in an MHU must never be left open or unattended, since contractor
+  // tools/sharps left accessible are as much a patient (and contractor)
+  // safety risk as the fixed ligature points themselves — also SRO.
+  // Only the Theatre template carries the ultra-clean ventilation
+  // validation item (Gate 6), tiered to AUTHORISED_PERSON_VENTILATION
+  // like every other genuine ventilation-performance validation in this
+  // library, even though this template doesn't replace the ventilation
+  // system itself. No new BypassAuthority needed anywhere.
+
+  const roomOrWardRefreshTemplate = await db.template.create({
+    data: {
+      key: "template.health.room_ward_refresh",
+      name: "Room or Ward Refresh",
+      description:
+        "Refurbishment or refresh of a general ward, room, or clinical area — redecoration, flooring, wall cladding, doors, windows, ceilings, and fixed furniture/fittings, in an operational healthcare environment. Not a Mental Health Unit ligature project (see Mental Health Unit Ligature & Room Refresh) or a theatre refresh (see Theatre Refresh), and not a plant or M&E system replacement — see the relevant system template for that; this template treats those services as interfaces to manage and reinstate, not systems it replaces.",
+      matchKeywords: [
+        "ward refresh",
+        "room refresh",
+        "ward refurbishment",
+        "room refurbishment",
+        "clinical area refurbishment",
+        "redecoration",
+        "flooring",
+        "wall cladding",
+        "altro",
+        "fixtures and fittings",
+        "fixed furniture",
+        "nurse station refresh",
+        "decant",
+      ],
+      sectorVariantId: health.id,
+    },
+  });
+  const roomOrWardRefreshStageTemplates = await createStageAndGateTemplates(roomOrWardRefreshTemplate.id);
+  await createDeliverableTemplates(roomOrWardRefreshStageTemplates, [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.wardrefresh_business_case", label: "Business case / need identification (condition, clinical functionality, infection risk)", description: "SHTM 00, HAI-SCRIBE Stage 1." },
+      { key: "del.wardrefresh_strategic_brief", label: "Strategic brief & project outcomes (patient safety, clinical environment, infection control)", description: "SHTM 00." },
+      { key: "del.wardrefresh_operational_impact_assessment", label: "High-level clinical / operational impact assessment", description: "Clinical and infection prevention & control (IPC) input." },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.wardrefresh_project_brief", label: "Project Brief (scope: finishes, rooms/wards affected)", description: "SHTM 00, HAI-SCRIBE Stage 1." },
+      { key: "del.wardrefresh_condition_surveys", label: "Existing condition surveys (fabric, doors, windows, finishes, known risks)" },
+      { key: "del.wardrefresh_expanded_risk_register", label: "Initial risk register (infection, clinical disruption, fire, asbestos)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.wardrefresh_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
+      { key: "del.wardrefresh_stakeholder_engagement", label: "Early engagement with Clinical, IPC, Estates and Soft FM teams", description: "Essential." },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.wardrefresh_concept_design_report", label: "Concept design options (finishes strategy, phasing, decant requirements)", description: "HAI-SCRIBE Stage 2." },
+      { key: "del.wardrefresh_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
+      { key: "del.wardrefresh_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
+      { key: "del.wardrefresh_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
+      { key: "del.wardrefresh_concept_risk_assessment", label: "Design risk assessment (including HAI risks)", description: "CDM 2015, HAI-SCRIBE." },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.wardrefresh_coordinated_layout_drawings", label: "Coordinated design (doors, windows, layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
+      { key: "del.wardrefresh_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
+      { key: "del.wardrefresh_fire_compartmentation_assessment", label: "Fire compartmentation and means of escape impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.wardrefresh_updated_risk_register_spatial", label: "Updated cost plan, risk register & detailed phasing / decant strategy" },
+      { key: "del.wardrefresh_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 4 — Technical Design
+    [
+      { key: "del.wardrefresh_full_technical_design_package", label: "Full technical design drawings, room layouts, door/window schedules, finishes schedules" },
+      { key: "del.wardrefresh_detailed_specifications", label: "Detailed specifications (flooring, wall cladding, ironmongery, ceilings)", description: "Relevant BS / manufacturer standards." },
+      { key: "del.wardrefresh_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
+      { key: "del.wardrefresh_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.wardrefresh_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.wardrefresh_building_regs_compliance_info", label: "Building Standards / statutory compliance information", description: "Building Standards (Scotland).", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.wardrefresh_pre_construction_information", label: "Pre-construction information & input to Construction Phase Plan", description: "CDM 2015." },
+      { key: "del.wardrefresh_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
+      { key: "del.wardrefresh_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
+      { key: "del.wardrefresh_clinical_stakeholder_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.wardrefresh_method_statements_decant_arrangements", label: "Contractor method statements, detailed phasing and temporary clinical arrangements", description: "Critical." },
+      { key: "del.wardrefresh_material_product_certificates", label: "Material & product certificates (flooring, cladding, doors, windows)", description: "Manufacturer." },
+      { key: "del.wardrefresh_finishes_furniture_install", label: "Installation of doors, windows, ironmongery, flooring, wall cladding and associated works" },
+      { key: "del.wardrefresh_protection_existing_services", label: "Protection of existing services and clinical areas", description: "HAI-SCRIBE Stage 3." },
+      { key: "del.wardrefresh_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.wardrefresh_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
+      { key: "del.wardrefresh_temp_clinical_continuity_records", label: "Temporary arrangements and clinical continuity records", description: "Essential." },
+      { key: "del.wardrefresh_decommissioning_records", label: "Decommissioning / strip-out records of redundant finishes and fittings" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.wardrefresh_full_commissioning_validation_records", label: "Full inspection, snagging and quality verification records" },
+      { key: "del.wardrefresh_infection_control_validation", label: "Cleaning, terminal clean and IPC clearance", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.wardrefresh_as_fitted_drawings_om_manuals", label: "As-fitted drawings, schedules and product information" },
+      { key: "del.wardrefresh_om_manuals", label: "Comprehensive O&M manuals and maintenance information for new finishes and fittings", description: "SHTM 00." },
+      { key: "del.wardrefresh_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
+      { key: "del.wardrefresh_training_records", label: "Training & demonstration records for clinical, Soft FM and Estates staff" },
+      { key: "del.wardrefresh_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
+      { key: "del.wardrefresh_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
+      { key: "del.wardrefresh_formal_acceptance", label: "Formal clinical, IPC and client acceptance", description: "Essential.", bypassAuthority: "SRO" },
+      { key: "del.wardrefresh_haiscribe_stage4_precheck", label: "HAI-SCRIBE Stage 4 pre-handover check completion", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.wardrefresh_soft_landings_review", label: "Soft landings / post-occupancy review (clinical functionality, cleanability, user feedback)", description: "SHTM 00, HAI-SCRIBE Stage 4." },
+      { key: "del.wardrefresh_updated_operational_cleaning_procedures", label: "Updated operational and cleaning procedures", description: "IPC / Soft FM." },
+      { key: "del.wardrefresh_ongoing_maintenance_regime", label: "Ongoing maintenance and inspection regime for finishes" },
+      { key: "del.wardrefresh_defects_liability_final_account", label: "Defects liability records & final account" },
+      { key: "del.wardrefresh_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
+    ],
+  ]);
+
+  const mhuLigatureTemplate = await db.template.create({
+    data: {
+      key: "template.health.mhu_ligature_room_refresh",
+      name: "Mental Health Unit Ligature & Room Refresh",
+      description:
+        "Refurbishment or refresh of a Mental Health Unit room or ward including safe ligature improvements — anti-ligature doors, windows, ensuite fittings, flooring, wall cladding, decoration, and fixed furniture, in an operational healthcare environment. For a general (non-MHU) ward/room refresh see Room or Ward Refresh; for a theatre refresh see Theatre Refresh. Not a plant or M&E system replacement — see the relevant system template for that.",
+      matchKeywords: [
+        "ligature",
+        "anti-ligature",
+        "safe ligature",
+        "ligature risk",
+        "ligature improvements",
+        "mental health unit",
+        "MHU",
+        "mental health ward refresh",
+        "psychiatric ward refresh",
+      ],
+      sectorVariantId: health.id,
+    },
+  });
+  const mhuLigatureStageTemplates = await createStageAndGateTemplates(mhuLigatureTemplate.id);
+  await createDeliverableTemplates(mhuLigatureStageTemplates, [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.mhu_business_case", label: "Business case / need identification (condition, ligature risk, clinical functionality, infection risk)", description: "SHTM 00, HAI-SCRIBE Stage 1." },
+      { key: "del.mhu_strategic_brief", label: "Strategic brief & project outcomes (patient safety, clinical environment, infection control, ligature reduction)", description: "SHTM 00." },
+      { key: "del.mhu_operational_impact_assessment", label: "High-level clinical / operational impact assessment", description: "Clinical and infection prevention & control (IPC) input." },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.mhu_project_brief", label: "Project Brief (scope: ligature works, finishes, rooms affected)", description: "SHTM 00, HAI-SCRIBE Stage 1." },
+      { key: "del.mhu_condition_surveys", label: "Existing condition surveys (fabric, doors, windows, ensuites, finishes, known risks)" },
+      { key: "del.mhu_ligature_risk_assessment", label: "Ligature risk assessment (Mental Health Unit areas)", description: "Design guidance for Mental Health environments and anti-ligature product standards.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.mhu_expanded_risk_register", label: "Initial risk register (ligature, infection, clinical disruption, fire, asbestos)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.mhu_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
+      { key: "del.mhu_stakeholder_engagement", label: "Early engagement with Clinical, IPC, Mental Health, Estates and Soft FM teams", description: "Essential." },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.mhu_concept_design_report", label: "Concept design options (ligature solutions, finishes strategy, phasing, decant requirements)", description: "HAI-SCRIBE Stage 2." },
+      { key: "del.mhu_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
+      { key: "del.mhu_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
+      { key: "del.mhu_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
+      { key: "del.mhu_concept_risk_assessment", label: "Design risk assessment (including ligature and HAI risks)", description: "CDM 2015, HAI-SCRIBE." },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.mhu_coordinated_layout_drawings", label: "Coordinated design (doors, windows, ensuite layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
+      { key: "del.mhu_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
+      { key: "del.mhu_fire_compartmentation_assessment", label: "Fire compartmentation and means of escape impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.mhu_updated_risk_register_spatial", label: "Updated cost plan, risk register & detailed phasing / decant strategy" },
+      { key: "del.mhu_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 4 — Technical Design
+    [
+      { key: "del.mhu_full_technical_design_package", label: "Full technical design drawings, room layouts, door/window schedules, finishes schedules" },
+      { key: "del.mhu_detailed_specifications", label: "Detailed specifications (anti-ligature products, flooring, wall cladding, ironmongery, ceilings)", description: "Relevant BS / manufacturer standards." },
+      { key: "del.mhu_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
+      { key: "del.mhu_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.mhu_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.mhu_building_regs_compliance_info", label: "Building Standards / statutory compliance information", description: "Building Standards (Scotland).", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.mhu_pre_construction_information", label: "Pre-construction information & input to Construction Phase Plan", description: "CDM 2015." },
+      { key: "del.mhu_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
+      { key: "del.mhu_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
+      { key: "del.mhu_clinical_stakeholder_design_approval", label: "Clinical, IPC and Mental Health stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.mhu_method_statements_decant_arrangements", label: "Contractor method statements, detailed phasing, decant and temporary clinical arrangements", description: "Critical." },
+      { key: "del.mhu_tool_control_room_security", label: "Contractor tool control and room security procedure", description: "Rooms under works must never be left open or unattended, and every tool and sharp item must be signed in, signed out, and accounted for at all times — a patient and contractor safety control distinct from general site security.", bypassAuthority: "SRO" },
+      { key: "del.mhu_material_product_certificates", label: "Material & product certificates (anti-ligature items, flooring, cladding, doors, windows)", description: "Manufacturer." },
+      { key: "del.mhu_finishes_furniture_install", label: "Installation of doors, windows, ironmongery, flooring, wall cladding and associated works" },
+      { key: "del.mhu_protection_existing_services", label: "Protection of existing services and clinical areas", description: "HAI-SCRIBE Stage 3." },
+      { key: "del.mhu_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.mhu_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
+      { key: "del.mhu_temp_clinical_continuity_records", label: "Temporary arrangements and clinical continuity records", description: "Essential." },
+      { key: "del.mhu_decommissioning_records", label: "Decommissioning / strip-out records of redundant finishes and fittings" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.mhu_full_commissioning_validation_records", label: "Full inspection, snagging and quality verification records" },
+      { key: "del.mhu_ligature_safety_verification", label: "Ligature safety verification and clinical sign-off", description: "Life-safety verification for at-risk patients — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.mhu_infection_control_validation", label: "Cleaning, terminal clean and IPC clearance", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.mhu_as_fitted_drawings_om_manuals", label: "As-fitted drawings, schedules and product information" },
+      { key: "del.mhu_om_manuals", label: "Comprehensive O&M manuals and maintenance information for new finishes and fittings", description: "SHTM 00." },
+      { key: "del.mhu_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
+      { key: "del.mhu_training_records", label: "Training & demonstration records for clinical, Soft FM and Estates staff" },
+      { key: "del.mhu_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
+      { key: "del.mhu_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
+      { key: "del.mhu_formal_acceptance", label: "Formal clinical, IPC and client acceptance", description: "Essential.", bypassAuthority: "SRO" },
+      { key: "del.mhu_haiscribe_stage4_precheck", label: "HAI-SCRIBE Stage 4 pre-handover check completion", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.mhu_soft_landings_review", label: "Soft landings / post-occupancy review (clinical functionality, ligature safety, cleanability, user feedback)", description: "SHTM 00, HAI-SCRIBE Stage 4." },
+      { key: "del.mhu_updated_operational_cleaning_procedures", label: "Updated operational and cleaning procedures", description: "IPC / Soft FM." },
+      { key: "del.mhu_ongoing_maintenance_regime", label: "Ongoing maintenance and inspection regime for anti-ligature items and finishes" },
+      { key: "del.mhu_defects_liability_final_account", label: "Defects liability records & final account" },
+      { key: "del.mhu_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
+    ],
+  ]);
+
+  const theatreRefreshTemplate = await db.template.create({
+    data: {
+      key: "template.health.theatre_refresh",
+      name: "Theatre Refresh",
+      description:
+        "Refurbishment or refresh of an operating theatre — finishes, wall/ceiling cladding, doors, and fixed furniture, plus validation of any disturbed ventilation/medical gas/electrical interfaces, in an operational healthcare environment. For a general (non-theatre) ward/room refresh see Room or Ward Refresh; for Mental Health Unit ligature work see Mental Health Unit Ligature & Room Refresh. Not a plant or M&E system replacement — see the relevant system template for that.",
+      matchKeywords: [
+        "theatre refresh",
+        "theatre refurbishment",
+        "operating theatre refresh",
+        "theatre finishes",
+        "laminar flow",
+        "ultra-clean ventilation",
+        "theatre validation",
+      ],
+      sectorVariantId: health.id,
+    },
+  });
+  const theatreRefreshStageTemplates = await createStageAndGateTemplates(theatreRefreshTemplate.id);
+  await createDeliverableTemplates(theatreRefreshStageTemplates, [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.theatrerefresh_business_case", label: "Business case / need identification (condition, clinical functionality, infection risk)", description: "SHTM 00, HAI-SCRIBE Stage 1." },
+      { key: "del.theatrerefresh_strategic_brief", label: "Strategic brief & project outcomes (patient safety, clinical environment, infection control)", description: "SHTM 00." },
+      { key: "del.theatrerefresh_operational_impact_assessment", label: "High-level clinical / operational impact assessment", description: "Clinical and infection prevention & control (IPC) input." },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.theatrerefresh_project_brief", label: "Project Brief (scope: finishes, theatres affected)", description: "SHTM 00, HAI-SCRIBE Stage 1." },
+      { key: "del.theatrerefresh_condition_surveys", label: "Existing condition surveys (fabric, doors, finishes, known risks)" },
+      { key: "del.theatrerefresh_expanded_risk_register", label: "Initial risk register (infection, clinical disruption, fire, asbestos)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.theatrerefresh_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
+      { key: "del.theatrerefresh_stakeholder_engagement", label: "Early engagement with Clinical, IPC, Estates and Soft FM teams", description: "Essential." },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.theatrerefresh_concept_design_report", label: "Concept design options (finishes strategy, phasing, decant requirements)", description: "HAI-SCRIBE Stage 2." },
+      { key: "del.theatrerefresh_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
+      { key: "del.theatrerefresh_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
+      { key: "del.theatrerefresh_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
+      { key: "del.theatrerefresh_concept_risk_assessment", label: "Design risk assessment (including HAI risks)", description: "CDM 2015, HAI-SCRIBE." },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.theatrerefresh_coordinated_layout_drawings", label: "Coordinated design (doors, layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
+      { key: "del.theatrerefresh_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
+      { key: "del.theatrerefresh_fire_compartmentation_assessment", label: "Fire compartmentation and means of escape impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.theatrerefresh_updated_risk_register_spatial", label: "Updated cost plan, risk register & detailed phasing / decant strategy" },
+      { key: "del.theatrerefresh_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 4 — Technical Design
+    [
+      { key: "del.theatrerefresh_full_technical_design_package", label: "Full technical design drawings, room layouts, door schedules, finishes schedules" },
+      { key: "del.theatrerefresh_detailed_specifications", label: "Detailed specifications (theatre-grade wall/ceiling finishes — impervious, seamless, cleanable — ironmongery, doors)", description: "Relevant BS / manufacturer standards." },
+      { key: "del.theatrerefresh_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
+      { key: "del.theatrerefresh_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.theatrerefresh_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.theatrerefresh_building_regs_compliance_info", label: "Building Standards / statutory compliance information", description: "Building Standards (Scotland).", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.theatrerefresh_pre_construction_information", label: "Pre-construction information & input to Construction Phase Plan", description: "CDM 2015." },
+      { key: "del.theatrerefresh_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
+      { key: "del.theatrerefresh_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
+      { key: "del.theatrerefresh_clinical_stakeholder_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.theatrerefresh_method_statements_decant_arrangements", label: "Contractor method statements, detailed phasing and temporary clinical arrangements", description: "Critical." },
+      { key: "del.theatrerefresh_material_product_certificates", label: "Material & product certificates (theatre-grade finishes, cladding, doors)", description: "Manufacturer." },
+      { key: "del.theatrerefresh_finishes_furniture_install", label: "Installation of doors, ironmongery, wall/ceiling cladding and associated works" },
+      { key: "del.theatrerefresh_protection_existing_services", label: "Protection of existing services and clinical areas", description: "HAI-SCRIBE Stage 3." },
+      { key: "del.theatrerefresh_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.theatrerefresh_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
+      { key: "del.theatrerefresh_temp_clinical_continuity_records", label: "Temporary arrangements and clinical continuity records", description: "Essential." },
+      { key: "del.theatrerefresh_decommissioning_records", label: "Decommissioning / strip-out records of redundant finishes and fittings" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.theatrerefresh_full_commissioning_validation_records", label: "Full inspection, snagging and quality verification records" },
+      { key: "del.theatrerefresh_ventilation_validation", label: "Ultra-clean ventilation validation (air changes, filtration integrity, laminar flow performance where fitted)", description: "SHTM 03-01, Part B (specialised ventilation) — required wherever finishes/ceiling works disturb the theatre's ventilation canopy or envelope.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
+      { key: "del.theatrerefresh_infection_control_validation", label: "Cleaning, terminal clean and IPC clearance", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.theatrerefresh_as_fitted_drawings_om_manuals", label: "As-fitted drawings, schedules and product information" },
+      { key: "del.theatrerefresh_om_manuals", label: "Comprehensive O&M manuals and maintenance information for new finishes and fittings", description: "SHTM 00." },
+      { key: "del.theatrerefresh_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
+      { key: "del.theatrerefresh_training_records", label: "Training & demonstration records for clinical, Soft FM and Estates staff" },
+      { key: "del.theatrerefresh_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
+      { key: "del.theatrerefresh_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
+      { key: "del.theatrerefresh_formal_acceptance", label: "Formal clinical, IPC and client acceptance", description: "Essential.", bypassAuthority: "SRO" },
+      { key: "del.theatrerefresh_haiscribe_stage4_precheck", label: "HAI-SCRIBE Stage 4 pre-handover check completion", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.theatrerefresh_soft_landings_review", label: "Soft landings / post-occupancy review (clinical functionality, cleanability, user feedback)", description: "SHTM 00, HAI-SCRIBE Stage 4." },
+      { key: "del.theatrerefresh_updated_operational_cleaning_procedures", label: "Updated operational and cleaning procedures", description: "IPC / Soft FM." },
+      { key: "del.theatrerefresh_ongoing_maintenance_regime", label: "Ongoing maintenance and inspection regime for finishes" },
+      { key: "del.theatrerefresh_defects_liability_final_account", label: "Defects liability records & final account" },
+      { key: "del.theatrerefresh_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
+    ],
+  ]);
+
   // ── Compliance corpus: independently maintained, reused across every
   // programme type (ConfigSchema.html §04) — not authored per project.
   // Grounded in Complaince and Regulations.docx. Deliberately distinct

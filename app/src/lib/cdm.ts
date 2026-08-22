@@ -32,11 +32,19 @@ export function isCdmWorksType(value: string): value is CdmWorksType {
   return (CDM_WORKS_TYPES as string[]).includes(value);
 }
 
-// The 5 systems Kevin's HAI-SCRIBE vs RIBA intensity matrix (21 Aug
-// 2026) rates "High" HAI-SCRIBE/IPC involvement across most of the
-// project lifecycle (RIBA 2–6), versus every other template's
-// Low–Medium rating. Keyed by Template.key so it's a property of the
-// discipline, not guessed per project.
+// The systems/templates rated "High" HAI-SCRIBE/IPC involvement across
+// most of the project lifecycle (RIBA 2–6), versus every other
+// template's Low–Medium rating. Keyed by Template.key so it's a
+// property of the discipline, not guessed per project. First 5 from
+// Kevin's HAI-SCRIBE vs RIBA intensity matrix (21 Aug 2026); the three
+// refresh templates (Room or Ward Refresh, Mental Health Unit Ligature
+// & Room Refresh, Theatre Refresh — split 22 Aug 2026 from one merged
+// draft) added per their shared source document
+// ("Room,Ward or Theatre Refresh.docx"), which states HAI-SCRIBE "must
+// be applied rigorously (High involvement expected)" as a blanket
+// principle covering all three of the project types it describes, and
+// appears at all four HAI-SCRIBE stages — same standing as Kevin's
+// original matrix, different source.
 export const HAISCRIBE_HIGH_INTENSITY_TAG = "haiscribe_high_intensity_system_affected";
 const HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS = new Set([
   "template.health.ventilation_systems_replacement",
@@ -44,6 +52,9 @@ const HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS = new Set([
   "template.health.domestic_hot_cold_water_replacement",
   "template.health.chilled_water_cooling_replacement",
   "template.health.above_ground_drainage_replacement",
+  "template.health.room_ward_refresh",
+  "template.health.mhu_ligature_room_refresh",
+  "template.health.theatre_refresh",
 ]);
 
 /**
