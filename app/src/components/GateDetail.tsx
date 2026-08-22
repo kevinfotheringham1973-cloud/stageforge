@@ -530,7 +530,7 @@ export async function GateDetail({
                   </div>
                 )}
                 {s.status === "PENDING" && !canApprove && (
-                  <span className="mt-2 block text-xs text-inkmuted">Awaiting Sponsor/SRO approval.</span>
+                  <span className="mt-2 block text-xs text-inkmuted">Awaiting Finance/SRO approval.</span>
                 )}
               </div>
             ))}

@@ -8,39 +8,45 @@
 import type { PrismaClient } from "@prisma/client";
 
 /**
- * Existing-vs-new resolution used by createProvisioningDraft — a
+ * Existing-vs-auto resolution used by createProvisioningDraft — a
  * package is optional for the primary system, but becomes mandatory
  * the moment additionalTemplateIds bundles other systems in alongside
- * it, since the package is what links them together. An existing pick
- * takes priority over a new name if a form somehow carries both.
- * Returns null when neither field is filled in.
+ * it, since the package is what links them together. An explicit
+ * existing-package pick always wins; autoCreateName (passed only when
+ * bundling is happening) is the fallback that guarantees a package
+ * still gets created even though the form no longer asks the PM to
+ * name one (confirmed by Kevin, 22 Aug 2026: the name is just a
+ * portfolio label, not worth a form field — reuses the project's own
+ * name instead). Returns null when there's no existing pick and no
+ * autoCreateName (the plain solo-project case).
  */
 export async function resolveWorksPackageId(
   db: PrismaClient,
   userId: string,
-  formData: FormData
+  formData: FormData,
+  autoCreateName?: string
 ): Promise<{ id: string; name: string } | null> {
   const worksPackageId = String(formData.get("worksPackageId") ?? "").trim();
-  const newWorksPackageName = String(formData.get("newWorksPackageName") ?? "").trim();
 
   if (worksPackageId) {
     const wp = await db.worksPackage.findUniqueOrThrow({ where: { id: worksPackageId } });
     return { id: wp.id, name: wp.name };
   }
-  if (newWorksPackageName) {
+  if (autoCreateName) {
     // Reuse an existing package with the same name (case-insensitive)
     // rather than silently creating a duplicate — found the hard way,
-    // 21 Aug 2026: typing "Main Kitchen Refit" into this field a second
-    // time (instead of picking it from the existing-package dropdown)
-    // created a second, identically-named WorksPackage row, and the
-    // dropdown had no way to tell them apart.
+    // 21 Aug 2026, back when this name came from a free-text field
+    // instead of the project name: typing the same name twice created
+    // a second, identically-named WorksPackage row, and the dropdown
+    // had no way to tell them apart. Same risk exists auto-naming from
+    // the project name, so the same guard stays.
     const existing = await db.worksPackage.findFirst({
-      where: { name: { equals: newWorksPackageName, mode: "insensitive" } },
+      where: { name: { equals: autoCreateName, mode: "insensitive" } },
     });
     if (existing) return { id: existing.id, name: existing.name };
 
     const created = await db.worksPackage.create({
-      data: { name: newWorksPackageName, createdById: userId },
+      data: { name: autoCreateName, createdById: userId },
     });
     return { id: created.id, name: created.name };
   }

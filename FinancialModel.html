@@ -317,8 +317,12 @@
 
   <h2><span class="num">04</span>Approval authority — the genuinely undecided part</h2>
   <p>The PRD flagged, unresolved, whether buckets have different sign-off roles or value thresholds. Real Hard FM practice likely does vary this by bucket and amount, but no specific rule survives in any source document — inventing numbers here would be guessing at someone else's finance policy.</p>
-  <div class="rec">
-    <span class="flag-label">Recommendation</span>
+  <div class="flag decided">
+    <span class="flag-label">Decided (revised 22 Aug 2026)</span>
+    Real practice is the other way round from the v1 recommendation below: the <strong>PM records</strong> spend (the delivery owner logging what's been spent, same as deliverable/compliance evidence — <code>canUploadEvidence</code>/<code>canUploadComplianceEvidence</code>'s "PM does the day-to-day work" pattern), and <strong>Finance approves</strong> it (the domain owner checking the PM's entry), with <strong>SRO able to do either</strong> (the existing tiered-authority pattern). Sponsor is not part of the spend loop at all — its role in this app is the separate gate-level sign-off decision (<code>canDecideGate</code>), which still can't happen until spend clears here too (<code>isGateReadyForSponsor</code>) — two distinct checks, not one role rubber-stamping the other.
+  </div>
+  <div class="flag" style="text-decoration: line-through; opacity: 0.6;">
+    <span class="flag-label">Superseded recommendation (19 Aug 2026)</span>
     Ship v1 with a single, flat rule reusing authority the app already has: <strong>Sponsor approves</strong> (same actor who approves gates — PRD.html §06 already casts the Sponsor as the accountable approver for a project), <strong>SRO can also approve</strong> (the existing tiered-authority pattern — whoever can do more can do less), <strong>identical across all three buckets</strong>, and <strong>no amount-based threshold</strong> (every spend record needs sign-off regardless of size). This is deliberately the simplest rule that satisfies "add an approval step" without guessing at bucket- or value-specific policy that isn't written down anywhere yet.
   </div>
   <div class="flag decided">
@@ -334,9 +338,9 @@
   <div class="table-wrap">
   <table>
     <tr><th>Action</th><th>Who</th><th>Effect</th></tr>
-    <tr><td><code>recordSpend</code></td><td>Finance (gate-scoped)</td><td>Creates a <code>SpendRecord</code> against a <code>Gate</code> — bucket, amount, description, invoice reference — status <code>PENDING</code>. Flips a <code>NOT_STARTED</code> gate to <code>IN_PROGRESS</code>, same as the first evidence upload on that gate.</td></tr>
-    <tr><td><code>approveSpend</code></td><td>Sponsor or SRO (§04)</td><td>Records <code>SpendApproval(APPROVED)</code>, flips <code>SpendRecord.status</code> to <code>APPROVED</code>.</td></tr>
-    <tr><td><code>rejectSpend</code></td><td>Sponsor or SRO, reason required</td><td>Records <code>SpendApproval(REJECTED, reason)</code>. Record stays <code>PENDING</code> — same "return to editable state with a reason" pattern as gate rejection and provisioning revision.</td></tr>
+    <tr><td><code>recordSpend</code></td><td>PM or SRO (gate-scoped)</td><td>Creates a <code>SpendRecord</code> against a <code>Gate</code> — bucket, amount, description, invoice reference — status <code>PENDING</code>. Flips a <code>NOT_STARTED</code> gate to <code>IN_PROGRESS</code>, same as the first evidence upload on that gate.</td></tr>
+    <tr><td><code>approveSpend</code></td><td>Finance or SRO (§04)</td><td>Records <code>SpendApproval(APPROVED)</code>, flips <code>SpendRecord.status</code> to <code>APPROVED</code>.</td></tr>
+    <tr><td><code>rejectSpend</code></td><td>Finance or SRO, reason required</td><td>Records <code>SpendApproval(REJECTED, reason)</code>. Record stays <code>PENDING</code> — same "return to editable state with a reason" pattern as gate rejection and provisioning revision.</td></tr>
   </table>
   </div>
   <p>Every action also writes the usual <code>AuditLogEntry</code> — <code>spend.recorded</code>, <code>spend.approved</code>, <code>spend.rejected</code> — same append-only trail as everything else.</p>
@@ -349,7 +353,7 @@
   <div class="table-wrap">
   <table>
     <tr><th>Where</th><th>Shows</th></tr>
-    <tr><td>Gate detail — new "Spend" section, alongside the Delivery checklist and Compliance sections</td><td>Every <code>SpendRecord</code> on that gate with its bucket, amount, description, invoice reference, and status — Finance's <code>recordSpend</code> form, Sponsor/SRO's approve/reject controls on pending records, decision history, all inline, no navigation — matching the established pattern from <code>GateDetail.tsx</code>.</td></tr>
+    <tr><td>Gate detail — new "Spend" section, alongside the Delivery checklist and Compliance sections</td><td>Every <code>SpendRecord</code> on that gate with its bucket, amount, description, invoice reference, and status — the PM's <code>recordSpend</code> form, Finance/SRO's approve/reject controls on pending records, decision history, all inline, no navigation — matching the established pattern from <code>GateDetail.tsx</code>.</td></tr>
     <tr><td>Project overview — gate accordion summary line</td><td>Per-gate spend record count and outstanding count, alongside the existing delivery/compliance outstanding counts — a project-level roll-up view is not yet built (see §08).</td></tr>
     <tr><td>New route <code>/finance</code></td><td>Portfolio-wide, read-only: every project's approved/pending totals and per-bucket split in one place — the Finance role's equivalent of the Resource Manager's <code>/resources</code>. Not yet built.</td></tr>
   </table>
@@ -371,6 +375,6 @@
     <li>A project-level (rather than per-gate) rolled-up spend total and the portfolio-wide <code>/finance</code> route are both still unbuilt — the gate-level record/approve loop is the piece that actually needed to exist for spend to be checked and approved at each gate; the read-only roll-up views are a natural next increment.</li>
   </ol>
 
-  <footer>StageForge · Financial Model draft v0.2 · gate-level record/approve loop built in <code>app/</code>, portfolio roll-up view not yet built · 19 Aug 2026</footer>
+  <footer>StageForge · Financial Model draft v0.2 · gate-level record/approve loop built in <code>app/</code>, portfolio roll-up view not yet built · approval authority revised (PM records, Finance approves) 22 Aug 2026</footer>
 
 </div>

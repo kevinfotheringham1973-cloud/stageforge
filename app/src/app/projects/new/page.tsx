@@ -157,36 +157,23 @@ export default async function NewProjectPage({
               just labels them as one combined package on the portfolio.
             </p>
           )}
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="flex-1">
-              <label htmlFor="new-project-works-package" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                Add to an existing package
-              </label>
-              <select
-                id="new-project-works-package"
-                name="worksPackageId"
-                defaultValue={preselectedWorksPackage?.id ?? ""}
-                className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
-              >
-                <option value="">None</option>
-                {allWorksPackages.map((wp) => (
-                  <option key={wp.id} value={wp.id}>
-                    {wp.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex-1">
-              <label htmlFor="new-project-works-package-name" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                Or name a new package
-              </label>
-              <input
-                id="new-project-works-package-name"
-                name="newWorksPackageName"
-                placeholder="e.g. Main Kitchen Refit"
-                className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
-              />
-            </div>
+          <div>
+            <label htmlFor="new-project-works-package" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              Add to an existing package
+            </label>
+            <select
+              id="new-project-works-package"
+              name="worksPackageId"
+              defaultValue={preselectedWorksPackage?.id ?? ""}
+              className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
+            >
+              <option value="">None</option>
+              {allWorksPackages.map((wp) => (
+                <option key={wp.id} value={wp.id}>
+                  {wp.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="mt-4">
             <div className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
@@ -195,7 +182,9 @@ export default async function NewProjectPage({
             <p className="mb-2 text-xs text-inkmuted">
               Check every other system riding along in the same disruption window &mdash; each becomes its
               own project with its own complete, discipline-specific checklist, created in this same
-              submission. Requires a package above (existing or newly named) to link them to.
+              submission. Picks the package above if you selected one, otherwise StageForge names a new
+              package after this project automatically &mdash; the name is just a label on the portfolio,
+              nothing hinges on it.
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {templates.map((t) => (
