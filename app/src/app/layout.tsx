@@ -36,8 +36,9 @@ export default async function RootLayout({
       <body className="font-sans">
         <header className="flex flex-col gap-3 border-b border-rule bg-surface px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between md:px-10">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <a href="/" className="font-serif text-xl font-bold text-accent">
-              StageForge
+            <a href="/" className="flex items-center gap-2.5">
+              <img src="/nhs-forth-valley-logo.jpeg" alt="NHS Forth Valley" className="h-9 w-auto rounded-sm" />
+              <span className="font-serif text-xl font-bold text-accent">StageForge</span>
             </a>
             <a href="/projects/new" className="text-sm font-semibold text-accent hover:underline">
               + New project
