@@ -1,5 +1,5 @@
 // A hospital runs 24/7, so a disruption window is precious — extra
-// opportunistic work often bundles into it (Kevin, 21 Aug 2026: kitchen
+// opportunistic work often bundles into it (21 Aug 2026: kitchen
 // drainage redesign is reason enough to also do the ventilation and
 // lighting while it's cleared). A Works Package is purely an
 // organisational label linking otherwise-independent, discipline-pure
@@ -15,7 +15,7 @@ import type { PrismaClient } from "@prisma/client";
  * existing-package pick always wins; autoCreateName (passed only when
  * bundling is happening) is the fallback that guarantees a package
  * still gets created even though the form no longer asks the PM to
- * name one (confirmed by Kevin, 22 Aug 2026: the name is just a
+ * name one (confirmed 22 Aug 2026: the name is just a
  * portfolio label, not worth a form field — reuses the project's own
  * name instead). Returns null when there's no existing pick and no
  * autoCreateName (the plain solo-project case).
@@ -55,7 +55,7 @@ export async function resolveWorksPackageId(
 
 /**
  * Every Works Package, for a "link to an existing package" dropdown —
- * deliberately unfiltered (Kevin, 21 Aug 2026: "I expect all the other
+ * deliberately unfiltered (21 Aug 2026: "I expect all the other
  * packages to be available in that area"). An earlier version hid
  * packages whose every project had already signed off, on the theory
  * there was nothing left to bundle new work into — but that's a

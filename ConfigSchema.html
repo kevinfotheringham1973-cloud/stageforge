@@ -292,7 +292,7 @@
       <h1>StageForge — Config Schema</h1>
       <div class="doc-meta">
         Draft v0.4 — companion to PRD v0.8 &amp; Data Model v0.5<br>
-        Owner: Kevin Fotheringham · 18 Aug 2026
+        Last updated: 18 Aug 2026
       </div>
     </div>
     <div class="stamp">Draft — schema not final</div>
@@ -399,7 +399,7 @@
 
   <h3>How tags work</h3>
   <p><code>applies_if_tags</code> is deliberately simple: a Project carries a set of tags (e.g. <code>acute_hospital</code>, <code>listed_building</code>, <code>occupied_during_works</code>), and a rule applies if at least one of its tags matches. This is the whole extensibility mechanism the PRD asked for — a Compliance Officer adds a new rule with a new tag combination, no code, no deploy.</p>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: "any match" is sufficient for the sectors currently in scope — no AND/OR/NOT logic for now. Worth revisiting only if a future sector's rules genuinely need combined conditions rather than a single qualifying tag.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: "any match" is sufficient for the sectors currently in scope — no AND/OR/NOT logic for now. Worth revisiting only if a future sector's rules genuinely need combined conditions rather than a single qualifying tag.</div>
 
   <h2><span class="num">05</span>How the two merge into a live Gate</h2>
   <p>At the moment a Stage is instantiated on a Project, its Gate's checklist is assembled once from both sources — the <code>StageTemplate</code>'s delivery items, plus every rule in the Project's sector <code>ComplianceRuleSet</code>(s) whose <code>applies_to_stage</code> and <code>applies_if_tags</code> match. The result is copied into real <code>Deliverable</code> and <code>ComplianceRequirement</code> rows for that Gate.</p>
@@ -443,16 +443,16 @@
   <p>Two different permissions, easy to conflate: who can edit the shared template content, and who can decide how much of it a given project actually uses.</p>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: authoring live edits to a <code>StageTemplate</code> or <code>ComplianceRuleSet</code> is restricted to <strong>Platform Admin</strong> and <strong>Compliance Officer</strong>. A PM never edits template content directly — consistent with a PM not being able to unilaterally change what's legally required of a project.
+    Confirmed: authoring live edits to a <code>StageTemplate</code> or <code>ComplianceRuleSet</code> is restricted to <strong>Platform Admin</strong> and <strong>Compliance Officer</strong>. A PM never edits template content directly — consistent with a PM not being able to unilaterally change what's legally required of a project.
   </div>
-  <p>But not every project needs every stage a template defines — a small works order might not go through stages a full capital scheme does. Kevin flagged the PM needs some control here, just not over the template itself.</p>
+  <p>But not every project needs every stage a template defines — a small works order might not go through stages a full capital scheme does. Worth flagging: the PM needs some control here, just not over the template itself.</p>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: a PM can select which subset of a <code>StageTemplate</code>'s stages apply to their specific Project — scoping, not authoring. Modelled as <code>Project.included_stage_keys</code>, chosen at project setup. Absent, or containing every key in the template, means the full template applies unchanged.
+    Confirmed: a PM can select which subset of a <code>StageTemplate</code>'s stages apply to their specific Project — scoping, not authoring. Modelled as <code>Project.included_stage_keys</code>, chosen at project setup. Absent, or containing every key in the template, means the full template applies unchanged.
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: <code>included_stage_keys</code> is editable, not write-once — a PM can reinstate a previously-excluded stage later if scope grows mid-programme. Reinstating one instantiates its Stage and Gate at that point, using whatever the template and matching compliance rules look like at that moment — same "copy at instantiation" behaviour as any other stage, just triggered later.
+    Confirmed: <code>included_stage_keys</code> is editable, not write-once — a PM can reinstate a previously-excluded stage later if scope grows mid-programme. Reinstating one instantiates its Stage and Gate at that point, using whatever the template and matching compliance rules look like at that moment — same "copy at instantiation" behaviour as any other stage, just triggered later.
   </div>
   <div class="code-block">
     <span class="code-label">excerpt — a Project scoped to a subset of its StageTemplate</span>
@@ -467,7 +467,7 @@
 }</pre>
   </div>
   <p>This project simply never instantiates whatever other stages the template defines — e.g. a "Post-Occupancy Review" stage a larger scheme would carry. Compliance items still attach by <code>applies_to_stage</code> as normal; a rule scoped to an excluded stage never gets instantiated for this project either, the same as any other stage that isn't part of it.</p>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a reinstated stage appends after the project's current point, rather than inserting back into its original template position. Simpler and safer — reinstating a stage never reshuffles or reopens stages that are already underway or complete.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: a reinstated stage appends after the project's current point, rather than inserting back into its original template position. Simpler and safer — reinstating a stage never reshuffles or reopens stages that are already underway or complete.</div>
 
   <h2><span class="num">07</span>Open questions</h2>
   <p>None outstanding for this schema. Everything raised while sketching it has been resolved.</p>

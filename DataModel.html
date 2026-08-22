@@ -259,7 +259,7 @@
       <h1>StageForge — Data Model</h1>
       <div class="doc-meta">
         Draft v0.5 — companion to PRD v0.8<br>
-        Owner: Kevin Fotheringham · 18 Aug 2026
+        Last updated: 18 Aug 2026
       </div>
     </div>
     <div class="stamp">Draft — schema not final</div>
@@ -349,8 +349,8 @@
     <tr><td><strong>ProjectRoleAssignment</strong></td><td>The access join. Grants one User (from one Department) one Role on one Project. This is the entity that actually resolves the tenancy question.</td><td class="field">id, project_id, department_id, user_id, role_id</td></tr>
   </table>
   </div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a sector variant can introduce its own role beyond the core seven. Modelled with a nullable <code>sector_variant_id</code> on <code>Role</code> — null means the role is global and available to every sector; set means it's specific to that sector and only assignable on projects within it.</div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: template authoring (<code>StageTemplate</code>, <code>ComplianceRuleSet</code>) is restricted to <strong>Platform Admin</strong> and Compliance Officer. Platform Admin is a genuinely different shape of role from the other eight — it isn't assigned per <code>ProjectRoleAssignment</code> at all, since template content isn't project-scoped. It's a tenant- or platform-level permission, sitting outside this table.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: a sector variant can introduce its own role beyond the core seven. Modelled with a nullable <code>sector_variant_id</code> on <code>Role</code> — null means the role is global and available to every sector; set means it's specific to that sector and only assignable on projects within it.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: template authoring (<code>StageTemplate</code>, <code>ComplianceRuleSet</code>) is restricted to <strong>Platform Admin</strong> and Compliance Officer. Platform Admin is a genuinely different shape of role from the other eight — it isn't assigned per <code>ProjectRoleAssignment</code> at all, since template content isn't project-scoped. It's a tenant- or platform-level permission, sitting outside this table.</div>
 
   <h2><span class="num">03</span>Gate closure mechanism</h2>
   <p>The PRD's governance decisions add up to an AND condition: a gate can only move to Sponsor approval once <em>both</em> the delivery checklist and the compliance checklist are clear — where "clear" means either genuinely satisfied, or satisfied through one of the two governed escape hatches, each locked to a specific role and each leaving a reason on the record.</p>
@@ -433,8 +433,8 @@
     <tr><td><strong>GateSignOff</strong></td><td>Record of the Sponsor's approval.</td><td class="field">id, gate_id, signed_off_by, timestamp</td></tr>
   </table>
   </div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a deliverable bypass requires a reason, for traceability — mandatory, not optional. Every override/bypass in this model now carries the same requirement.</div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a PM cannot bypass a deliverable that carries legal weight — that escalates to Compliance Officer or SRO instead. Bypass authority is set per deliverable (via its template's <code>legally_significant</code> flag), not uniformly PM-level.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: a deliverable bypass requires a reason, for traceability — mandatory, not optional. Every override/bypass in this model now carries the same requirement.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: a PM cannot bypass a deliverable that carries legal weight — that escalates to Compliance Officer or SRO instead. Bypass authority is set per deliverable (via its template's <code>legally_significant</code> flag), not uniformly PM-level.</div>
 
   <h3>Compliance &amp; governance</h3>
   <div class="table-wrap">
@@ -446,7 +446,7 @@
     <tr><td><strong>AuditLogEntry</strong></td><td>Append-only trail. One row per upload, bypass, override, sign-off, and rejection, across every entity above.</td><td class="field">id, actor_id, action, entity_type, entity_id, timestamp</td></tr>
   </table>
   </div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: an SRO override clears everything outstanding on the Gate in one action — not a per-requirement record. <code>covered_requirement_ids</code> snapshots which specific requirements were outstanding at the moment of override, so the audit trail shows exactly what the SRO accepted, even if new requirements are added to the stage later.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: an SRO override clears everything outstanding on the Gate in one action — not a per-requirement record. <code>covered_requirement_ids</code> snapshots which specific requirements were outstanding at the moment of override, so the audit trail shows exactly what the SRO accepted, even if new requirements are added to the stage later.</div>
 
   <h2><span class="num">04</span>Later-phase entities (sketch only)</h2>
   <p>Thin on purpose — the PRD treats these as Phase 2–3 and doesn't yet have enough detail to model properly.</p>
@@ -461,7 +461,7 @@
   <h2><span class="num">05</span>Resolved this round</h2>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    <code>Programme</code> is not a real entity for now — confirmed by Kevin. But he flagged it could become one as project scope grows, so <code>Project</code> is deliberately left without a <code>programme_id</code> today rather than a real one being added and left unused — the field should be added only once there's an actual grouping need, as a nullable FK, so it's a non-breaking addition when that day comes.
+    <code>Programme</code> is not a real entity for now — confirmed, though it could become one as project scope grows, so <code>Project</code> is deliberately left without a <code>programme_id</code> today rather than a real one being added and left unused — the field should be added only once there's an actual grouping need, as a nullable FK, so it's a non-breaking addition when that day comes.
   </div>
   <p>Also resolved: sector-specific roles, mandatory bypass reasons, and single-action SRO overrides — folded into the tables above rather than repeated here.</p>
 

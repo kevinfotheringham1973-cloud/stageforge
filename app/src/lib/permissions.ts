@@ -66,7 +66,7 @@ export const BYPASS_AUTHORITY_LABEL: Record<BypassAuthority, string> = {
  * Compliance-Officer-tier item, same as it can override compliance.
  * Below SRO there is deliberately no ladder — PM and Compliance
  * Officer are two separate tiers, not one inheriting the other.
- * Corrected by Kevin, 21 Aug 2026, after live testing on the Main
+ * Corrected by 21 Aug 2026, after live testing on the Main
  * Kitchen Drainage project found a Compliance Officer able to bypass
  * ordinary PM-managed deliverables that had nothing to do with
  * compliance: a Compliance Officer authors and evidences the
@@ -76,7 +76,7 @@ export const BYPASS_AUTHORITY_LABEL: Record<BypassAuthority, string> = {
  * (enforced at the call site — see actions.ts — not here).
  *
  * FIRE_OFFICER and the AUTHORISED_PERSON_* authorities are exact-match
- * requirements, not reachable by SRO either — confirmed by Kevin,
+ * requirements, not reachable by SRO either — confirmed
  * 20 Aug 2026 (fire) and 21 Aug 2026 (electrical/water AP): an SRO has
  * no professional standing to assess fire safety, authorise an
  * electrical isolation, or sign off water disinfection, so unlike
@@ -130,7 +130,7 @@ export function isGateReadyForSponsor(
  * compliance evidence (canUploadEvidence/canUploadComplianceEvidence):
  * the PM does the day-to-day work of logging what's been spent, and
  * SRO can act at every tier below it too. Finance no longer records —
- * it owns the approval step instead (confirmed by Kevin, 22 Aug 2026:
+ * it owns the approval step instead (confirmed 22 Aug 2026:
  * in practice the PM enters spend and Finance checks it, not the
  * other way round).
  */
@@ -139,7 +139,7 @@ export function canRecordSpend(actorRoleKeys: string[]): boolean {
 }
 
 /**
- * Spend approval is Finance/SRO (confirmed by Kevin, 22 Aug 2026) —
+ * Spend approval is Finance/SRO (confirmed 22 Aug 2026) —
  * Finance is the domain owner checking what the PM logged, and SRO
  * retains its usual standing to act at every tier below it. Sponsor
  * dropped: its role in this app is the gate-level sign-off decision
@@ -171,7 +171,7 @@ export function canRecordLessonLearned(actorRoleKeys: string[]): boolean {
  * getCurrentUserGlobalRoleKeys), the same "holds this role anywhere"
  * standing used for Compliance Officer authority before a project has
  * its own role assignments. Client Authority added (confirmed by
- * Kevin, 20 Aug 2026) — the NHS side commissioning the work has the
+ * 20 Aug 2026) — the NHS side commissioning the work has the
  * same standing interest in who sees portfolio status as the SRO does.
  */
 export function canManageScheduledReports(actorGlobalRoleKeys: string[]): boolean {

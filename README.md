@@ -66,7 +66,7 @@ occasionally guessing the wrong discipline from an ambiguous
 description, so `/projects/new` now has an explicit Template dropdown
 — the PM picks the system directly — and the LLM's role narrows to
 proposing the compliance-tag set for it. A Compliance Officer still
-reviews and approves before the project goes live. Kevin's HAI-SCRIBE
+reviews and approves before the project goes live. the HAI-SCRIBE
 involvement-intensity matrix is also operational: five systems rated
 sustained High infection-control involvement get extra compliance
 checkpoints across the project lifecycle, driven by which Template

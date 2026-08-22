@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 
 /**
  * Client component only because the bundling checkboxes need to react
- * live to the primary System/Template pick (Kevin, 22 Aug 2026: seeing
+ * live to the primary System/Template pick (22 Aug 2026: seeing
  * the system you just selected as primary also listed as something you
  * could "additionally" bundle in is confusing, especially for less
  * menu-confident users — it can't mean anything since a project can't
@@ -162,12 +162,19 @@ export function NewProjectForm({
           </div>
         </div>
       </fieldset>
-      <SubmitButton
-        pendingText="Matching against the template library…"
-        className="self-start rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white"
-      >
-        Match &amp; create draft
-      </SubmitButton>
+      <div className="flex flex-col items-start gap-2">
+        <SubmitButton
+          pendingText="Matching against the template library…"
+          className="self-start rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white"
+        >
+          Match &amp; create draft
+        </SubmitButton>
+        <p className="text-xs text-inkmuted">
+          This won&rsquo;t go live yet — it creates a draft that a Compliance Officer reviews next, and
+          may need sign-off from other roles (Principal Designer, Fire Officer, Authorised Person)
+          depending on your answers above.
+        </p>
+      </div>
     </form>
   );
 }

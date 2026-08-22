@@ -7,7 +7,7 @@ import { getPortfolioRows } from "@/lib/portfolioReport";
 const GBP = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
- * "Assess the full project" (Kevin, 21 Aug 2026) — a Works Package is a
+ * "Assess the full project" (21 Aug 2026) — a Works Package is a
  * label on otherwise-independent projects (see schema.prisma), but a PM
  * or SRO still needs to look at the *combined* disruption window as one
  * thing: total spend across every system riding along with it, and

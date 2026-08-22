@@ -1,4 +1,4 @@
-// The standing project team (confirmed by Kevin, 20 Aug 2026): this
+// The standing project team (confirmed 20 Aug 2026): this
 // system currently models exactly one hospital relationship — Serco
 // Health : FVRH Scotland delivering for FVRH NHS — and that team is
 // consistent across every project at that hospital, not something a

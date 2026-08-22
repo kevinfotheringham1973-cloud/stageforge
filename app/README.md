@@ -83,7 +83,7 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   as one disruption window, not just its pieces one dashboard at a time.
   No effect on instantiation, tags, or bypass/override authority. The
   works-package box on `/projects/new` itself is also where you start
-  several systems at once — the actual point Kevin was making (21 Aug
+  several systems at once — the actual point behind the requirement (21 Aug
   2026): "there are times when multiple systems... required," and a
   first cut that hid the multi-system checkboxes in a separate,
   disconnected accordion below the package box was "useless... unless
@@ -108,7 +108,7 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   `/works-packages/[id]` (combined view across a Works Package's member
   projects). Every screen has real heading structure (`h1`→`h2`/`h3`) and every form
   control a genuine programmatic label — see "Accessibility" below.
-  The project dashboard (confirmed by Kevin, 19 Aug
+  The project dashboard (confirmed 19 Aug
   2026, after comparing a mockup against the original scrolling
   accordion) is a persistent shell — `(dashboard)/layout.tsx` — with
   three KPI cards (Cost, Gate Activity, Timeline headline) and a
@@ -130,7 +130,7 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   Compressed Air, Ventilation, Medical Gases, Fire Alarm & Detection,
   Fire Suppression, Lifts, Electrical Services, Lighting, Domestic Hot &
   Cold Water, Chilled Water/Cooling, Above-Ground Drainage, BMS,
-  Security, Pneumatic Tube, Nurse Call), each built from Kevin's own
+  Security, Pneumatic Tube, Nurse Call), each built from the
   RIBA/SHTM-aligned source documents (kept in the repo root for
   traceability), plus one retired Template (Cold Water Storage &
   Distribution, merged into Domestic Hot & Cold Water — `matchKeywords`

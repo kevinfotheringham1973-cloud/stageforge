@@ -36,14 +36,14 @@ export function isCdmWorksType(value: string): value is CdmWorksType {
 // most of the project lifecycle (RIBA 2–6), versus every other
 // template's Low–Medium rating. Keyed by Template.key so it's a
 // property of the discipline, not guessed per project. First 5 from
-// Kevin's HAI-SCRIBE vs RIBA intensity matrix (21 Aug 2026); the three
+// the HAI-SCRIBE vs RIBA intensity matrix (21 Aug 2026); the three
 // refresh templates (Room or Ward Refresh, Mental Health Unit Ligature
 // & Room Refresh, Theatre Refresh — split 22 Aug 2026 from one merged
 // draft) added per their shared source document
 // ("Room,Ward or Theatre Refresh.docx"), which states HAI-SCRIBE "must
 // be applied rigorously (High involvement expected)" as a blanket
 // principle covering all three of the project types it describes, and
-// appears at all four HAI-SCRIBE stages — same standing as Kevin's
+// appears at all four HAI-SCRIBE stages — same standing as the
 // original matrix, different source.
 export const HAISCRIBE_HIGH_INTENSITY_TAG = "haiscribe_high_intensity_system_affected";
 const HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS = new Set([

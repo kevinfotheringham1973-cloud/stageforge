@@ -50,7 +50,7 @@ function railDot(gate: {
 }
 
 /**
- * The project dashboard shell (Gate Dashboard mockup, confirmed by Kevin
+ * The project dashboard shell (Gate Dashboard mockup, confirmed
  * 19 Aug 2026): a persistent KPI strip + full timeline up top, a side
  * rail to switch gates below, replacing the old single-page scroll of
  * every gate's accordion. `children` is whichever gate (or the

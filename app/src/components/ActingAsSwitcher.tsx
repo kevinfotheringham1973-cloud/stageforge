@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 
 /**
  * Was a row of 10 buttons — stopped scaling once the cast grew past
- * ~8 people (Kevin, 20 Aug 2026). A native <select> gets type-ahead
+ * ~8 people (20 Aug 2026). A native <select> gets type-ahead
  * (type a letter to jump) for free, and auto-submits on change so
  * switching stays a single interaction, same as clicking a button did.
  *
- * Two layers of state-sync, found necessary by testing this live (Kevin
- * noticed the display drifting from the real acting-as user, 21 Aug
+ * Two layers of state-sync, found necessary by testing this live (the
+ * display was noticed drifting from the real acting-as user, 21 Aug
  * 2026):
  *
  * 1. Local `value` state, not a bare `value={currentUserId}` — a
@@ -48,33 +48,37 @@ export function ActingAsSwitcher({
   }, [currentUserId]);
 
   return (
-    <div className="flex items-center gap-2">
-      <label htmlFor="acting-as-select" className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-        Acting as
-      </label>
-      <select
-        id="acting-as-select"
-        name="userId"
-        value={value}
-        onChange={(e) => {
-          const next = e.target.value;
-          setValue(next);
-          const formData = new FormData();
-          formData.set("userId", next);
-          startTransition(async () => {
-            await action(formData);
-            router.refresh();
-          });
-        }}
-        className="rounded-lg border border-rule bg-surface px-3 py-1.5 text-sm font-semibold text-ink"
-      >
-        {users.map((u) => (
-          <option key={u.id} value={u.id}>
-            {u.name}
-            {u.roleLabel ? ` — ${u.roleLabel}` : ""}
-          </option>
-        ))}
-      </select>
+    <div className="flex flex-col items-end gap-0.5">
+      <div className="flex items-center gap-2">
+        <label htmlFor="acting-as-select" className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+          Acting as
+        </label>
+        <select
+          id="acting-as-select"
+          name="userId"
+          title="This demo has no separate logins — switch this to see the app as a different person/role."
+          value={value}
+          onChange={(e) => {
+            const next = e.target.value;
+            setValue(next);
+            const formData = new FormData();
+            formData.set("userId", next);
+            startTransition(async () => {
+              await action(formData);
+              router.refresh();
+            });
+          }}
+          className="rounded-lg border border-rule bg-surface px-3 py-1.5 text-sm font-semibold text-ink"
+        >
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+              {u.roleLabel ? ` — ${u.roleLabel}` : ""}
+            </option>
+          ))}
+        </select>
+      </div>
+      <span className="text-[10px] text-inkmuted">Switches who you&rsquo;re signed in as &mdash; stands in for separate logins</span>
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { NewProjectForm } from "./NewProjectForm";
  * library and creates a DRAFT project — never touches Stages/Gates
  * directly. Review happens at /projects/[projectNumber]/provisioning.
  *
- * Project number is system-issued, not typed (confirmed by Kevin, 19
+ * Project number is system-issued, not typed (confirmed 19
  * Aug 2026) — the number shown here is a peek, not a reservation; the
  * real one is assigned atomically at submit time in
  * createProvisioningDraft, so it can drift if someone else submits
@@ -19,7 +19,7 @@ import { NewProjectForm } from "./NewProjectForm";
  * The form itself is NewProjectForm, a client component — the primary
  * System/Template pick has to live in React state so the "also bundle
  * these systems" checkbox list can filter that same system out of
- * itself as the pick changes (Kevin, 22 Aug 2026).
+ * itself as the pick changes (22 Aug 2026).
  */
 export default async function NewProjectPage({
   searchParams,
@@ -42,11 +42,20 @@ export default async function NewProjectPage({
       <div className="mb-4 font-mono text-xs uppercase tracking-wide text-inkmuted">
         Project No. {nextProjectNumber} &middot; assigned automatically
       </div>
-      <p className="mb-8 text-sm text-inkmuted">
+      <p className="mb-4 text-sm text-inkmuted">
         Pick the system this project covers and describe the works. StageForge proposes compliance
         tags from the description, plus the deliverables checklist and compliance requirements for
-        the selected system — a Compliance Officer reviews the tags before the project goes live.
+        the selected system.
       </p>
+
+      <div className="mb-8 rounded-lg border border-dashed border-flag bg-accentsoft/40 px-4 py-3 text-sm">
+        <span className="font-semibold">This creates a draft, not a live project.</span> A Compliance
+        Officer must review and approve it before it goes live — and what you enter below (especially
+        the CDM 2015 answer, and which systems are bundled in) decides which other roles get pulled in
+        too: a Principal Designer, Fire Officer, or an Authorised Person may need to sign off further
+        down the line. Get these right and downstream approvals go smoothly; get them wrong and the
+        project stalls waiting on the right person.
+      </div>
 
       <NewProjectForm templates={templates} preselectedWorksPackage={preselectedWorksPackage} />
     </div>

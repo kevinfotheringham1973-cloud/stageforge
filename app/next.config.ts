@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   // domain, and repeatedly falls back to full page reloads, which
   // wipes in-progress form input (e.g. typing on /projects/new). See
   // the "Blocked cross-origin request" warnings this produced in the
-  // dev server log. Kevin, 21 Aug 2026.
+  // dev server log. 21 Aug 2026.
   allowedDevOrigins: ["stageforge.pmopassport.co.uk"],
 };
 

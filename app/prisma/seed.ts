@@ -47,7 +47,7 @@ async function main() {
   // Authorised Person and Authorising Engineer are always discipline-
   // specific appointments in real NHS estates practice — someone's AP/AE
   // competency certificate names one engineering discipline, never a
-  // bare "Authorised Person" (confirmed by Kevin, 19 Aug 2026). One Role
+  // bare "Authorised Person" (confirmed 19 Aug 2026). One Role
   // row per discipline rather than a field on the assignment: it's a
   // property of the person's standing appointment, the same way this
   // app already treats "PM" and "SRO" as distinct roles rather than one
@@ -65,7 +65,7 @@ async function main() {
     { key: "AUTHORISED_PERSON_ELECTRICAL", name: "AP (Electrical)" },
     { key: "AUTHORISED_PERSON_MEDICAL_GASES", name: "AP (Medical Gases)" },
     // "Ventilation" here covers the combined Heating & Ventilation (H&V)
-    // discipline — confirmed by Kevin, 21 Aug 2026: LTHW heating-circuit
+    // discipline — confirmed 21 Aug 2026: LTHW heating-circuit
     // isolation and hot-tapping fall under this AP, not Water AP. There
     // is deliberately no "AP (Gas)" — standard fuel gas/oil competency
     // comes from the external Gas Safe Register/OFTEC schemes, not a
@@ -77,19 +77,19 @@ async function main() {
     { key: "AUTHORISING_ENGINEER_VENTILATION", name: "AE (Heating & Ventilation)" },
     { key: "PRINCIPAL_DESIGNER", name: "Principal Designer" },
     // The site NHS Fire Officer — the only authority that can approve
-    // or reject fire-related compliance (confirmed by Kevin, 20 Aug
+    // or reject fire-related compliance (confirmed 20 Aug
     // 2026: an SRO has no legal standing to assess fire safety). See
     // BypassAuthority.FIRE_OFFICER in schema.prisma.
     { key: "FIRE_OFFICER", name: "Fire Officer" },
     // Clinical governance, not an engineering AP/AE — the named
     // sign-off DCB0129/DCB0160 requires for safety-related health IT
-    // systems (nurse call, staff alert). Confirmed by Kevin, 21 Aug
+    // systems (nurse call, staff alert). Confirmed 21 Aug
     // 2026. See BypassAuthority.CLINICAL_SAFETY_OFFICER in schema.prisma.
     { key: "CLINICAL_SAFETY_OFFICER", name: "Clinical Safety Officer" },
     // Information governance, not clinical or engineering — the named
     // DPO/Caldicott Guardian sign-off UK GDPR/the Data Protection Act
     // 2018 requires for DPIA, data retention/destruction, and CCTV/
-    // access control acceptance. Confirmed by Kevin, 21 Aug 2026. See
+    // access control acceptance. Confirmed 21 Aug 2026. See
     // BypassAuthority.INFORMATION_GOVERNANCE_OFFICER in schema.prisma.
     { key: "INFORMATION_GOVERNANCE_OFFICER", name: "Information Governance Officer" },
   ];
@@ -145,7 +145,7 @@ async function main() {
   const david = await db.user.create({
     data: {
       name: "David Mackay",
-      // Real address (Kevin, 20 Aug 2026): every other seeded persona is
+      // Real address (20 Aug 2026): every other seeded persona is
       // an unroutable .example address, so this is the one demo user
       // scheduled-report sends actually land in an inbox for.
       email: "kevinfotheringham1973@gmail.com",
@@ -209,7 +209,7 @@ async function main() {
     },
   });
   // Platform admin — deliberately not part of either company/department
-  // structure (confirmed by Kevin, 20 Aug 2026: a dedicated admin
+  // structure (confirmed 20 Aug 2026: a dedicated admin
   // persona, not one of the project-delivery team wearing a second
   // hat). Only this flag can delete a project.
   const callum = await db.user.create({
@@ -220,7 +220,7 @@ async function main() {
     },
   });
   // Named holders for the four authorities that had no seeded user as
-  // of 21 Aug 2026 (Kevin: "seed a user for the missing authorities") —
+  // of 21 Aug 2026 ("seed a user for the missing authorities") —
   // none of the five fixed demo projects below happen to gate anything
   // on Ventilation/Medical Gases/Clinical Safety/Information Governance,
   // so these are appointed but not yet assigned to a project, same
@@ -332,7 +332,7 @@ async function main() {
   // Electrical Services Replacement — formerly "M&E Systems
   // Replacement" (the original UPS Systems Replacement worked
   // example). Overwritten in place 21 Aug 2026 with the broader
-  // Electrical Services content Kevin supplied (Electrical Systems.docx),
+  // Electrical Services content supplied (Electrical Systems.docx),
   // which supersedes the old UPS-only scope: LV distribution,
   // switchgear, UPS, IPS, standby generators, and associated controls.
   // Same Template row/id as before (only key/name/content changed), so
@@ -341,7 +341,7 @@ async function main() {
   // time, so its existing Gate data is unaffected either way; only
   // future projects matched to this Template see the new checklist.
   // Deliberately kept separate from Lighting & Electrical Distribution
-  // Replacement below (confirmed by Kevin, 21 Aug 2026) even though
+  // Replacement below (confirmed 21 Aug 2026) even though
   // this new source document also covers emergency lighting design —
   // a small LED-only job shouldn't match a giant resilience/UPS/
   // generator checklist, so the two templates' descriptions cross-
@@ -359,7 +359,7 @@ async function main() {
   const meStageTemplates = await createStageAndGateTemplates(meTemplate.id);
 
   // Deliverable templates for every gate — overwritten 21 Aug 2026 from
-  // Electrical Systems.docx (Kevin), superseding the old UPS-only list
+  // Electrical Systems.docx, superseding the old UPS-only list
   // (which was itself from Example_Overview_Plan.docx §3). Keys
   // reprefixed del.electrical_* to match the rest of the library's
   // convention. bypassAuthority follows the same discipline mapping
@@ -464,7 +464,7 @@ async function main() {
 
   // Domestic Hot & Cold Water Systems Replacement — formerly "Calorifier
   // & Hot Water System Replacement". Overwritten in place 21 Aug 2026
-  // with the combined content Kevin supplied (Domestic hot and cold
+  // with the combined content supplied (Domestic hot and cold
   // water systems.docx), which deliberately treats hot and cold
   // domestic water as one discipline (storage, distribution, TMVs,
   // temperature control, Legionella) — merging in the separate Cold
@@ -581,7 +581,7 @@ async function main() {
   // not water safety/Legionella (that's the Calorifier template above).
   // Added after a live "Main Kitchen drainage replacement" project got
   // wrongly matched to the calorifier template for lack of anywhere
-  // better to go (confirmed by Kevin, 19 Aug 2026). Grounded in BS EN
+  // better to go (confirmed 19 Aug 2026). Grounded in BS EN
   // 12056 (gravity drainage systems inside buildings), the Building
   // (Scotland) Regulations 2004 Technical Handbook Section 3
   // (Environment — drainage), SHTM 64 (Sanitary Assemblies), and —
@@ -691,7 +691,7 @@ async function main() {
   // Cold Water Storage & Distribution Replacement — RETIRED 21 Aug
   // 2026: merged into Domestic Hot & Cold Water Systems Replacement
   // above, which now covers this scope combined with hot water/
-  // calorifiers, per Kevin's own supplied document treating both as
+  // calorifiers, per the supplied source document treating both as
   // one discipline. matchKeywords cleared to `[]` so listMatchableTemplates'
   // `where: { matchKeywords: { isEmpty: false } }` query excludes this
   // Template from every provisioning dropdown entirely — it can never be
@@ -808,7 +808,7 @@ async function main() {
   // after a live LED corridor-lighting project got wrongly matched to
   // M&E Systems Replacement for lack of anywhere better to go — its own
   // stored reasoning says "the others are all water/drainage" (confirmed
-  // by Kevin, 20 Aug 2026). Grounded in BS 7671 (IET Wiring
+  // 20 Aug 2026). Grounded in BS 7671 (IET Wiring
   // Regulations), BS 5266 (emergency lighting), and BS EN 12464-1
   // (lighting of work places).
   const lightingTemplate = await db.template.create({
@@ -915,21 +915,21 @@ async function main() {
   // plant (combustion, dual-fuel boilers, heating circuit), distinct
   // from domestic hot water storage/calorifiers (see Calorifier & Hot
   // Water System Replacement) and cold water storage. Content supplied
-  // by Kevin (Boiler_template.docx, 21 Aug 2026): a 3x 7MW dual-fuel
+  // (Boiler_template.docx, 21 Aug 2026): a 3x 7MW dual-fuel
   // boiler replacement with temporary boilers for continuity of
   // heating. Grounded in SHTM 00, SHTM 04-01 (Parts A/B/D/E/G — LTHW
   // closed-system water safety), SHTM 06-01, CDM 2015, HSE ACOP L8 /
   // HSG 274, and PSSR. bypassAuthority follows the same discipline
   // split as every other template: isolation/hot-tapping of the LTHW
   // heating circuit is AUTHORISED_PERSON_VENTILATION (Heating &
-  // Ventilation AP), not Water AP — confirmed by Kevin, 21 Aug 2026,
+  // Ventilation AP), not Water AP — confirmed 21 Aug 2026,
   // there is no separate "Gas AP" in the SHTM/HTM scheme (fuel gas/oil
   // competency is the external Gas Safe Register/OFTEC schemes, not a
   // Trust-appointed AP/AE), so gas/oil connection items stay untiered
   // (PM-level, evidenced via contractor certification) rather than
   // inventing a bypass authority that doesn't exist in real appointment
   // schemes. Fire compartmentation item added for consistency with
-  // every other template (Kevin, 21 Aug 2026) even though the source
+  // every other template (21 Aug 2026) even though the source
   // document didn't list one — flue/plinth penetrations plausibly
   // affect compartmentation the same way cable routing or pipework
   // penetrations do elsewhere in the library.
@@ -1054,9 +1054,9 @@ async function main() {
   // AHUs, ductwork, fans, filters, controls, distinct from the LTHW
   // heating side of the same source document, which the Boiler &
   // Heating Plant Replacement template above already covers. Content
-  // supplied by Kevin (Heating&Ventillation.docx, 21 Aug 2026) — a
+  // supplied (Heating&Ventillation.docx, 21 Aug 2026) — a
   // combined heating-or-ventilation checklist deliberately split into
-  // two templates (confirmed by Kevin, 21 Aug 2026) since a live
+  // two templates (confirmed 21 Aug 2026) since a live
   // project matches one system type, not both, and the app's Template
   // model is one fixed deliverable set per Template. Grounded in
   // SHTM 00, SHTM 03-01 Parts A (design & validation) and B
@@ -1064,7 +1064,7 @@ async function main() {
   // CDM 2015. Isolation/shutdown and hygiene items use
   // AUTHORISED_PERSON_VENTILATION (Heating & Ventilation AP) — the
   // same appointment as the Boiler template's LTHW isolation items,
-  // since it's one combined AP discipline (Kevin, 21 Aug 2026). No
+  // since it's one combined AP discipline (21 Aug 2026). No
   // PSSR compliance item here — the source document scopes PSSR to
   // heating (pressure systems) only, not ventilation. Fire
   // compartmentation item added at Gate 3 for consistency with every
@@ -1177,7 +1177,7 @@ async function main() {
   // Pipeline Systems (MGPS): pipework, terminal units, ceiling
   // pendants/medical supply units, plant (manifold, VIE, compressors,
   // vacuum plant), alarms, and anaesthetic gas scavenging (AGSS).
-  // Content supplied by Kevin (Medical Gases.docx, 21 Aug 2026).
+  // Content supplied (Medical Gases.docx, 21 Aug 2026).
   // Grounded in SHTM 02-01 Parts A (design/installation/validation)
   // and B (operational management), SHTM 06-01 (pendant power/data),
   // SHTM 00, BS EN ISO 7396-1/9170/11197, CDM 2015. Unlike the Boiler
@@ -1301,8 +1301,8 @@ async function main() {
   // ── 9th Template: Fire Alarm & Detection Systems Replacement — CIE
   // (control and indicating equipment) panels, detectors, call points,
   // sounders/visual alarms, cause & effect interfaces (door release,
-  // smoke control, lift recall, plant shutdown). Content supplied by
-  // Kevin (Fire Alarm & Detection.docx, 21 Aug 2026). Grounded in
+  // smoke control, lift recall, plant shutdown). Content supplied
+  // (Fire Alarm & Detection.docx, 21 Aug 2026). Grounded in
   // SHTM 82 (NHSScotland Firecode: fire detection and alarm systems),
   // SHTM 81/83/86, BS 5839-1 (Category L1 addressable required
   // throughout hospitals), CDM 2015. Unlike every other template
@@ -1425,7 +1425,7 @@ async function main() {
 
   // ── 10th Template: Lift & Vertical Transportation Replacement —
   // passenger, bed/passenger, firefighting, escape bed, and service
-  // lifts. Content supplied by Kevin (Lift_template.docx, 21 Aug
+  // lifts. Content supplied (Lift_template.docx, 21 Aug
   // 2026). Grounded in SHTM 08-02 (Specialist services: Lifts), SFPN 3
   // (escape bed lifts), SHTM 81/Firecode (firefighting/escape lifts),
   // SHTM 06 series (electrical supplies), BS EN 81 series, CDM 2015.
@@ -1556,7 +1556,7 @@ async function main() {
   // ── 11th Template: Nurse Call & Staff Paging Systems Replacement —
   // patient-to-nurse call, staff emergency/attack alert, paging, and
   // bedhead communication, including integration with cardiac arrest
-  // alerts and fire alarm interfaces. Content supplied by Kevin
+  // alerts and fire alarm interfaces. Content supplied
   // (Electronis communication systems.docx, 21 Aug 2026). Grounded in
   // SHTM 08-03 (Specialist services: Bedhead services), SHTM 08-01
   // (Acoustics), SHTM 06 series, CDM 2015. Unlike every other template
@@ -1564,7 +1564,7 @@ async function main() {
   // or the Fire Officer — it's clinical governance: the source
   // document names "Clinical stakeholder review and approval" (design)
   // and "Clinical acceptance / sign-off" (handover, marked "Essential")
-  // as the real checkpoints. Confirmed by Kevin, 21 Aug 2026: added
+  // as the real checkpoints. Confirmed 21 Aug 2026: added
   // CLINICAL_SAFETY_OFFICER as a new BypassAuthority, since nurse
   // call/staff alert are safety-related health IT systems under NHS
   // Digital's DCB0129/DCB0160 clinical risk management standard, which
@@ -1679,7 +1679,7 @@ async function main() {
   // ── 12th Template: Building Management System (BMS) Replacement —
   // full replacement or major upgrade of the BMS/BEMS controls layer
   // (network, controllers, head-end, graphics, energy monitoring).
-  // Content supplied by Kevin (Building Management System Replacement.docx,
+  // Content supplied (Building Management System Replacement.docx,
   // 21 Aug 2026). The source document is explicit that this is for a
   // standalone/major BMS project only — minor BMS point-additions for
   // new plant are already covered within each system-specific
@@ -1811,7 +1811,7 @@ async function main() {
   // ── 13th Template: Chilled Water & Cooling Systems Replacement —
   // chillers, closed chilled-water (CHW) distribution circuit, pumps,
   // pressurisation, AHU cooling coils, free cooling, and refrigerant
-  // plant. Content supplied by Kevin (Chilled water  cooling systems.docx,
+  // plant. Content supplied (Chilled water  cooling systems.docx,
   // 21 Aug 2026). Grounded in SHTM 03-01 (strongly linked — cooling of
   // critical areas), SHTM 00, SHTM 06 series, CIBSE Guides B & H, BSRIA
   // guidance, F-Gas Regulations, CDM 2015. Genuinely distinct from
@@ -1939,7 +1939,7 @@ async function main() {
   // ── 14th Template: Steam Systems Replacement — steam generation,
   // distribution, condensate recovery, pressure reducing stations,
   // humidification, and sterile-services steam supply. Content
-  // supplied by Kevin (Steam Systems.docx, 21 Aug 2026). Squarely a
+  // supplied (Steam Systems.docx, 21 Aug 2026). Squarely a
   // Pressure Systems Safety Regulations (PSSR) discipline — the source
   // document states plainly "Steam systems are pressure systems and
   // fall under PSSR" and "A Written Scheme of Examination is
@@ -2067,7 +2067,7 @@ async function main() {
 
   // ── 15th Template: Fire Suppression Systems Replacement —
   // sprinklers, water mist, gaseous suppression, foam systems and
-  // associated controls/interfaces. Content supplied by Kevin (Fire
+  // associated controls/interfaces. Content supplied (Fire
   // Supression System.docx, 21 Aug 2026). Companion to Fire Alarm &
   // Detection Systems Replacement (built earlier this session) but
   // genuinely distinct: this is active suppression/extinguishing
@@ -2188,12 +2188,12 @@ async function main() {
 
   // ── 16th Template: Security Systems Replacement — CCTV, access
   // control, intruder detection, staff attack/panic systems, control
-  // room equipment and associated networks. Content supplied by Kevin
+  // room equipment and associated networks. Content supplied
   // (Security Systems.docx, 21 Aug 2026). Grounded in NHS Scotland
   // Security Standards, SHTM 00, BS EN standards for CCTV/access
   // control/intruder alarms, NHS cybersecurity guidance, UK GDPR/Data
   // Protection Act 2018, CDM 2015. Introduces
-  // INFORMATION_GOVERNANCE_OFFICER (Kevin, 21 Aug 2026) — a genuinely
+  // INFORMATION_GOVERNANCE_OFFICER (21 Aug 2026) — a genuinely
   // distinct authority from Clinical Safety Officer: DPIA sign-off,
   // data retention/destruction, and formal system acceptance sit with
   // a named DPO/Caldicott Guardian appointment under UK GDPR, not
@@ -2319,7 +2319,7 @@ async function main() {
   // network, stations, blowers/compressors, carriers, control system
   // and software, for transporting specimens, blood products,
   // medicines and documents between departments (lab, pharmacy, blood
-  // bank, theatres). Content supplied by Kevin (Pneumatic_Tube_System.docx,
+  // bank, theatres). Content supplied (Pneumatic_Tube_System.docx,
   // 21 Aug 2026). Grounded in manufacturer standards, SHTM 00,
   // Infection Prevention & Control (IPC) requirements, SHTM 06 series,
   // SHTM 08-01 (acoustics, where relevant), CDM 2015. Reuses the
@@ -2447,7 +2447,7 @@ async function main() {
   // channels, interceptors and access points WITHIN the building,
   // deliberately distinct from the existing Drainage & Foul Water
   // System Replacement template above, which is below-ground
-  // (excavation, manholes, flow-path/falls). Content supplied by Kevin
+  // (excavation, manholes, flow-path/falls). Content supplied
   // (Above_Ground.docx, 21 Aug 2026). Grounded in Building Standards
   // (Scotland) Section 3 Environment, BS EN 12056 (the same standard
   // the below-ground template already cites), IPC requirements, SHTM
@@ -2562,7 +2562,7 @@ async function main() {
 
   // ── 19th Template: Compressed Air Systems Replacement (Non-Medical)
   // — compressors, receivers, distribution pipework, filters, dryers,
-  // pressure regulation and controls. Content supplied by Kevin
+  // pressure regulation and controls. Content supplied
   // (Compressed_Air.docx, 21 Aug 2026) — the 17th and final system on
   // his own "Summary Table — All Hard FM Systems Completed" tracker
   // (Template_Summary.docx), which cross-checked cleanly against every
@@ -2688,7 +2688,7 @@ async function main() {
 
   // ── 20th–22nd Templates: Room or Ward Refresh, Mental Health Unit
   // Ligature & Room Refresh, and Theatre Refresh — split from a single
-  // "Room, Ward or Theatre Refresh" template (Kevin, 22 Aug 2026,
+  // "Room, Ward or Theatre Refresh" template (22 Aug 2026,
   // after that first draft was already built and briefly live-tested)
   // once it was clear the source document itself ("Room,Ward or
   // Theatre Refresh.docx" — supplied but not flagged until after that
@@ -2713,7 +2713,7 @@ async function main() {
   // risk assessment (Gate 1), the ligature safety verification/clinical
   // sign-off (Gate 6, SRO — same "life-safety, cannot be bypassed at PM
   // level" tier as pressure/LOLER-adjacent items elsewhere), and the
-  // Gate 5 tool-control/room-security item Kevin added directly (22 Aug
+  // Gate 5 tool-control/room-security item added directly (22 Aug
   // 2026, beyond the source document): rooms actively being worked on
   // in an MHU must never be left open or unattended, since contractor
   // tools/sharps left accessible are as much a patient (and contractor)
@@ -3078,7 +3078,7 @@ async function main() {
         appliesIfTags: [],
       },
       // Every project gets the baseline HAI-SCRIBE check above at
-      // Spatial Coordination. Kevin's HAI-SCRIBE vs RIBA intensity
+      // Spatial Coordination. The HAI-SCRIBE vs RIBA intensity
       // matrix (21 Aug 2026) shows five systems — Ventilation, Medical
       // Gases, Domestic Hot & Cold Water, Chilled Water/Cooling, and
       // Above-ground Drainage — sustain "High" HAI-SCRIBE/IPC
@@ -3095,7 +3095,7 @@ async function main() {
         ruleSetId: scottishHealthCompliance.id,
         key: "comp.haiscribe_high_intensity_review",
         label: "HAI-SCRIBE / IPC review — sustained high-intensity involvement",
-        description: "This system is rated High HAI-SCRIBE/Infection Prevention & Control involvement across most of the project lifecycle, not just at Spatial Coordination — Concept Design through Handover all need an active IPC review checkpoint, per Kevin's HAI-SCRIBE vs RIBA intensity matrix.",
+        description: "This system is rated High HAI-SCRIBE/Infection Prevention & Control involvement across most of the project lifecycle, not just at Spatial Coordination — Concept Design through Handover all need an active IPC review checkpoint, per the HAI-SCRIBE vs RIBA intensity matrix.",
         ruleRef: "SHFN 30 / Healthcare Improvement Scotland",
         blocksGate: true,
         appliesToStageKeys: ["stage.concept_design", "stage.technical_design", "stage.manufacturing_construction", "stage.handover"],
@@ -3315,7 +3315,7 @@ async function main() {
       // template's checklist for this stage is created EVIDENCED, not
       // left empty — the gap where these gates showed zero deliverables
       // at all was a seed-data omission, not a real state (confirmed by
-      // Kevin, 20 Aug 2026).
+      // 20 Aug 2026).
       gate = await db.gate.create({
         data: { stageId: stage.id, key: def.gateKey, name: def.gateName, status: "SIGNED_OFF" },
       });
@@ -3510,7 +3510,7 @@ async function main() {
       // regardless of which system it serves, so it's the site
       // AP(Electrical) — not AP(Water) — who signs the permit-to-work.
       // AP(Water) covers disinfection/chlorination and hygiene
-      // commissioning sign-off (Kevin, 21 Aug 2026).
+      // commissioning sign-off (21 Aug 2026).
       { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
       { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: claire.id, roleId: roles.AUTHORISED_PERSON_WATER.id },
     ],
@@ -3719,7 +3719,7 @@ async function main() {
     data: [
       // Dennis was "acting as" when the real project was created live —
       // createProvisioningDraft assigns PM to the creator, not always
-      // Derek (confirmed by Kevin, 20 Aug 2026, after this gap caused
+      // Derek (confirmed 20 Aug 2026, after this gap caused
       // canSetGateTimeline to look "broken" when acting as anyone else).
       { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.PM.id },
       { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },

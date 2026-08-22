@@ -457,7 +457,7 @@ export async function reviseSpend(spendRecordId: string, projectNumber: string, 
 
 /**
  * Removes a PENDING spend record entirely — the "delete a mistaken
- * entry" option FinancialModel.html §08 left open, decided (Kevin, 22
+ * entry" option FinancialModel.html §08 left open, decided (22
  * Aug 2026) in favour of allowing it rather than forcing reviseSpend
  * or reject-then-record-again for a record that should never have
  * existed at all. Same PM/SRO authority and PENDING-only restriction
@@ -608,7 +608,7 @@ export async function rejectGate(gateId: string, projectNumber: string, formData
 
 /**
  * A PM reinstating a stage they'd previously excluded from the
- * project's scope. Confirmed by Kevin: it appends after the
+ * project's scope. Confirmed: it appends after the
  * project's current furthest stage, never reinserting into the
  * template's original order — reinstating never reshuffles stages
  * already underway or complete (ConfigSchema.html §06).
@@ -693,7 +693,7 @@ export async function createProvisioningDraft(formData: FormData) {
   const brief = String(formData.get("brief") ?? "").trim();
   const templateId = String(formData.get("templateId") ?? "").trim();
   const worksType = String(formData.get("worksType") ?? "");
-  // "There are times when multiple systems are required" (Kevin, 21 Aug
+  // "There are times when multiple systems are required" (21 Aug
   // 2026) — the works-package box doubles as a bundler: any additional
   // systems checked there become sibling DRAFT projects in the same
   // package as this one, created in the same submission. Each still
@@ -718,13 +718,13 @@ export async function createProvisioningDraft(formData: FormData) {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
 
-  // Works Package (Kevin, 21 Aug 2026): a hospital runs 24/7, so extra
+  // Works Package (21 Aug 2026): a hospital runs 24/7, so extra
   // opportunistic work often bundles into the same disruption window as
   // the project that triggered it — a purely organisational link between
   // otherwise-independent, discipline-pure Projects, never a merge of
   // their checklists. Optional for a solo project; mandatory the moment
   // additional systems are being bundled in, since that's what links
-  // them — auto-named after this project (Kevin, 22 Aug 2026) so
+  // them — auto-named after this project (22 Aug 2026) so
   // bundling never depends on the PM having typed a package name.
   const resolvedWorksPackage = await resolveWorksPackageId(
     db,
@@ -1237,7 +1237,7 @@ export async function setProjectWorksPackage(projectId: string, projectNumber: s
 }
 
 /**
- * Platform-admin-only, irreversible (confirmed by Kevin, 20 Aug 2026:
+ * Platform-admin-only, irreversible (confirmed 20 Aug 2026:
  * "only admin access is able to delete projects"). No cascade at the
  * schema level — every dependent row (deliverables, evidence,
  * compliance, spend, sign-offs, lessons learned, ...) is deleted
