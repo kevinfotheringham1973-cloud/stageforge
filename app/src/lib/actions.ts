@@ -288,9 +288,9 @@ export async function overrideCompliance(gateId: string, projectNumber: string, 
 
 /**
  * Records an invoice-level spend against a gate (FinancialModel.html,
- * revised: spend is checked and approved at each gate). Finance-only,
- * same "domain owner enters" split as Compliance. Starts PENDING —
- * blocks the gate (isGateReadyForSponsor) until a Sponsor/SRO approves
+ * revised: spend is checked and approved at each gate). PM/SRO —
+ * the PM logs what's been spent, Finance checks it. Starts PENDING —
+ * blocks the gate (isGateReadyForSponsor) until Finance/SRO approves
  * it via approveSpend.
  */
 export async function recordSpend(gateId: string, projectNumber: string, formData: FormData) {
@@ -312,7 +312,7 @@ export async function recordSpend(gateId: string, projectNumber: string, formDat
   const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
   if (!canRecordSpend(roleKeys)) {
-    throw new Error("Recording spend requires the Finance role.");
+    throw new Error("Recording spend requires the Project Manager or SRO role.");
   }
 
   await db.$transaction([
@@ -352,7 +352,7 @@ async function decideSpend(
   });
   const roleKeys = await getCurrentUserRoleKeysForProject(spendRecord.gate.stage.projectId);
   if (!canApproveSpend(roleKeys)) {
-    throw new Error("Approving spend requires Sponsor or SRO authority.");
+    throw new Error("Approving spend requires Finance or SRO authority.");
   }
   if (spendRecord.status !== "PENDING") {
     throw new Error("This spend record has already been approved.");
@@ -604,13 +604,15 @@ export async function createProvisioningDraft(formData: FormData) {
   // the project that triggered it — a purely organisational link between
   // otherwise-independent, discipline-pure Projects, never a merge of
   // their checklists. Optional for a solo project; mandatory the moment
-  // additional systems are being bundled in, since that's what links them.
-  const resolvedWorksPackage = await resolveWorksPackageId(db, userId, formData);
-  if (additionalTemplateIds.length > 0 && !resolvedWorksPackage) {
-    throw new Error(
-      "Bundling additional systems needs a works package name (existing or new) — that's what links them together."
-    );
-  }
+  // additional systems are being bundled in, since that's what links
+  // them — auto-named after this project (Kevin, 22 Aug 2026) so
+  // bundling never depends on the PM having typed a package name.
+  const resolvedWorksPackage = await resolveWorksPackageId(
+    db,
+    userId,
+    formData,
+    additionalTemplateIds.length > 0 ? name : undefined
+  );
 
   const template = await db.template.findUniqueOrThrow({
     where: { id: templateId },

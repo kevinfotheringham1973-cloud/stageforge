@@ -126,22 +126,29 @@ export function isGateReadyForSponsor(
 }
 
 /**
- * Who can record spend against a gate — locked to the Finance role,
- * the same "domain owner enters, someone else approves" split as
- * Compliance (Compliance Officer authors rules; PM/CO/SRO evidence
- * them).
+ * Who can record spend against a gate — the PM, same as deliverable/
+ * compliance evidence (canUploadEvidence/canUploadComplianceEvidence):
+ * the PM does the day-to-day work of logging what's been spent, and
+ * SRO can act at every tier below it too. Finance no longer records —
+ * it owns the approval step instead (confirmed by Kevin, 22 Aug 2026:
+ * in practice the PM enters spend and Finance checks it, not the
+ * other way round).
  */
 export function canRecordSpend(actorRoleKeys: string[]): boolean {
-  return actorRoleKeys.includes("FINANCE");
+  return actorRoleKeys.includes("PM") || actorRoleKeys.includes("SRO");
 }
 
 /**
- * Spend approval is Sponsor/SRO only (FinancialModel.html) — the same
- * pair with standing to close a gate at all, since an approved spend
- * record is now part of that closure.
+ * Spend approval is Finance/SRO (confirmed by Kevin, 22 Aug 2026) —
+ * Finance is the domain owner checking what the PM logged, and SRO
+ * retains its usual standing to act at every tier below it. Sponsor
+ * dropped: its role in this app is the gate-level sign-off decision
+ * (canDecideGate), not line-item spend approval — those are two
+ * separate checks that both have to clear (isGateReadyForSponsor)
+ * before a gate can close, not one role rubber-stamping the other.
  */
 export function canApproveSpend(actorRoleKeys: string[]): boolean {
-  return actorRoleKeys.includes("SPONSOR") || actorRoleKeys.includes("SRO");
+  return actorRoleKeys.includes("FINANCE") || actorRoleKeys.includes("SRO");
 }
 
 /**
