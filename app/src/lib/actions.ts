@@ -139,9 +139,12 @@ export async function bypassDeliverable(
 
   const deliverable = await db.deliverable.findUniqueOrThrow({ where: { id: deliverableId } });
   const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
-  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  const [roleKeys, globalRoleKeys] = await Promise.all([
+    getCurrentUserRoleKeysForProject(gate.stage.projectId),
+    getCurrentUserGlobalRoleKeys(),
+  ]);
 
-  if (!canBypassDeliverable(roleKeys, deliverable.bypassAuthority)) {
+  if (!canBypassDeliverable(roleKeys, deliverable.bypassAuthority, globalRoleKeys)) {
     throw new Error(
       `This deliverable requires ${BYPASS_AUTHORITY_LABEL[deliverable.bypassAuthority]} authority to bypass — your current roles on this project don't qualify.`
     );

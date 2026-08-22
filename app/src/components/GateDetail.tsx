@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { getCurrentUserRoleKeysForProject } from "@/lib/session";
+import { getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
   BYPASS_AUTHORITY_LABEL,
@@ -90,7 +90,10 @@ export async function GateDetail({
   });
   if (!gate || gate.stage.project.projectNumber !== projectNumber) notFound();
 
-  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  const [roleKeys, globalRoleKeys] = await Promise.all([
+    getCurrentUserRoleKeysForProject(gate.stage.projectId),
+    getCurrentUserGlobalRoleKeys(),
+  ]);
   const ready = isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements, gate.spendRecords);
   const outstanding = gate.deliverables.filter((d) => d.blocksGate && d.status === "PENDING").length;
   const outstandingCompliance = gate.complianceRequirements.filter(
@@ -125,8 +128,10 @@ export async function GateDetail({
           </div>
           <div>
             <span className="font-semibold">Bypass</span> (delivery items only) — skip a delivery item
-            with no evidence, when it genuinely doesn&rsquo;t apply to this project. Needs the role shown
-            on its badge to do it, and the reason is recorded permanently against your name.
+            with no evidence, when it genuinely doesn&rsquo;t apply to this project. Ordinary items (no
+            badge) need PM authority — held by any PM, not just this specific project&rsquo;s. An item
+            carrying a badge (e.g. &ldquo;Requires Fire Officer&rdquo;) needs that specific role on this
+            project, no exceptions. Either way, the reason is recorded permanently against your name.
           </div>
           <div>
             <span className="font-semibold">Override</span> (compliance items only) — the same idea as
@@ -250,8 +255,8 @@ export async function GateDetail({
 
           <div className="flex flex-col gap-3">
             {gate.deliverables.map((d) => {
-              const canBypass = d.status === "PENDING" && canBypassDeliverable(roleKeys, d.bypassAuthority);
-              const canReplaceEvidence = gate.status !== "SIGNED_OFF" && canUploadEvidence(roleKeys, d.bypassAuthority);
+              const canBypass = d.status === "PENDING" && canBypassDeliverable(roleKeys, d.bypassAuthority, globalRoleKeys);
+              const canReplaceEvidence = gate.status !== "SIGNED_OFF" && canUploadEvidence(roleKeys, d.bypassAuthority, globalRoleKeys);
               const canUpload = d.status === "PENDING" && canReplaceEvidence;
 
               // Statutory ceiling gets a visibly heavier treatment than a routine

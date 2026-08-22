@@ -82,13 +82,28 @@ export const BYPASS_AUTHORITY_LABEL: Record<BypassAuthority, string> = {
  * electrical isolation, or sign off water disinfection, so unlike
  * every other tier here, SRO does NOT automatically qualify for one of
  * these items — only the named role does.
+ *
+ * PM-tier (ordinary, non-compliance-significant) deliverables only:
+ * holding PM on ANY project also qualifies, not just this one —
+ * confirmed 22 Aug 2026, "PM" is a professional authority a person
+ * holds, not a per-project seating arrangement; it was "crazy" (Kevin's
+ * word) for someone who is a PM to be locked out of ordinary delivery
+ * bypass just because this particular project's PM assignment went to
+ * someone else (e.g. whoever happened to be acting-as when the project
+ * was created). Every other tier here — Compliance Officer, SRO, Fire
+ * Officer, each Authorised Person — stays strictly per-project: those
+ * are compliance-significant, and per-project assignment is the point.
  */
 export function canBypassDeliverable(
   actorRoleKeys: string[],
-  requiredAuthority: BypassAuthority
+  requiredAuthority: BypassAuthority,
+  actorGlobalRoleKeys: string[] = []
 ): boolean {
   if (EXACT_MATCH_AUTHORITIES.includes(requiredAuthority)) return actorRoleKeys.includes(requiredAuthority);
   if (requiredAuthority === "SRO") return actorRoleKeys.includes("SRO");
+  if (requiredAuthority === "PM") {
+    return actorRoleKeys.includes("SRO") || actorRoleKeys.includes("PM") || actorGlobalRoleKeys.includes("PM");
+  }
   return actorRoleKeys.includes("SRO") || actorRoleKeys.includes(requiredAuthority);
 }
 
@@ -234,9 +249,13 @@ export function canOverrideCompliance(
  */
 export function canUploadEvidence(
   actorRoleKeys: string[],
-  requiredBypassAuthority: BypassAuthority
+  requiredBypassAuthority: BypassAuthority,
+  actorGlobalRoleKeys: string[] = []
 ): boolean {
-  return actorRoleKeys.includes("PM") || canBypassDeliverable(actorRoleKeys, requiredBypassAuthority);
+  return (
+    actorRoleKeys.includes("PM") ||
+    canBypassDeliverable(actorRoleKeys, requiredBypassAuthority, actorGlobalRoleKeys)
+  );
 }
 
 export function outstandingDeliverableCount(
