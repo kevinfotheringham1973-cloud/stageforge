@@ -45,6 +45,9 @@ export default async function RootLayout({
             <a href="/resources" className="text-sm font-semibold text-accent hover:underline">
               Resources
             </a>
+            <a href="/finance" className="text-sm font-semibold text-accent hover:underline">
+              Finance
+            </a>
             <a href="/lessons-learned" className="text-sm font-semibold text-accent hover:underline">
               Lessons learned
             </a>
