@@ -141,13 +141,13 @@ export default async function WorksPackagePage({ params }: { params: Promise<{ i
                       ) : (
                         <span className="text-sm">
                           {r.outstandingDeliverables > 0 && (
-                            <span className="font-bold text-warn">{r.outstandingDeliverables} del.</span>
+                            <span className="font-bold text-warn">{r.outstandingDeliverables} deliverable{r.outstandingDeliverables === 1 ? "" : "s"}</span>
                           )}
                           {r.outstandingDeliverables > 0 && r.outstandingCompliance > 0 && (
                             <span className="text-inkmuted"> &middot; </span>
                           )}
                           {r.outstandingCompliance > 0 && (
-                            <span className="font-bold text-flag">{r.outstandingCompliance} comp.</span>
+                            <span className="font-bold text-flag">{r.outstandingCompliance} compliance item{r.outstandingCompliance === 1 ? "" : "s"}</span>
                           )}
                         </span>
                       )}

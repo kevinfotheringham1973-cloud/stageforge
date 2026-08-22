@@ -22,7 +22,7 @@ NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
 | Path | What it is |
 | --- | --- |
 | [`Overview.docx`](Overview.docx) | The original one-page concept note this whole project expands from. |
-| [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.13) |
+| [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.15) |
 | [`DataModel.html`](DataModel.html) | Entity model — tenancy/access resolution, the gate-closure mechanism, tiered bypass/override authority. (draft v0.5) |
 | [`ConfigSchema.html`](ConfigSchema.html) | Config schema for Stage/Gate/Deliverable templates and Compliance rule sets. (draft v0.4) |
 | [`ProvisioningModel.html`](ProvisioningModel.html) | Design for AI-assisted project provisioning — the draft/review/activate flow and the LLM call itself (structured-output enforcement, model/prompt-caching design). (draft v0.3 — built in `app/`, see Status below; its template-matching step has since been superseded by a deterministic dropdown, per `PRD.html` §10) |
@@ -66,7 +66,7 @@ occasionally guessing the wrong discipline from an ambiguous
 description, so `/projects/new` now has an explicit Template dropdown
 — the PM picks the system directly — and the LLM's role narrows to
 proposing the compliance-tag set for it. A Compliance Officer still
-reviews and approves before the project goes live. the HAI-SCRIBE
+reviews and approves before the project goes live. The HAI-SCRIBE
 involvement-intensity matrix is also operational: five systems rated
 sustained High infection-control involvement get extra compliance
 checkpoints across the project lifecycle, driven by which Template
@@ -94,14 +94,26 @@ and enterprise PPM tools) drove several rounds of fixes, ending at
 Windows accessibility tree (the same API screen readers consume, not
 just code inspection): every form label given a real programmatic
 association with its field, WCAG contrast measured and corrected, and
-heading structure added across every screen.
+heading structure added across every screen. A follow-up demo-readiness
+pass added plain-language guidance for less computer-confident users on
+top of that: the new-project form now states up front that submitting
+creates a draft needing Compliance Officer (and possibly other role)
+approval before it goes live, the gate detail screen gained a plain
+Upload/Bypass/Override/Reject glossary and a spend-bucket explainer, a
+messaging bug on Gate 0 was fixed, and the Acting-as switcher and
+portfolio homepage both got added explanatory copy.
 
-Financial View (`FinancialModel.html`) is built too, gate-level: spend is
+Financial View (`FinancialModel.html`) is built, gate-level: spend is
 recorded, checked, and approved at each gate rather than just logged
 against the project, folding into the same closure check as the delivery
 and compliance checklists, with a project-level roll-up visible at a
-glance on the project overview. The portfolio-wide `/finance` route
-remains unbuilt.
+glance on the project overview. A PM can revise a pending record's
+bucket/amount/description/invoice reference, or delete one outright if
+it was logged in error. The portfolio-wide `/finance` route is built
+too — Finance's read-only equivalent of the Resource Manager's
+`/resources`: every live project's spend total/approved/pending and
+per-bucket split in one place, with a direct link to wherever a pending
+record is actually approved.
 
 A Timeline is built alongside it: PM-set target start/end dates per
 gate, actual dates stamped automatically the moment a gate really

@@ -100,11 +100,12 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
 - **Screens** — the portfolio (`/`, current gate/cost/outstanding per
   project, plus scheduled-report management), a project dashboard
   (`/projects/[projectNumber]`), a portfolio-wide Resource/Capacity view
-  (`/resources`, stacked-bar allocation with a 100%-capacity marker),
-  a portfolio-wide Lessons Learned library (`/lessons-learned`, grouped
-  by gate so a recurring mistake at the same lifecycle point is visible
-  across projects), `/projects/new` (provisioning entry, System/Template
-  dropdown), `/projects/[projectNumber]/provisioning` (match review), and
+  (`/resources`, stacked-bar allocation with a 100%-capacity marker), a
+  portfolio-wide Finance view (`/finance`, spend total/approved/pending
+  per project and per bucket), a portfolio-wide Lessons Learned library
+  (`/lessons-learned`, grouped by gate so a recurring mistake at the same
+  lifecycle point is visible across projects), `/projects/new`
+  (provisioning entry, System/Template dropdown), `/projects/[projectNumber]/provisioning` (match review), and
   `/works-packages/[id]` (combined view across a Works Package's member
   projects). Every screen has real heading structure (`h1`→`h2`/`h3`) and every form
   control a genuine programmatic label — see "Accessibility" below.
@@ -145,6 +146,16 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   permanent example; **#55998**, Main Kitchen Drainage Replacement;
   **#30001**, Main Water Tank Replacement; and **#30002**, LED Upgrade
   Throughout Hospital Corridors and Avenues.
+- **Financial View — Finance role screens** (`src/app/finance/page.tsx`,
+  `reviseSpend`, `deleteSpendRecord`) — a portfolio-wide `/finance` route,
+  Finance's read-only equivalent of the Resource Manager's `/resources`:
+  every live project's spend total/approved/pending and per-bucket split
+  in one place, with a direct link to wherever a pending record is
+  actually approved (this page never records or approves spend itself).
+  A PM can revise a `PENDING` record's bucket/amount/description/invoice
+  reference before approval, or delete one outright if it was logged in
+  error — no more forcing a reject-then-record-again for a mistaken
+  entry.
 - **CI** (`../.github/workflows/ci.yml`) — typecheck and `next build`
   on every push and PR. No database service required: every route is
   dynamic (cookies()-based session), so the build never queries one.
@@ -156,7 +167,15 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   (`h1`→`h2`/`h3`) added across every screen. Verified against the live
   Windows UI Automation tree (the actual API Narrator/NVDA/JAWS consume),
   not just DOM inspection — see git history for the specific commit if
-  you want the measurements.
+  you want the measurements. A follow-up demo-readiness pass (22 Aug
+  2026) added plain-language guidance on top for less computer-confident
+  users: the new-project form states up front that submitting creates a
+  draft needing Compliance Officer (and possibly other role) approval
+  before it goes live; the gate detail screen gained a plain
+  Upload/Bypass/Override/Reject glossary and a spend-bucket explainer; a
+  messaging bug was fixed where Gate 0 wrongly claimed earlier gates
+  needed finishing first; and the Acting-as switcher and portfolio
+  homepage both got added explanatory copy.
 
 ## What's deliberately stubbed, not built
 
@@ -165,11 +184,6 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   entirely before this is near a second real user.
 - **Evidence storage.** Uploads record a file *name* against a
   deliverable, not an actual file — there's no object storage wired up.
-- **Financial View roll-up screens.** The gate-level record/approve loop
-  is built (see `../FinancialModel.html` §06/§08); a project-level total
-  and the portfolio-wide `/finance` route (Finance's equivalent of
-  `/resources`) aren't yet. `reviseSpend` (editing a `PENDING` record
-  before approval) is also deferred, not built.
 - **Template authoring UI.** All 17 Templates are hand-authored in
   `seed.ts`. The Compliance Rule Set editor sketched in the design
   screens has no backing code yet — the compliance corpus is
@@ -223,7 +237,22 @@ Officer), Bob Smith (AP Electrical), Claire Duncan (AP Water), and Andrea
 Dennis Kelly (a second PM), Ross Blair (Principal Designer), and Callum
 Reid (platform admin, no delivery role — can delete a project) — and
 watch what each one can and can't do, right there in the expanded gate
-row, no navigation. Fiona Wallace (AP Heating & Ventilation), Graeme
+row, no navigation.
+
+**Roles are per-project, not global.** The dropdown label next to each
+name (e.g. "PM") is a deduped summary of every role that person holds
+*anywhere*, not a guarantee they hold it on the project you're
+currently looking at. Derek Gibb is PM on most demo projects, but
+**#30002 (LED Upgrade) was actually created live by Dennis Kelly, so
+Dennis is PM there and Derek only holds FM Contractor** — acting as
+Derek on #30002 will look broken (no bypass, no upload, nothing
+actionable) until you switch to Dennis. The app now states this
+outright wherever it applies (a banner if you hold no role at all on a
+project, inline notes like "Only the PM can..." next to anything
+role-gated), so if something looks unavailable, look for that text
+first — it's there, not a bug.
+
+Fiona Wallace (AP Heating & Ventilation), Graeme
 Paterson (AP Medical Gases), Sarah Chen (Clinical Safety Officer), and
 Neil Forsyth (Information Governance Officer) are also in the cast, but
 show no role label until assigned to a project that needs them — see
