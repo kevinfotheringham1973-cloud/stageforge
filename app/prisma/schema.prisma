@@ -157,7 +157,7 @@ model GateTemplate {
 }
 
 // FIRE_OFFICER sits outside the PM < COMPLIANCE_OFFICER < SRO ladder
-// deliberately (confirmed by Kevin, 20 Aug 2026: "the SRO is not the
+// deliberately (confirmed 20 Aug 2026: "the SRO is not the
 // legal entity that can assess fire... the site NHS Fire Officer is
 // the only one that can approve or reject fire related compliance") —
 // it is not a rank SRO or anyone else inherits, only an exact-match
@@ -166,7 +166,7 @@ model GateTemplate {
 //
 // AUTHORISED_PERSON_ELECTRICAL / AUTHORISED_PERSON_WATER are the same
 // kind of exact-match requirement, for the same reason: confirmed by
-// Kevin, 21 Aug 2026 — a permit-to-work covering an electrical
+// 21 Aug 2026 — a permit-to-work covering an electrical
 // isolation (a switch-out, a circuit or tank/main shutdown) needs the
 // site AP(Electrical), and evidence of disinfection/chlorination needs
 // the site AP(Water). An SRO has no more professional standing over an
@@ -175,7 +175,7 @@ model GateTemplate {
 // (an SRO-tier generic catch-all), which is the bug this fixes.
 //
 // AUTHORISED_PERSON_VENTILATION follows the same pattern, added for
-// the Boiler & Heating Plant Replacement template (Kevin, 21 Aug
+// the Boiler & Heating Plant Replacement template (21 Aug
 // 2026): LTHW heating-circuit isolation and hot-tapping sit under the
 // Heating & Ventilation AP discipline, not Water AP — confirmed there
 // is no separate "Gas AP" in the SHTM/HTM scheme, since standard fuel
@@ -184,14 +184,14 @@ model GateTemplate {
 // does have its own AP/AE appointment under SHTM/HTM 02-01).
 //
 // AUTHORISED_PERSON_MEDICAL_GASES is that AP/AE appointment, added for
-// the Medical Gas Systems Replacement template (Kevin, 21 Aug 2026):
+// the Medical Gas Systems Replacement template (21 Aug 2026):
 // isolation under the MGPS Permit-to-Work system, and the
 // identity/purity/pressure test certification patient safety depends
 // on, both sit with the site AP(MGPS) — not SRO, not Electrical AP.
 //
 // CLINICAL_SAFETY_OFFICER is a different kind of exact-match authority
 // from the AP/AE engineering disciplines above — added for the Nurse
-// Call & Staff Paging Systems Replacement template (Kevin, 21 Aug
+// Call & Staff Paging Systems Replacement template (21 Aug
 // 2026). Nurse call / staff alert systems are safety-related health IT
 // systems under NHS Digital's DCB0129/DCB0160 clinical risk management
 // standard, which requires a named Clinical Safety Officer sign-off —
@@ -208,7 +208,7 @@ enum BypassAuthority {
   AUTHORISED_PERSON_VENTILATION
   AUTHORISED_PERSON_MEDICAL_GASES
   CLINICAL_SAFETY_OFFICER
-  // Added for the Security Systems Replacement template (Kevin, 21 Aug
+  // Added for the Security Systems Replacement template (21 Aug
   // 2026): DPIA sign-off, data retention/destruction, and formal
   // acceptance of CCTV/access control systems genuinely sit with a
   // named Data Protection Officer/Caldicott Guardian appointment under
@@ -358,7 +358,7 @@ model ComplianceOverride {
   createdAt             DateTime @default(now())
 }
 
-// A managed, incrementing project-number sequence (confirmed by Kevin,
+// A managed, incrementing project-number sequence (confirmed
 // 19 Aug 2026 — replacing the old free-text "type your own project
 // number" field, which had no collision/typo protection beyond the DB
 // unique constraint). Single-row counter rather than a Postgres
@@ -392,7 +392,7 @@ enum ProjectStatus {
 // of whether the building itself is touched: a like-for-like swap
 // needing two trades on site still needs a Principal Designer, even
 // though it's not BUILDING_MODIFICATION and never raises planning
-// permission (confirmed by Kevin, 19 Aug 2026 — corrects an earlier
+// permission (confirmed 19 Aug 2026 — corrects an earlier
 // version of this field that conflated "modifies the building" with
 // "CDM applies").
 //   - DIRECT_REPLACEMENT_SINGLE_CONTRACTOR: neither duty applies.
@@ -411,7 +411,7 @@ enum CdmWorksType {
 // A hospital runs 24/7, so a disruption window (an area decanted, a
 // system isolated) is precious — when one arises, extra opportunistic
 // work often gets bundled in rather than disrupting the same space
-// twice (Kevin, 21 Aug 2026: redesigning the kitchen drainage is reason
+// twice (21 Aug 2026: redesigning the kitchen drainage is reason
 // enough to also upgrade its ventilation and relamp its lighting while
 // it's cleared). Deliberately just a label linking otherwise-independent
 // Projects, not a merge of their checklists — each Template's checklist
@@ -466,7 +466,7 @@ model Project {
   createdAt                  DateTime                @default(now())
 }
 
-// Financial View (FinancialModel.html, revised per Kevin: spend is
+// Financial View (FinancialModel.html, revised: spend is
 // checked and approved at each gate, not just recorded against the
 // project as a whole). Manual/invoice-level actuals only — no ERP
 // integration (PRD.html §06/§08 decided, not near-term). Attaches to
@@ -667,7 +667,7 @@ model EvidenceFile {
   uploadedAt    DateTime    @default(now())
 }
 
-// Reason is mandatory — confirmed by Kevin, for traceability. Whoever
+// Reason is mandatory — confirmed, for traceability. Whoever
 // bypasses must hold the role named by the deliverable's
 // bypassAuthority; enforced in application code (lib/permissions.ts),
 // not the schema.
@@ -686,7 +686,7 @@ enum SignOffDecision {
   REJECTED
 }
 
-// Reject requires a reason too (confirmed by Kevin) — same
+// Reject requires a reason too (confirmed) — same
 // mandatory-reason pattern as every bypass/override in the model.
 model GateSignOff {
   id            String          @id @default(cuid())

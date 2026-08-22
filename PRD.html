@@ -339,8 +339,8 @@
       <h1>StageForge</h1>
       <div class="doc-meta">
         Product Requirements Document — Draft v0.14<br>
-        Owner: Kevin Fotheringham · 21 Aug 2026<br>
-        Source: Overview.docx + Kevin's decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx; revised 20–21 Aug 2026 with the completed Hard FM Template library, the resulting provisioning/authority-model corrections (§10), Works Packages plus the Works Package overview page, and merging multi-system creation into the Works Package box (§06)
+        Last updated: 21 Aug 2026<br>
+        Source: Overview.docx + the decisions, 18 Aug 2026; extended 19 Aug 2026 with Complaince and Regulations.docx, Maintenance schedule - SHTM.docx, and Example_Overview_Plan.docx; revised 20–21 Aug 2026 with the completed Hard FM Template library, the resulting provisioning/authority-model corrections (§10), Works Packages plus the Works Package overview page, and merging multi-system creation into the Works Package box (§06)
       </div>
     </div>
     <div class="stamp">Draft — not signed off</div>
@@ -358,7 +358,7 @@
   <p>The note also raises hosting StageForge as a sub-domain of <strong>pmopassport.co.uk</strong>.</p>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: pmopassport.co.uk is a domain he owns personally, currently used by his GasNet project. StageForge would sit as a sibling subdomain under the same domain, not a shared company or product with GasNet.
+    Confirmed: pmopassport.co.uk is a personally-owned domain, currently used by the GasNet project. StageForge would sit as a sibling subdomain under the same domain, not a shared company or product with GasNet.
   </div>
   <div class="flag">
     <span class="flag-label">Open question</span>
@@ -368,8 +368,8 @@
   <h2><span class="num">02</span>Problem it solves</h2>
   <p>Not stated directly in the source note, so this is inferred rather than confirmed: stage-gate sign-off on Hard FM programmes today likely runs on spreadsheets, email evidence trails, and spend tracked separately from delivery status. Without one record tying deliverable evidence, compliance status, resourcing, and actual spend to a single project number, a sponsor signs a gate off without a reliable single view of whether the project is actually ready. StageForge's job is to make "ready to sign off" a verifiable state rather than a judgement call.</p>
   <div class="flag decided">
-    <span class="flag-label">Context, from Kevin</span>
-    Part of why this matters concretely for Health specifically: an NHS Trust doesn't always commission a Hard FM programme on its own discretionary timeline — sometimes it's driven by the Trust's own compliance obligations, or by a non-compliance finding that's been issued with a mandated closure date. In that setting, weak stage-gate governance isn't just messy paperwork, it's the difference between hitting or missing a deadline the Trust doesn't control. Kevin confirmed this stays narrative context for now, not a modelled feature (e.g. no <code>Project.compliance_deadline</code> field) — but it's the kind of scenario the platform should hold up under.
+    <span class="flag-label">Context</span>
+    Part of why this matters concretely for Health specifically: an NHS Trust doesn't always commission a Hard FM programme on its own discretionary timeline — sometimes it's driven by the Trust's own compliance obligations, or by a non-compliance finding that's been issued with a mandated closure date. In that setting, weak stage-gate governance isn't just messy paperwork, it's the difference between hitting or missing a deadline the Trust doesn't control. This stays narrative context for now, not a modelled feature (e.g. no <code>Project.compliance_deadline</code> field) — but it's the kind of scenario the platform should hold up under.
   </div>
 
   <h2><span class="num">03</span>Competitive landscape</h2>
@@ -386,7 +386,7 @@
   </div>
 
   <h2><span class="num">04</span>Who uses it</h2>
-  <p><span class="tag decided">Decided</span> Confirmed by Kevin: the initial target user and buyer is <strong>Hard FM maintenance in hospitals</strong>. Four roles apply, and — importantly — none of them are fixed globally: who holds each role is set per project/programme in configuration, not hardcoded to a person or company.</p>
+  <p><span class="tag decided">Decided</span> Confirmed: the initial target user and buyer is <strong>Hard FM maintenance in hospitals</strong>. Four roles apply, and — importantly — none of them are fixed globally: who holds each role is set per project/programme in configuration, not hardcoded to a person or company.</p>
   <div class="table-wrap">
   <table>
     <tr><th>Role</th><th>Needs from the platform</th></tr>
@@ -416,7 +416,7 @@
     <li><strong>Sector Variant</strong> — a rebranded, re-templated instance of the same engine for a different Hard FM vertical.</li>
     <li><strong>Approval Bucket</strong> — one of three Hard FM spend-approval categories a project's costs are classified under: Lifecycle Replacement, Small Works, or Variation. A single project can draw from more than one.</li>
   </ul>
-  <p>Delivery and compliance as two distinct, concurrently-running module types is explicit in the source note — it's the one piece of architecture Kevin has already specified.</p>
+  <p>Delivery and compliance as two distinct, concurrently-running module types is explicit in the source note — it's the one piece of architecture already specified up front.</p>
 
   <h2><span class="num">06</span>Functional requirements</h2>
 
@@ -432,11 +432,11 @@
     <li>A deliverable can be flagged <strong>legally significant</strong>. A PM cannot bypass one of these — only the <strong>Compliance Officer</strong> or the <strong>SRO</strong> can, with a mandatory written reason.</li>
     <li>Only a <strong>higher-tier authority above the Sponsor</strong> (the SRO) can override an outstanding compliance block and pass the gate anyway.</li>
   </ul>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: PM-bypass and Sponsor-approval are hard, role-locked actions — not configurable to other roles.</div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: compliance blocks gate pass-through by default, for governance — the same hard-stop treatment as missing delivery evidence, not advisory. See the Compliance Module section below for the override mechanic that sits alongside it.</div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: a PM cannot bypass a deliverable that carries legal weight. That escalates to Compliance Officer or SRO instead — bypass authority isn't uniformly PM-level, it depends on what the deliverable actually is. Every bypass, at any authority level, requires a written reason (also confirmed — see Deliverable &amp; Evidence Management below).</div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: rejecting a gate requires a written reason and returns it to the PM — the same mandatory-reason pattern as every bypass and override in the model.</div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: the Health sector's standard Delivery Module template follows the <strong>RIBA Plan of Work 2020</strong>'s eight stages — Strategic Definition, Preparation &amp; Briefing, Concept Design, Spatial Coordination, Technical Design, Manufacturing &amp; Construction, Handover, Use — as the default gate structure, rather than a bespoke shape per project. Validated against a real worked example (NHS Forth Valley UPS Replacement) with a full mandatory-deliverables list per stage and named gate approvers (Authorised Person, Authorising Engineer, Principal Designer) alongside the core PM/Sponsor/SRO roles.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: PM-bypass and Sponsor-approval are hard, role-locked actions — not configurable to other roles.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: compliance blocks gate pass-through by default, for governance — the same hard-stop treatment as missing delivery evidence, not advisory. See the Compliance Module section below for the override mechanic that sits alongside it.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: a PM cannot bypass a deliverable that carries legal weight. That escalates to Compliance Officer or SRO instead — bypass authority isn't uniformly PM-level, it depends on what the deliverable actually is. Every bypass, at any authority level, requires a written reason (also confirmed — see Deliverable &amp; Evidence Management below).</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: rejecting a gate requires a written reason and returns it to the PM — the same mandatory-reason pattern as every bypass and override in the model.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: the Health sector's standard Delivery Module template follows the <strong>RIBA Plan of Work 2020</strong>'s eight stages — Strategic Definition, Preparation &amp; Briefing, Concept Design, Spatial Coordination, Technical Design, Manufacturing &amp; Construction, Handover, Use — as the default gate structure, rather than a bespoke shape per project. Validated against a real worked example (NHS Forth Valley UPS Replacement) with a full mandatory-deliverables list per stage and named gate approvers (Authorised Person, Authorising Engineer, Principal Designer) alongside the core PM/Sponsor/SRO roles.</div>
 
   <h3>Deliverable &amp; Evidence Management</h3>
   <ul>
@@ -445,10 +445,10 @@
     <li>Version history when a file is replaced before sign-off.</li>
     <li>Every deliverable is either ordinary (PM can bypass, with reason) or flagged <strong>legally significant</strong> (only Compliance Officer or SRO can bypass, with reason) — set when the deliverable template is authored.</li>
   </ul>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: audit trail and version control are required, not optional — this is now a firm requirement rather than an inferred one. Bypass reason is mandatory at every authority level.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: audit trail and version control are required, not optional — this is now a firm requirement rather than an inferred one. Bypass reason is mandatory at every authority level.</div>
 
   <h3>Compliance Module — architecture options</h3>
-  <p>Kevin asked for an assessment of two ways to build this: a config-driven rules engine versus pluggable, code-level workflow modules per sector/regulation.</p>
+  <p>This section assesses two ways to build this: a config-driven rules engine versus pluggable, code-level workflow modules per sector/regulation.</p>
   <div class="compare">
     <div class="compare-col">
       <h5>Config-driven rules engine</h5>
@@ -479,26 +479,26 @@
     <li>Incomplete compliance status blocks gate sign-off by default, on par with missing delivery evidence.</li>
     <li>A higher-tier authority above the Sponsor — provisionally a <strong>Senior Responsible Owner (SRO)</strong>, the standard term for the accountable individual above a project sponsor in UK public-sector capital governance — can override that block and pass the gate anyway.</li>
   </ul>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: for true governance and control, compliance blocks gate pass-through by default. A super-level authority can still approve through it — an exception path for accepted risk, not a routine approval.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: for true governance and control, compliance blocks gate pass-through by default. A super-level authority can still approve through it — an exception path for accepted risk, not a routine approval.</div>
   <div class="rec">
     <span class="flag-label">Note</span>
     The escalation ladder turns out to be risk-based, not simply delivery-vs-compliance: a PM can bypass an <em>ordinary</em> deliverable without escalation — a procedural gap, lower stakes. Anything with legal weight — whether it's a delivery deliverable flagged legally significant, or a compliance requirement — escalates to Compliance Officer or SRO, because it means knowingly accepting regulatory or legal risk rather than skipping paperwork. Every level of override carries the same audit rigor — logged reason, timestamp, visible in the gate's history as an override, never rendered the same as an ordinary pass.
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: the SRO role is assigned per project, like every other role — not held by a small fixed set of senior people across the tenant. This actually matches how SRO works in UK public-sector practice: each major programme has its own named SRO, not one central figure across an organisation, so the per-project model is the realistic one.
+    Confirmed: the SRO role is assigned per project, like every other role — not held by a small fixed set of senior people across the tenant. This actually matches how SRO works in UK public-sector practice: each major programme has its own named SRO, not one central figure across an organisation, so the per-project model is the realistic one.
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: an SRO override requires a written reason, captured at the point of override, and needs a single sign-off — not a multi-person approval chain. The written reason plus the SRO's identity and timestamp form the audit record for that gate.
+    Confirmed: an SRO override requires a written reason, captured at the point of override, and needs a single sign-off — not a multi-person approval chain. The written reason plus the SRO's identity and timestamp form the audit record for that gate.
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: "Senior Responsible Owner (SRO)" stays as the title. The compliance-override mechanic is now fully specified end to end.
+    Confirmed: "Senior Responsible Owner (SRO)" stays as the title. The compliance-override mechanic is now fully specified end to end.
   </div>
 
   <h3>AI-Assisted Project Provisioning</h3>
-  <p>Kevin's framing, 19 Aug 2026: the compliance corpus for a given sector/jurisdiction (e.g. the SHTM series, Building (Scotland) Act, HAI-SCRIBE for Scottish Health) is largely static — it doesn't change drastically once loaded — and the RIBA Plan of Work's eight stages are already a standard, sector-agnostic gate structure (see decided flag above). Given both of those as fixed background knowledge, a new project shouldn't need its Delivery Module hand-authored from scratch or picked from one hardcoded template — StageForge should be able to provision it from a short description of the project.</p>
+  <p>The framing, 19 Aug 2026: the compliance corpus for a given sector/jurisdiction (e.g. the SHTM series, Building (Scotland) Act, HAI-SCRIBE for Scottish Health) is largely static — it doesn't change drastically once loaded — and the RIBA Plan of Work's eight stages are already a standard, sector-agnostic gate structure (see decided flag above). Given both of those as fixed background knowledge, a new project shouldn't need its Delivery Module hand-authored from scratch or picked from one hardcoded template — StageForge should be able to provision it from a short description of the project.</p>
   <p>Full mechanism scoped separately in <a href="ProvisioningModel.html">ProvisioningModel.html</a> — summary below.</p>
   <ul>
     <li>At project creation, the PM (or Compliance Officer) enters a free-text project description — e.g. "Replace 12 UPS units across 4 systems, weekend working, live hospital."</li>
@@ -509,19 +509,19 @@
   </ul>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: this depends on the Compliance Module existing as structured data first (Phase 2) — see roadmap, §09 — since matching is only as good as the corpus it's grounded in. The Compliance Module shipped 19 Aug 2026 (schema, live instantiation, gate-closure enforcement, UI), unblocking this.
+    Confirmed: this depends on the Compliance Module existing as structured data first (Phase 2) — see roadmap, §09 — since matching is only as good as the corpus it's grounded in. The Compliance Module shipped 19 Aug 2026 (schema, live instantiation, gate-closure enforcement, UI), unblocking this.
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Revised 21 Aug 2026, once the Template library was built out to full coverage (17 Hard FM systems, up from the two it launched with): the bullet above describing an LLM call matching the description against the Template library is superseded. Real usage surfaced repeated mismatches — the LLM guessing the wrong discipline from an ambiguous brief, caught by the Compliance Officer on review every time. Kevin's read: which Hard FM system a project is about is a closed, known set the PM already knows outright, not something worth an LLM guess. <code>/projects/new</code> now carries an explicit "System / Template" dropdown instead — the PM picks the discipline directly, and the LLM's role narrows to proposing the compliance-tag set (occupied/live site, National Treatment Centre, etc.) for that already-known system. The Compliance Officer's review correspondingly narrows from "is this even the right template" to just "are these tags right." <a href="ProvisioningModel.html">ProvisioningModel.html</a> §01/§03/§07 still describe the original LLM-matches-template design as originally scoped and built — read alongside this note, not as still-current.
+    Revised 21 Aug 2026, once the Template library was built out to full coverage (17 Hard FM systems, up from the two it launched with): the bullet above describing an LLM call matching the description against the Template library is superseded. Real usage surfaced repeated mismatches — the LLM guessing the wrong discipline from an ambiguous brief, caught by the Compliance Officer on review every time. The read: which Hard FM system a project is about is a closed, known set the PM already knows outright, not something worth an LLM guess. <code>/projects/new</code> now carries an explicit "System / Template" dropdown instead — the PM picks the discipline directly, and the LLM's role narrows to proposing the compliance-tag set (occupied/live site, National Treatment Centre, etc.) for that already-known system. The Compliance Officer's review correspondingly narrows from "is this even the right template" to just "are these tags right." <a href="ProvisioningModel.html">ProvisioningModel.html</a> §01/§03/§07 still describe the original LLM-matches-template design as originally scoped and built — read alongside this note, not as still-current.
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin, 19 Aug 2026: template-library selection, not freeform generation — an LLM matches and adapts against a human-authored template library rather than drafting checklist items from scratch, to bound the failure mode to "picked the wrong real template" rather than "hallucinated a regulatory requirement."
+    Confirmed 19 Aug 2026: template-library selection, not freeform generation — an LLM matches and adapts against a human-authored template library rather than drafting checklist items from scratch, to bound the failure mode to "picked the wrong real template" rather than "hallucinated a regulatory requirement."
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin, 19 Aug 2026: a provisioned project requires Compliance Officer review and approval before it goes live — resolves the human-review open question below. A provisioned project sits in draft, not instantiated, until reviewed.
+    Confirmed 19 Aug 2026: a provisioned project requires Compliance Officer review and approval before it goes live — resolves the human-review open question below. A provisioned project sits in draft, not instantiated, until reviewed.
   </div>
   <div class="flag">
     <span class="flag-label">Open question</span>
@@ -529,15 +529,15 @@
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Added 21 Aug 2026: Works Packages. A hospital runs 24/7, so a disruption window (an area decanted, a system isolated) is precious — Kevin's example: redesigning the main kitchen's drainage is reason enough to also upgrade its ventilation and relamp its lighting while it's cleared out. Rather than merging multiple disciplines' checklists into one project — which would blur the compliance rigor the Template model exists for, since each discipline needs its own SHTM reference, its own Authorised Person, its own sign-off chain — a project stays single-Template and fully correct, and can optionally link to a <code>WorksPackage</code>: a lightweight label grouping otherwise-independent projects sharing one disruption window. Set at creation (an existing-package dropdown or a new-package name field on <code>/projects/new</code>) or after the fact once a PM decides to fold in extra work. Shown as a small badge on the portfolio and each project's own dashboard, cross-linking to the sibling projects — no effect on instantiation, tags, or bypass/override authority.
+    Added 21 Aug 2026: Works Packages. A hospital runs 24/7, so a disruption window (an area decanted, a system isolated) is precious — the example: redesigning the main kitchen's drainage is reason enough to also upgrade its ventilation and relamp its lighting while it's cleared out. Rather than merging multiple disciplines' checklists into one project — which would blur the compliance rigor the Template model exists for, since each discipline needs its own SHTM reference, its own Authorised Person, its own sign-off chain — a project stays single-Template and fully correct, and can optionally link to a <code>WorksPackage</code>: a lightweight label grouping otherwise-independent projects sharing one disruption window. Set at creation (an existing-package dropdown or a new-package name field on <code>/projects/new</code>) or after the fact once a PM decides to fold in extra work. Shown as a small badge on the portfolio and each project's own dashboard, cross-linking to the sibling projects — no effect on instantiation, tags, or bypass/override authority.
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Refined same day, from Kevin's own first reaction to the shipped feature: linking a project to a package was a fine label, but there was no fast way to actually build the package out, and no way to look at it as one thing. Two additions, no new concepts: a "+ Add a system" shortcut wherever a package badge appears, straight into <code>/projects/new</code> with that package already selected, so adding the second or third system is one click plus picking a Template, not re-finding the package in a dropdown; and a Works Package overview page — combined spend and combined outstanding deliverables/compliance summed across every project in the package, alongside each project's own row, so a PM or SRO can "assess the full project" (Kevin's words) as a whole disruption window, not just its individual pieces one dashboard at a time.
+    Refined same day, from the first reaction to the shipped feature: linking a project to a package was a fine label, but there was no fast way to actually build the package out, and no way to look at it as one thing. Two additions, no new concepts: a "+ Add a system" shortcut wherever a package badge appears, straight into <code>/projects/new</code> with that package already selected, so adding the second or third system is one click plus picking a Template, not re-finding the package in a dropdown; and a Works Package overview page — combined spend and combined outstanding deliverables/compliance summed across every project in the package, alongside each project's own row, so a PM or SRO can "assess the full project" as a whole disruption window, not just its individual pieces one dashboard at a time.
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Refined again same day: Kevin's actual, repeated point — "there are times when multiple systems from the 17 [templates] are required... there is no option to add those packages on the 'new project' screen right now" — was first answered with a second, separate collapsed form lower down the page for bulk-creating several systems at once, leaving the works-package box itself still a single-system tagging field. Kevin's reaction to that split — "the 'part of combined works package' window is useless as it is right now unless it adds additional system packages" — showed the two belonged together, not apart. Merged into one: the works-package box on <code>/projects/new</code> now carries the multi-system checklist directly, alongside the existing-package dropdown and new-package name field. The primary system is still picked the usual way above; any additional systems checked in the works-package box become sibling DRAFT projects created in the same submission, all linked to the same package (a package name, existing or new, becomes required the moment anything extra is checked, since that's what links them). Each sibling still needs its own Compliance Officer review before going live, same as a solo project.
+    Refined again same day: the actual, repeated point — "there are times when multiple systems from the 17 [templates] are required... there is no option to add those packages on the 'new project' screen right now" — was first answered with a second, separate collapsed form lower down the page for bulk-creating several systems at once, leaving the works-package box itself still a single-system tagging field. the reaction to that split — "the 'part of combined works package' window is useless as it is right now unless it adds additional system packages" — showed the two belonged together, not apart. Merged into one: the works-package box on <code>/projects/new</code> now carries the multi-system checklist directly, alongside the existing-package dropdown and new-package name field. The primary system is still picked the usual way above; any additional systems checked in the works-package box become sibling DRAFT projects created in the same submission, all linked to the same package (a package name, existing or new, becomes required the moment anything extra is checked, since that's what links them). Each sibling still needs its own Compliance Officer review before going live, same as a solo project.
   </div>
 
   <h3>Roles &amp; Permissions</h3>
@@ -549,7 +549,7 @@
     <li>Overriding a blocked compliance requirement is locked to the SRO role only — a tier above the Sponsor, not an alternate route to the same permission.</li>
     <li>Every bypass and every override requires a written reason and a single sign-off — no multi-person approval chain at any level.</li>
   </ul>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: role assignment happens at project/programme configuration, and permissions are required from the outset, not a later hardening pass.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: role assignment happens at project/programme configuration, and permissions are required from the outset, not a later hardening pass.</div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
     Revised 20–21 Aug 2026, once the Template library exposed real, named Trust appointments the global role list above didn't cover: Fire Officer, Authorised Person (Electrical), Authorised Person (Water), Authorised Person (Ventilation), Authorised Person (Medical Gases), Clinical Safety Officer, Information Governance Officer, and Principal Designer are now part of the role roster — added only where a genuinely distinct, real appointment exists, never invented for an external statutory regime that doesn't correspond to one (e.g. no "Gas AP" for fuel gas, no "Lifts AP" for LOLER — those stay SRO/Compliance-Officer checkpoints). The bypass model above was also corrected from a simple PM → Compliance Officer → SRO ladder to a mixed model: SRO remains an apex that can act at any lower tier, but every other named authority — Fire Officer, each Authorised Person, Clinical Safety Officer, Information Governance Officer — is an <em>exact-match</em> requirement even Compliance Officer doesn't inherit into. A fire-safety item needs the Fire Officer specifically; an isolation/permit item needs the relevant discipline AP specifically. This closed two real bugs: fire-safety items had been escalating to SRO, who has no legal standing over fire compliance, and Compliance Officer bypass authority had been silently reaching down into ordinary PM-tier deliverables it was never tagged for.
@@ -566,18 +566,18 @@
     <li>A single large project can draw from more than one bucket at once — the Financial View must show total spend across all buckets combined for that project, as well as broken out per bucket, so a Sponsor or SRO sees full committed spend rather than one approval stream's slice of it.</li>
     <li>Longer-term ambition to connect that project number back to SAP or D365.</li>
   </ul>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin, 19 Aug 2026: the three approval buckets are Lifecycle Replacement, Small Works, and Variation; large projects often draw from more than one, and spend must roll up across all of them a project uses, not just per bucket.</div>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed by Kevin: SAP/D365 integration is not near-term. Financial view should ship with manual/invoice-level actuals only; ERP reconciliation stays a later-phase ambition.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed 19 Aug 2026: the three approval buckets are Lifecycle Replacement, Small Works, and Variation; large projects often draw from more than one, and spend must roll up across all of them a project uses, not just per bucket.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: SAP/D365 integration is not near-term. Financial view should ship with manual/invoice-level actuals only; ERP reconciliation stays a later-phase ambition.</div>
   <div class="flag">
     <span class="flag-label">Open question</span>
-    Approval thresholds and workflow differences between the three buckets — value ranges, whether each bucket has its own sign-off role beyond Sponsor/SRO, whether bucket choice is set per-deliverable or per-project — aren't specified yet. Needs Kevin's input before this becomes a data model.
+    Approval thresholds and workflow differences between the three buckets — value ranges, whether each bucket has its own sign-off role beyond Sponsor/SRO, whether bucket choice is set per-deliverable or per-project — aren't specified yet. Needs the input before this becomes a data model.
   </div>
 
   <h3>Sector / Brand Variants &amp; Tenancy</h3>
   <p>Same underlying engine, different template libraries and branding per sector. Health is the reference implementation.</p>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin: <strong>multi-tenancy</strong> is the right model — many projects and different company/programme departments will use the same platform. This resolves the earlier open question and implies a shared backend with per-sector template libraries and branding, not separate codebases per sector.
+    Confirmed: <strong>multi-tenancy</strong> is the right model — many projects and different company/programme departments will use the same platform. This resolves the earlier open question and implies a shared backend with per-sector template libraries and branding, not separate codebases per sector.
   </div>
   <div class="example">
     <span class="example-label">Open question — worked example</span>
@@ -611,7 +611,7 @@
   <h2><span class="num">08</span>Integrations</h2>
   <ul>
     <li><strong>SAP / D365</strong> — for spend reconciliation. Confirmed not near-term; keep out of MVP and early phases entirely.</li>
-    <li><strong>pmopassport.co.uk</strong> — Kevin's own domain, also used by his GasNet project. StageForge sits as a sibling subdomain, not a shared product. Whether it shares infrastructure or login with GasNet is still open.</li>
+    <li><strong>pmopassport.co.uk</strong> — a personally-owned domain, also used by the GasNet project. StageForge sits as a sibling subdomain, not a shared product. Whether it shares infrastructure or login with GasNet is still open.</li>
   </ul>
 
   <h2><span class="num">09</span>Proposed phased roadmap</h2>
@@ -648,12 +648,12 @@
   <h2><span class="num">10</span>Open questions</h2>
   <p>Every question from the original concept note is resolved. Three detail-level questions remain, added this round:</p>
   <ol class="oq">
-    <li>Does StageForge share any infrastructure or login with Kevin's GasNet project under pmopassport.co.uk, or does it just coexist as a sibling subdomain?</li>
+    <li>Does StageForge share any infrastructure or login with the GasNet project under pmopassport.co.uk, or does it just coexist as a sibling subdomain?</li>
     <li>How much PM-facing guidance AI-assisted project provisioning should surface — a one-time generated brief versus ongoing per-gate guidance.</li>
     <li>Approval thresholds and workflow differences between the three spend buckets (Lifecycle Replacement, Small Works, Variation) — value ranges, bucket-specific approvers, and whether bucket is set per-deliverable or per-project.</li>
   </ol>
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (19 Aug 2026): the Health sector's standard Delivery Module template follows the RIBA Plan of Work 2020's eight stages, validated against a real worked example; the Compliance Module's grounding corpus for Scottish Health (SHTM series, Building (Scotland) Act, HAI-SCRIBE) is now documented, and the Compliance Module itself has shipped (schema, live instantiation, gate-closure enforcement, UI); AI-assisted project provisioning is scoped in full in ProvisioningModel.html — template-library matching rather than freeform generation, and a mandatory Compliance Officer review/approval step before a provisioned project goes live; the three Hard FM approval buckets (Lifecycle Replacement, Small Works, Variation) and cross-bucket spend rollup are scoped into the Financial View.</p>
-  <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (21 Aug 2026): the Template library reached full coverage for the Health reference implementation — 17 Hard FM systems (Boiler, Steam, Compressed Air, Ventilation, Medical Gases, Fire Alarm &amp; Detection, Fire Suppression, Lifts, Electrical Services, Lighting, Domestic Hot &amp; Cold Water, Chilled Water/Cooling, Above-Ground Drainage, BMS, Security, Pneumatic Tube, Nurse Call), each mapped from Kevin's own RIBA/SHTM-aligned source documents, with two authority-modeling bugs fixed along the way (isolation/permit items now require the relevant discipline Authorised Person instead of generic SRO; Compliance Officer bypass authority no longer inherits down to ordinary PM-tier deliverables outside its own remit) and new named Trust appointments added only where a genuinely distinct one exists (Electrical/Water/Ventilation/Medical Gases Authorised Persons, a Fire Officer authority tier — SRO has no legal standing over fire compliance — Clinical Safety Officer, Information Governance Officer). AI-assisted project provisioning's template-matching step is superseded by a deterministic dropdown — see the flag on §06 above. HAI-SCRIBE involvement intensity (Kevin's RIBA-stage matrix) is now operational: the five systems rated sustained High involvement get an extra compliance checkpoint at Concept Design through Handover, driven by which Template matched, not left to the LLM. A UX audit (screen-by-screen, benchmarked against Linear/Asana/enterprise PPM tools) drove several rounds of fixes, ending at 8.1/10: an accessibility pass (WCAG contrast measured and fixed, every form label given a real programmatic association with its field, heading structure added across all seven screens) verified against the live Windows accessibility tree, not just code inspection.</p>
+  <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (21 Aug 2026): the Template library reached full coverage for the Health reference implementation — 17 Hard FM systems (Boiler, Steam, Compressed Air, Ventilation, Medical Gases, Fire Alarm &amp; Detection, Fire Suppression, Lifts, Electrical Services, Lighting, Domestic Hot &amp; Cold Water, Chilled Water/Cooling, Above-Ground Drainage, BMS, Security, Pneumatic Tube, Nurse Call), each mapped from RIBA/SHTM-aligned source documents, with two authority-modeling bugs fixed along the way (isolation/permit items now require the relevant discipline Authorised Person instead of generic SRO; Compliance Officer bypass authority no longer inherits down to ordinary PM-tier deliverables outside its own remit) and new named Trust appointments added only where a genuinely distinct one exists (Electrical/Water/Ventilation/Medical Gases Authorised Persons, a Fire Officer authority tier — SRO has no legal standing over fire compliance — Clinical Safety Officer, Information Governance Officer). AI-assisted project provisioning's template-matching step is superseded by a deterministic dropdown — see the flag on §06 above. HAI-SCRIBE involvement intensity (the RIBA-stage matrix) is now operational: the five systems rated sustained High involvement get an extra compliance checkpoint at Concept Design through Handover, driven by which Template matched, not left to the LLM. A UX audit (screen-by-screen, benchmarked against Linear/Asana/enterprise PPM tools) drove several rounds of fixes, ending at 8.1/10: an accessibility pass (WCAG contrast measured and fixed, every form label given a real programmatic association with its field, heading structure added across all seven screens) verified against the live Windows accessibility tree, not just code inspection.</p>
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved in earlier rounds and reflected here: target user/buyer, role set, role-assignment model, bypass/approval permissions, audit trail &amp; versioning, tenancy model, compliance architecture direction, ERP timing, compliance-blocks-by-default with SRO override, SRO assigned per-project, SRO override requires written reason + single sign-off, PM bypass requires written reason, tenant boundary resolved via project-scoped access, legally significant deliverables escalate bypass authority to Compliance Officer/SRO, pmopassport.co.uk as sibling subdomain, SRO title, gate rejection requires written reason and returns to PM, sector priority after Health stays open.</p>
 
   <h2><span class="num">11</span>Out of scope, for now</h2>
@@ -665,13 +665,13 @@
   </ul>
 
   <h2><span class="num">12</span>Proposed success metrics</h2>
-  <p>Not in the source note — proposed here for Kevin to validate or replace.</p>
+  <p>Not in the source note — proposed here to validate or replace.</p>
   <ul>
     <li>Share of gates signed off with 100% of deliverable evidence attached (target: 100%, since the platform enforces it structurally).</li>
     <li>Time elapsed from "all evidence uploaded" to sponsor sign-off.</li>
-    <li>Reduction in manual spend-reconciliation effort versus the current process — needs a baseline from Kevin.</li>
+    <li>Reduction in manual spend-reconciliation effort versus the current process — needs a baseline.</li>
   </ul>
 
-  <footer>StageForge · PRD draft v0.10 · expanded from Overview.docx + Kevin's decisions, 18–19 Aug 2026</footer>
+  <footer>StageForge · PRD draft v0.10 · expanded from Overview.docx + the decisions, 18–19 Aug 2026</footer>
 
 </div>

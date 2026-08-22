@@ -268,8 +268,8 @@
       <h1>StageForge — Financial Model</h1>
       <div class="doc-meta">
         Technical scoping — Draft v0.1<br>
-        Owner: Kevin Fotheringham · 19 Aug 2026<br>
-        Source: PRD.html §06 "Financial View" + DataModel.html §04 (SpendRecord sketch) + Kevin's decisions, 19 Aug 2026
+        Last updated: 19 Aug 2026<br>
+        Source: PRD.html §06 "Financial View" + DataModel.html §04 (SpendRecord sketch) + the decisions, 19 Aug 2026
       </div>
     </div>
     <div class="stamp">Scoping — not built</div>
@@ -282,12 +282,12 @@
   <ul>
     <li><strong>Manual/invoice-level actuals only.</strong> PRD.html §06 decided flag: SAP/D365 integration is not near-term — ship with manual entry, ERP reconciliation stays a later-phase ambition.</li>
     <li><strong>Three approval buckets.</strong> Lifecycle Replacement, Small Works, Variation — a single large project can draw from more than one at once, and the view must show total spend across all buckets combined <em>and</em> broken out per bucket.</li>
-    <li><strong>Gate-level, not just project-level.</strong> Revised by Kevin, 19 Aug 2026, superseding this document's original v0.1 draft (which read spend as project-level only): spend must be <strong>checked and approved at each gate</strong>. A <code>SpendRecord</code> attaches to a <code>Gate</code> — the same shape as <code>Deliverable</code> and <code>ComplianceRequirement</code> — and an unapproved blocking record holds up that gate's Sponsor submission exactly the way an unevidenced deliverable does. A project's total is still the sum across its gates, reached via <code>Gate → Stage → Project</code>, not a direct FK.</li>
+    <li><strong>Gate-level, not just project-level.</strong> Revised by 19 Aug 2026, superseding this document's original v0.1 draft (which read spend as project-level only): spend must be <strong>checked and approved at each gate</strong>. A <code>SpendRecord</code> attaches to a <code>Gate</code> — the same shape as <code>Deliverable</code> and <code>ComplianceRequirement</code> — and an unapproved blocking record holds up that gate's Sponsor submission exactly the way an unevidenced deliverable does. A project's total is still the sum across its gates, reached via <code>Gate → Stage → Project</code>, not a direct FK.</li>
     <li><strong>The Finance role already exists</strong>, seeded, unused (<code>roleDefs</code> in <code>seed.ts</code>) — PRD.html §04: "Reconciles invoice-level actual spend against the central project number."</li>
   </ul>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin, 19 Aug 2026: spend needs a real <strong>approval step</strong>, not passive recording — the PRD's own unresolved open question ("approval thresholds and workflow differences between the three buckets... whether each bucket has its own sign-off role") is resolved in the direction of building governance here, mirroring the gate-closure pattern used everywhere else in the app rather than treating Financial View as a simple log.
+    Confirmed 19 Aug 2026: spend needs a real <strong>approval step</strong>, not passive recording — the PRD's own unresolved open question ("approval thresholds and workflow differences between the three buckets... whether each bucket has its own sign-off role") is resolved in the direction of building governance here, mirroring the gate-closure pattern used everywhere else in the app rather than treating Financial View as a simple log.
   </div>
 
   <h2><span class="num">02</span>What's already built and reusable</h2>
@@ -331,7 +331,7 @@
   </div>
   <div class="flag">
     <span class="flag-label">Open question</span>
-    Whether Lifecycle Replacement, Small Works, and Variation should actually require different approval tiers or value thresholds in practice — the exact question the PRD already left open, still open. If Kevin's real process differs (e.g. Small Works auto-approves under some value, Lifecycle Replacement always needs SRO), that's a straightforward extension of the same rule shape once the actual numbers exist.
+    Whether Lifecycle Replacement, Small Works, and Variation should actually require different approval tiers or value thresholds in practice — the exact question the PRD already left open, still open. If the real process differs (e.g. Small Works auto-approves under some value, Lifecycle Replacement always needs SRO), that's a straightforward extension of the same rule shape once the actual numbers exist.
   </div>
 
   <h2><span class="num">05</span>Actions</h2>

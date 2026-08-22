@@ -362,8 +362,8 @@
       <h1>StageForge — Provisioning Model</h1>
       <div class="doc-meta">
         Technical scoping — Draft v0.3<br>
-        Owner: Kevin Fotheringham · 19 Aug 2026<br>
-        Source: PRD.html §06 "AI-Assisted Project Provisioning" + Kevin's decision, 19 Aug 2026
+        Last updated: 19 Aug 2026<br>
+        Source: PRD.html §06 "AI-Assisted Project Provisioning" + the decision, 19 Aug 2026
       </div>
     </div>
     <div class="stamp">Scoping — not built</div>
@@ -393,7 +393,7 @@
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin, 19 Aug 2026: template-library selection. Everything below is scoped to that shape.
+    Confirmed 19 Aug 2026: template-library selection. Everything below is scoped to that shape.
   </div>
 
   <h2><span class="num">02</span>What's already built and reusable</h2>
@@ -432,7 +432,7 @@
   </div>
   <div class="flag decided">
     <span class="flag-label">Decided</span>
-    Confirmed by Kevin (this session): a generated project requires Compliance Officer review before going live — resolves the open question PRD.html §06 left open. This also matches the existing rule that template/rule-set <em>authoring</em> is Compliance Officer-only (ConfigSchema.html §06); reviewing a provisioning match is the same authority tier as authoring the content it draws from.
+    Confirmed: a generated project requires Compliance Officer review before going live — resolves the open question PRD.html §06 left open. This also matches the existing rule that template/rule-set <em>authoring</em> is Compliance Officer-only (ConfigSchema.html §06); reviewing a provisioning match is the same authority tier as authoring the content it draws from.
   </div>
 
   <h2><span class="num">04</span>Data model</h2>
@@ -505,7 +505,7 @@
   <h3>Model &amp; effort</h3>
   <ul>
     <li>Closed-set classification against a short candidate list is exactly the "simple task" case — <code>output_config: {effort: "low"}</code> (not <code>high</code>/<code>xhigh</code>/<code>max</code>, which buy reasoning depth this task doesn't need). Temperature/top_p/top_k don't exist as controls on current Claude models — effort is the actual lever here, not a "low temperature" setting (a stale idea from older-model thinking).</li>
-    <li><strong>Recommendation, not decided:</strong> lead with match quality over cost. Call volume for a Hard FM provisioning tool is inherently low (tens per month, not millions) — at this shape (short cached system prompt, short structured JSON output), the cost gap between the cheapest and most capable Claude tier is fractions of a cent per call, negligible in absolute terms. Getting the match right matters more than shaving that cost, so pick the more capable tier over the cheapest one; which exact tier is genuinely Kevin's call, not locked in here.</li>
+    <li><strong>Recommendation, not decided:</strong> lead with match quality over cost. Call volume for a Hard FM provisioning tool is inherently low (tens per month, not millions) — at this shape (short cached system prompt, short structured JSON output), the cost gap between the cheapest and most capable Claude tier is fractions of a cent per call, negligible in absolute terms. Getting the match right matters more than shaving that cost, so pick the more capable tier over the cheapest one; which exact tier is genuinely the call, not locked in here.</li>
   </ul>
   <h3>Prompt structure &amp; caching</h3>
   <ul>
