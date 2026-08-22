@@ -114,6 +114,35 @@ export async function GateDetail({
 
   return (
     <div>
+      <details className="group mb-6 rounded-lg border border-rule bg-surface px-4 py-3">
+        <summary className="cursor-pointer select-none font-mono text-[10px] font-bold uppercase tracking-wide text-inkmuted">
+          What do Upload, Bypass, Override &amp; Reject mean?
+        </summary>
+        <div className="mt-3 flex flex-col gap-3 text-sm">
+          <div>
+            <span className="font-semibold">Upload evidence</span> — the normal path. Attach the actual
+            document or certificate that proves a delivery item or compliance requirement is met.
+          </div>
+          <div>
+            <span className="font-semibold">Bypass</span> (delivery items only) — skip a delivery item
+            with no evidence, when it genuinely doesn&rsquo;t apply to this project. Needs the role shown
+            on its badge to do it, and the reason is recorded permanently against your name.
+          </div>
+          <div>
+            <span className="font-semibold">Override</span> (compliance items only) — the same idea as
+            Bypass, but for legal/compliance requirements, and one override clears every outstanding
+            compliance item on the gate at once rather than one at a time. Needs the specific authority
+            named on the item — an SRO cannot override a Fire Officer&ndash; or Authorised Person&ndash;only
+            requirement.
+          </div>
+          <div>
+            <span className="font-semibold">Reject</span> (Sponsor only) — sends the whole gate back to
+            the PM once it&rsquo;s been submitted, because something about it isn&rsquo;t right. This is
+            different from Bypass/Override: it stops the entire gate, not just one item.
+          </div>
+        </div>
+      </details>
+
       <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
         <div className="mb-3 flex items-center justify-between">
           <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Timeline</div>
@@ -652,6 +681,13 @@ export async function GateDetail({
               action={recordSpend.bind(null, gateId, projectNumber)}
               className="mt-3 flex flex-col gap-2 rounded-lg border border-dashed border-rule bg-surface p-4"
             >
+              <p className="text-xs text-inkmuted">
+                <span className="font-semibold">Bucket</span> just categorises the spend for reporting —
+                it doesn&rsquo;t change who approves it. <span className="font-semibold">Lifecycle replacement</span>:
+                routine like-for-like swap at end of working life (most projects). <span className="font-semibold">Small
+                works</span>: minor, lower-value work. <span className="font-semibold">Variation</span>: a change to
+                what was originally agreed. Not sure which? Ask your Compliance Officer.
+              </p>
               <div className="flex flex-wrap items-end gap-2">
                 <div>
                   <label htmlFor="spend-bucket" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
@@ -701,7 +737,9 @@ export async function GateDetail({
       <div className="mt-6 flex items-center justify-between rounded-lg border border-rule bg-surface px-6 py-5">
         {gate.status === "NOT_STARTED" && (
           <span className="text-sm text-inkmuted">
-            This gate hasn&rsquo;t started &mdash; work through the earlier gates first.
+            {gate.stage.order === 0
+              ? "Not started yet — upload evidence, record spend, or add compliance documents below to begin."
+              : "This gate hasn’t started — work through the earlier gates first."}
           </span>
         )}
 

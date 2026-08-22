@@ -14,7 +14,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 const GBP = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /**
- * The landing page (confirmed by Kevin, 20 Aug 2026: default to the
+ * The landing page (confirmed 20 Aug 2026: default to the
  * portfolio view, since it carries the most overall detail and every
  * project is reachable from it anyway) — every live project in one
  * place, with cost approved-vs-total, which gate it's at, and what's
@@ -78,12 +78,12 @@ export default async function HomePage() {
 
   const outstandingInfo = (r: (typeof rows)[number]) =>
     r.outstandingDeliverables === 0 && r.outstandingCompliance === 0 ? (
-      <span className="font-semibold text-inkmuted">Clear</span>
+      <span className="font-semibold text-inkmuted">Clear &mdash; nothing outstanding</span>
     ) : (
       <span className="text-sm">
         {r.outstandingDeliverables > 0 && (
           <span className="font-bold text-warn">
-            {r.outstandingDeliverables} <span className="font-semibold">del.</span>
+            {r.outstandingDeliverables} <span className="font-semibold">deliverable{r.outstandingDeliverables === 1 ? "" : "s"}</span>
           </span>
         )}
         {r.outstandingDeliverables > 0 && r.outstandingCompliance > 0 && (
@@ -91,19 +91,25 @@ export default async function HomePage() {
         )}
         {r.outstandingCompliance > 0 && (
           <span className="font-bold text-flag">
-            {r.outstandingCompliance} <span className="font-semibold">comp.</span>
+            {r.outstandingCompliance} <span className="font-semibold">compliance item{r.outstandingCompliance === 1 ? "" : "s"}</span>
           </span>
         )}
+        <span className="block text-xs font-normal text-inkmuted">still to upload or sign off</span>
       </span>
     );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
       <h1 className="mb-1 text-3xl font-bold">Portfolio</h1>
-      <p className="mb-8 text-base text-inkmuted">
+      <p className="mb-2 text-base text-inkmuted">
         Every live project in one view — current gate, cost approved vs. recorded, and what&rsquo;s
-        still outstanding. Select a project below to open its dashboard. A project drops off once
-        every one of its gates is signed off.
+        still outstanding. <span className="font-semibold text-ink">Click a project name below</span> to
+        open its full checklist. A project drops off this list once every one of its gates is signed off.
+      </p>
+      <p className="mb-8 text-sm text-inkmuted">
+        &ldquo;Gate&rdquo; is the project stage it&rsquo;s currently working through (Strategic
+        Definition, Concept Design, and so on) &mdash; each one has its own checklist of deliverables
+        and compliance items that need evidence or sign-off before the project can move to the next.
       </p>
 
       {draftProjects.length > 0 && (
