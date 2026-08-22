@@ -71,8 +71,8 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   label linking otherwise-independent, discipline-pure projects — never
   a merge of their checklists, which stay exactly as correct and
   discipline-specific as a solo project's. Set on `/projects/new` (an
-  existing-package dropdown or a new-package name field) or after the
-  fact from the project dashboard (PM-only, `setProjectWorksPackage`).
+  existing-package dropdown or a new-package name field) — a solo
+  project can't currently be reassigned to a package after creation.
   Shown as a small badge on the portfolio and each project's dashboard,
   cross-linking to sibling projects, with a "+ Add a system" shortcut
   straight into `/projects/new` with that package pre-selected

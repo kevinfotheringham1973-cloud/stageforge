@@ -9,8 +9,7 @@ import {
   type GateTimelineStatus,
 } from "@/lib/permissions";
 import { getCurrentUser, getCurrentUserRoleKeysForProject } from "@/lib/session";
-import { deleteProject, renameProject, setProjectWorksPackage } from "@/lib/actions";
-import { listWorksPackages } from "@/lib/worksPackages";
+import { deleteProject } from "@/lib/actions";
 import { GateRail } from "@/components/GateRail";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -82,13 +81,11 @@ export default async function ProjectDashboardLayout({
   });
   if (!project) notFound();
 
-  const [roleKeys, currentUser, allWorksPackages] = await Promise.all([
+  const [roleKeys, currentUser] = await Promise.all([
     getCurrentUserRoleKeysForProject(project.id),
     getCurrentUser(),
-    listWorksPackages(db),
   ]);
   const worksPackageSiblings = project.worksPackage?.projects.filter((p) => p.projectNumber !== projectNumber) ?? [];
-  const isPM = roleKeys.includes("PM");
   const isPlatformAdmin = currentUser?.isPlatformAdmin ?? false;
 
   const contractorAssignment = project.roleAssignments.find((a) => a.role.key === "FM_CONTRACTOR");
@@ -272,62 +269,6 @@ export default async function ProjectDashboardLayout({
                 + Add a system
               </a>
             </div>
-          )}
-          {isPM && (
-            <form
-              action={renameProject.bind(null, project.id, project.projectNumber)}
-              className="mt-2 flex flex-wrap items-center gap-1.5"
-            >
-              <input
-                name="name"
-                aria-label="Project name"
-                defaultValue={project.name}
-                required
-                className="w-full rounded border border-inkmuted bg-bg px-2 py-1 text-sm sm:w-80"
-              />
-              <SubmitButton pendingText="Renaming…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
-                Rename
-              </SubmitButton>
-            </form>
-          )}
-          {isPM && (
-            <form
-              action={setProjectWorksPackage.bind(null, project.id, project.projectNumber)}
-              className="mt-2 flex flex-wrap items-end gap-1.5"
-            >
-              <div>
-                <label htmlFor="works-package-select" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                  Works package
-                </label>
-                <select
-                  id="works-package-select"
-                  name="worksPackageId"
-                  defaultValue={project.worksPackageId ?? ""}
-                  className="rounded border border-inkmuted bg-bg px-2 py-1 text-sm"
-                >
-                  <option value="">None</option>
-                  {allWorksPackages.map((wp) => (
-                    <option key={wp.id} value={wp.id}>
-                      {wp.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <input
-                name="newWorksPackageName"
-                aria-label="Or name a new works package"
-                placeholder="or name a new package"
-                className="rounded border border-inkmuted bg-bg px-2 py-1 text-sm"
-              />
-              <SubmitButton pendingText="Saving…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
-                Save
-              </SubmitButton>
-            </form>
-          )}
-          {!isPM && !hasNoRoleHere && (
-            <p className="mt-2 text-xs text-inkmuted">
-              Only the PM can rename this project or change its works package.
-            </p>
           )}
         </div>
 
