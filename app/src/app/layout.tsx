@@ -52,6 +52,14 @@ export default async function RootLayout({
             <a href="/lessons-learned" className="text-sm font-semibold text-accent hover:underline">
               Lessons learned
             </a>
+            {currentUser?.isPlatformAdmin && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-l border-rule pl-5">
+                <span className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Admin</span>
+                <a href="/team" className="text-sm font-semibold text-accent hover:underline">
+                  Team
+                </a>
+              </div>
+            )}
           </div>
           <ActingAsSwitcher action={setActingUser} users={users} currentUserId={currentUser?.id} />
         </header>
