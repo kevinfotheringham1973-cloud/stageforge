@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
+import { evidenceFolderPath } from "@/lib/sharepoint";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
   BYPASS_AUTHORITY_LABEL,
@@ -44,6 +45,32 @@ const APPROVAL_BUCKET_LABELS: Record<string, string> = {
 
 function toDateInputValue(d: Date | null): string {
   return d ? d.toISOString().slice(0, 10) : "";
+}
+
+function SharePointEvidenceLocation({
+  project,
+  stageName,
+}: {
+  project: { name: string; projectNumber: string };
+  stageName: string;
+}) {
+  return (
+    <div
+      className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-inkmuted"
+      title="Preview of future storage — evidence is not yet actually synced to SharePoint."
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" className="shrink-0 text-accent" aria-hidden="true">
+        <path
+          fill="currentColor"
+          d="M2 3.5A1.5 1.5 0 0 1 3.5 2h3.19a1.5 1.5 0 0 1 1.06.44l1.06 1.06H12.5A1.5 1.5 0 0 1 14 5v7.5A1.5 1.5 0 0 1 12.5 14h-9A1.5 1.5 0 0 1 2 12.5v-9Z"
+        />
+      </svg>
+      <span className="font-mono">/{evidenceFolderPath(project, stageName)}/</span>
+      <span className="rounded bg-accentsoft px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+        Preview &middot; SharePoint sync not yet wired up
+      </span>
+    </div>
+  );
 }
 
 /**
@@ -299,6 +326,7 @@ export async function GateDetail({
                           {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
                         </div>
                       ))}
+                      <SharePointEvidenceLocation project={gate.stage.project} stageName={gate.stage.name} />
                       {canReplaceEvidence && (
                         <form
                           action={recordEvidenceStub.bind(null, d.id, projectNumber, gateId)}
@@ -421,6 +449,7 @@ export async function GateDetail({
                           {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
                         </div>
                       ))}
+                      <SharePointEvidenceLocation project={gate.stage.project} stageName={gate.stage.name} />
                       {canReplaceEvidence && (
                         <form
                           action={recordComplianceEvidenceStub.bind(null, c.id, projectNumber, gateId)}

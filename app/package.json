@@ -11,7 +11,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "sharepoint:check": "tsx scripts/sharepoint-check.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
