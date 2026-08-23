@@ -1,5 +1,6 @@
 "use server";
 
+import type { BypassAuthority } from "@prisma/client";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -1447,4 +1448,62 @@ export async function assignUserToProject(userId: string, formData: FormData) {
 
   revalidatePath("/team");
   revalidatePath(`/projects/${(await db.project.findUniqueOrThrow({ where: { id: projectId } })).projectNumber}`);
+}
+
+// ── Compliance rule approvals ───────────────────────────────────────
+
+/**
+ * Platform-admin-only, same reasoning as the Team page: a
+ * ComplianceRuleTemplate is a global/platform entity with no natural
+ * per-project owner, so this doesn't fit a project-scoped role check.
+ * Changes the rule template's approval configuration — who can
+ * override it, and which other role(s) must independently co-sign
+ * (see permissions.ts#isComplianceRequirementClear). Since
+ * ComplianceRequirement is a frozen copy taken at instantiation (same
+ * as Deliverable), editing the template alone only affects *future*
+ * instantiations — applyToExisting additionally pushes the same two
+ * fields onto every already-instantiated requirement for this rule,
+ * the same one-off pattern used to retrofit the HAI-SCRIBE worked
+ * example onto live demo data.
+ */
+export async function updateComplianceRuleApprovals(templateId: string, formData: FormData) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can change compliance rule approvals.");
+  }
+
+  const overrideAuthorityRaw = String(formData.get("overrideAuthority") ?? "").trim();
+  if (!(overrideAuthorityRaw in BYPASS_AUTHORITY_LABEL)) {
+    throw new Error(`Unknown override authority: ${overrideAuthorityRaw}.`);
+  }
+  const overrideAuthority = overrideAuthorityRaw as BypassAuthority;
+
+  const validRoleKeys = new Set((await db.role.findMany({ select: { key: true } })).map((r) => r.key));
+  const additionalApproverRoleKeys = formData.getAll("additionalApproverRoleKeys").map(String);
+  const invalidKeys = additionalApproverRoleKeys.filter((k) => !validRoleKeys.has(k));
+  if (invalidKeys.length > 0) {
+    throw new Error(`Unknown role key(s): ${invalidKeys.join(", ")}.`);
+  }
+
+  const applyToExisting = formData.get("applyToExisting") === "on";
+
+  const data = { overrideAuthority, additionalApproverRoleKeys };
+
+  await db.$transaction([
+    db.complianceRuleTemplate.update({ where: { id: templateId }, data }),
+    ...(applyToExisting ? [db.complianceRequirement.updateMany({ where: { templateId }, data })] : []),
+    db.auditLogEntry.create({
+      data: {
+        actorId,
+        action: "compliance_rule.approvals_updated",
+        entityType: "ComplianceRuleTemplate",
+        entityId: templateId,
+        reason: applyToExisting ? "Applied to existing live requirements too" : "Template only",
+      },
+    }),
+  ]);
+
+  revalidatePath("/", "layout");
 }
