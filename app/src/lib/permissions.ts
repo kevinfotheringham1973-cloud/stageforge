@@ -2,13 +2,7 @@
 // DataModel.html's gate-closure diagram, made real. Deliberately has
 // no DB dependency so it stays trivially testable.
 
-import type {
-  BypassAuthority,
-  ComplianceRequirementStatus,
-  DeliverableStatus,
-  GateStatus,
-  SpendRecordStatus,
-} from "@prisma/client";
+import type { ComplianceRequirementStatus, DeliverableStatus, GateStatus, SpendRecordStatus } from "@prisma/client";
 
 /**
  * The roles the Resource/Capacity view tracks (ResourceCapacityModel.html
@@ -32,31 +26,15 @@ export const DELIVERY_FACING_ROLE_KEYS = [
   "FM_CONTRACTOR",
 ];
 
-// Exact-match authorities: not even SRO qualifies — only the named
-// role does. Kept as a set so canBypassDeliverable/canOverrideCompliance
-// share one place that knows which BypassAuthority values work this way.
-export const EXACT_MATCH_AUTHORITIES: BypassAuthority[] = [
-  "FIRE_OFFICER",
-  "AUTHORISED_PERSON_ELECTRICAL",
-  "AUTHORISED_PERSON_WATER",
-  "AUTHORISED_PERSON_VENTILATION",
-  "AUTHORISED_PERSON_MEDICAL_GASES",
-  "CLINICAL_SAFETY_OFFICER",
-  "INFORMATION_GOVERNANCE_OFFICER",
-];
-
-export const BYPASS_AUTHORITY_LABEL: Record<BypassAuthority, string> = {
-  PM: "PM",
-  COMPLIANCE_OFFICER: "Compliance Officer",
-  SRO: "SRO",
-  FIRE_OFFICER: "Fire Officer",
-  AUTHORISED_PERSON_ELECTRICAL: "Electrical AP",
-  AUTHORISED_PERSON_WATER: "Water AP",
-  AUTHORISED_PERSON_VENTILATION: "Heating & Ventilation AP",
-  AUTHORISED_PERSON_MEDICAL_GASES: "Medical Gases AP",
-  CLINICAL_SAFETY_OFFICER: "Clinical Safety Officer",
-  INFORMATION_GOVERNANCE_OFFICER: "Information Governance Officer",
-};
+// Which authorities are "exact-match" (not even SRO qualifies — only
+// the named role does) used to be a hardcoded list here. Since
+// bypassAuthority/overrideAuthority became open Role.key strings
+// rather than a fixed enum (23 Aug 2026, "fully dynamic authority
+// roles" — a brand-new role like "Head of Estates" needs the same
+// choice available at creation, not a code change), that's now
+// Role.isExactMatchAuthority in the database instead — every caller
+// below fetches the current set of exact-match role keys and passes
+// it in, keeping this file itself DB-free.
 
 /**
  * Can a user holding these roles (on this project) bypass a
@@ -96,10 +74,11 @@ export const BYPASS_AUTHORITY_LABEL: Record<BypassAuthority, string> = {
  */
 export function canBypassDeliverable(
   actorRoleKeys: string[],
-  requiredAuthority: BypassAuthority,
+  requiredAuthority: string,
+  exactMatchAuthorityKeys: Set<string>,
   actorGlobalRoleKeys: string[] = []
 ): boolean {
-  if (EXACT_MATCH_AUTHORITIES.includes(requiredAuthority)) return actorRoleKeys.includes(requiredAuthority);
+  if (exactMatchAuthorityKeys.has(requiredAuthority)) return actorRoleKeys.includes(requiredAuthority);
   if (requiredAuthority === "SRO") return actorRoleKeys.includes("SRO");
   if (requiredAuthority === "PM") {
     return actorRoleKeys.includes("SRO") || actorRoleKeys.includes("PM") || actorGlobalRoleKeys.includes("PM");
@@ -256,9 +235,10 @@ export function canUploadComplianceEvidence(actorRoleKeys: string[]): boolean {
  */
 export function canOverrideCompliance(
   actorRoleKeys: string[],
-  requiredAuthority: BypassAuthority = "SRO"
+  exactMatchAuthorityKeys: Set<string>,
+  requiredAuthority: string = "SRO"
 ): boolean {
-  if (EXACT_MATCH_AUTHORITIES.includes(requiredAuthority)) return actorRoleKeys.includes(requiredAuthority);
+  if (exactMatchAuthorityKeys.has(requiredAuthority)) return actorRoleKeys.includes(requiredAuthority);
   return actorRoleKeys.includes("SRO");
 }
 
@@ -284,12 +264,13 @@ export function canCoSignCompliance(actorRoleKeys: string[], roleKey: string): b
  */
 export function canUploadEvidence(
   actorRoleKeys: string[],
-  requiredBypassAuthority: BypassAuthority,
+  requiredBypassAuthority: string,
+  exactMatchAuthorityKeys: Set<string>,
   actorGlobalRoleKeys: string[] = []
 ): boolean {
   return (
     actorRoleKeys.includes("PM") ||
-    canBypassDeliverable(actorRoleKeys, requiredBypassAuthority, actorGlobalRoleKeys)
+    canBypassDeliverable(actorRoleKeys, requiredBypassAuthority, exactMatchAuthorityKeys, actorGlobalRoleKeys)
   );
 }
 

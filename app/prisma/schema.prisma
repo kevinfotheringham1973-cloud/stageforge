@@ -84,6 +84,16 @@ model Role {
   sectorVariantId String?
   sectorVariant   SectorVariant?          @relation(fields: [sectorVariantId], references: [id])
   assignments     ProjectRoleAssignment[]
+  // Whether SRO can bypass/override an item requiring this role as its
+  // sole authority (false — SRO inherits into it, the ordinary case) or
+  // whether this is a genuinely distinct professional/statutory
+  // authority SRO has no standing over, so only this exact role
+  // qualifies (true — e.g. Fire Officer, an Authorised Person). Set
+  // once, at role creation. Replaces the old hardcoded
+  // EXACT_MATCH_AUTHORITIES list in permissions.ts now that
+  // bypassAuthority/overrideAuthority are open role keys, not a fixed
+  // enum — see the 23 Aug 2026 "fully dynamic authority roles" change.
+  isExactMatchAuthority Boolean            @default(false)
 }
 
 // The access join — resolves the tenancy question. Grants one User
@@ -199,26 +209,16 @@ model GateTemplate {
 // a clinical governance appointment, not an engineering one, but the
 // same "no ladder, not even SRO" reasoning applies: an SRO has no more
 // clinical-safety standing than they do fire or electrical standing.
-enum BypassAuthority {
-  PM
-  COMPLIANCE_OFFICER
-  SRO
-  FIRE_OFFICER
-  AUTHORISED_PERSON_ELECTRICAL
-  AUTHORISED_PERSON_WATER
-  AUTHORISED_PERSON_VENTILATION
-  AUTHORISED_PERSON_MEDICAL_GASES
-  CLINICAL_SAFETY_OFFICER
-  // Added for the Security Systems Replacement template (21 Aug
-  // 2026): DPIA sign-off, data retention/destruction, and formal
-  // acceptance of CCTV/access control systems genuinely sit with a
-  // named Data Protection Officer/Caldicott Guardian appointment under
-  // UK GDPR/the Data Protection Act 2018 — a distinct discipline from
-  // Clinical Safety Officer (health IT clinical risk) or any
-  // engineering AP. Same exact-match reasoning as every other
-  // authority here.
-  INFORMATION_GOVERNANCE_OFFICER
-}
+// Formerly a fixed BypassAuthority enum (PM/COMPLIANCE_OFFICER/SRO/
+// FIRE_OFFICER/the AUTHORISED_PERSON_*/CLINICAL_SAFETY_OFFICER/
+// INFORMATION_GOVERNANCE_OFFICER) — converted (23 Aug 2026, "fully
+// dynamic authority roles") to plain Role.key strings on
+// bypassAuthority/overrideAuthority below, validated at the
+// application layer against real Role rows rather than a DB enum, so
+// a newly-created Role (e.g. "Head of Estates") can be assigned as an
+// authority immediately, without a schema migration. Role.isExactMatchAuthority
+// (above) now carries the "does SRO inherit into this" distinction
+// the rationale in this comment block describes.
 
 // The shared checklist-item primitive (ConfigSchema.html §02), scoped
 // to delivery for Phase 1 — compliance's use of this same shape is
@@ -234,7 +234,7 @@ model DeliverableTemplate {
   description     String?
   minFiles        Int             @default(1)
   blocksGate      Boolean         @default(true)
-  bypassAuthority BypassAuthority @default(PM)
+  bypassAuthority String          @default("PM") // a Role.key
   deliverables    Deliverable[]
 
   @@unique([gateTemplateId, key])
@@ -289,7 +289,7 @@ model ComplianceRuleTemplate {
   // SRO for almost everything (matches the historical hard-coded
   // behaviour); FIRE_OFFICER for the fire-domain rules, since an SRO
   // has no professional standing to wave through a fire-safety item.
-  overrideAuthority  BypassAuthority         @default(SRO)
+  overrideAuthority  String                  @default("SRO") // a Role.key
   // Role keys that must ALSO independently sign off before an instance
   // of this rule counts as gate-clear, on top of the evidence/override
   // above — e.g. HAI-SCRIBE needing a separate Client Authority
@@ -333,7 +333,7 @@ model ComplianceRequirement {
   status        ComplianceRequirementStatus @default(PENDING)
   // Copied from the template at instantiation, same "frozen, not a
   // live join" rule as everything else here — see canOverrideCompliance.
-  overrideAuthority BypassAuthority         @default(SRO)
+  overrideAuthority String                  @default("SRO") // a Role.key
   // Copied from the template too — see ComplianceRuleTemplate's field
   // of the same name for what this means.
   additionalApproverRoleKeys String[]       @default([])
@@ -678,7 +678,7 @@ model Deliverable {
   description     String?
   minFiles        Int                  @default(1)
   blocksGate      Boolean              @default(true)
-  bypassAuthority BypassAuthority      @default(PM)
+  bypassAuthority String               @default("PM") // a Role.key
   status          DeliverableStatus    @default(PENDING)
   evidenceFiles   EvidenceFile[]
   bypass          DeliverableBypass?

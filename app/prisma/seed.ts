@@ -61,16 +61,16 @@ async function main() {
     { key: "COMPLIANCE_OFFICER", name: "Compliance Officer" },
     { key: "RESOURCE_MANAGER", name: "Resource / Portfolio Manager" },
     { key: "FINANCE", name: "Finance" },
-    { key: "AUTHORISED_PERSON_WATER", name: "AP (Water)" },
-    { key: "AUTHORISED_PERSON_ELECTRICAL", name: "AP (Electrical)" },
-    { key: "AUTHORISED_PERSON_MEDICAL_GASES", name: "AP (Medical Gases)" },
+    { key: "AUTHORISED_PERSON_WATER", name: "AP (Water)", isExactMatchAuthority: true },
+    { key: "AUTHORISED_PERSON_ELECTRICAL", name: "AP (Electrical)", isExactMatchAuthority: true },
+    { key: "AUTHORISED_PERSON_MEDICAL_GASES", name: "AP (Medical Gases)", isExactMatchAuthority: true },
     // "Ventilation" here covers the combined Heating & Ventilation (H&V)
     // discipline — confirmed 21 Aug 2026: LTHW heating-circuit
     // isolation and hot-tapping fall under this AP, not Water AP. There
     // is deliberately no "AP (Gas)" — standard fuel gas/oil competency
     // comes from the external Gas Safe Register/OFTEC schemes, not a
     // Trust-appointed AP/AE, unlike Medical Gases above.
-    { key: "AUTHORISED_PERSON_VENTILATION", name: "AP (Heating & Ventilation)" },
+    { key: "AUTHORISED_PERSON_VENTILATION", name: "AP (Heating & Ventilation)", isExactMatchAuthority: true },
     { key: "AUTHORISING_ENGINEER_WATER", name: "AE (Water)" },
     { key: "AUTHORISING_ENGINEER_ELECTRICAL", name: "AE (Electrical)" },
     { key: "AUTHORISING_ENGINEER_MEDICAL_GASES", name: "AE (Medical Gases)" },
@@ -80,18 +80,18 @@ async function main() {
     // or reject fire-related compliance (confirmed 20 Aug
     // 2026: an SRO has no legal standing to assess fire safety). See
     // BypassAuthority.FIRE_OFFICER in schema.prisma.
-    { key: "FIRE_OFFICER", name: "Fire Officer" },
+    { key: "FIRE_OFFICER", name: "Fire Officer", isExactMatchAuthority: true },
     // Clinical governance, not an engineering AP/AE — the named
     // sign-off DCB0129/DCB0160 requires for safety-related health IT
     // systems (nurse call, staff alert). Confirmed 21 Aug
     // 2026. See BypassAuthority.CLINICAL_SAFETY_OFFICER in schema.prisma.
-    { key: "CLINICAL_SAFETY_OFFICER", name: "Clinical Safety Officer" },
+    { key: "CLINICAL_SAFETY_OFFICER", name: "Clinical Safety Officer", isExactMatchAuthority: true },
     // Information governance, not clinical or engineering — the named
     // DPO/Caldicott Guardian sign-off UK GDPR/the Data Protection Act
     // 2018 requires for DPIA, data retention/destruction, and CCTV/
     // access control acceptance. Confirmed 21 Aug 2026. See
     // BypassAuthority.INFORMATION_GOVERNANCE_OFFICER in schema.prisma.
-    { key: "INFORMATION_GOVERNANCE_OFFICER", name: "Information Governance Officer" },
+    { key: "INFORMATION_GOVERNANCE_OFFICER", name: "Information Governance Officer", isExactMatchAuthority: true },
   ];
   const roles = Object.fromEntries(
     await Promise.all(
