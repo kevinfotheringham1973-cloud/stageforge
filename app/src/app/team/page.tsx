@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { createUser } from "@/lib/actions";
+import { createRole, createUser } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { TeamRoster } from "@/components/TeamRoster";
-import { notFound } from "next/navigation";
+import { forbidden } from "next/navigation";
 
 /**
  * Platform-admin-only. The in-app replacement for hand-editing
@@ -15,7 +15,7 @@ import { notFound } from "next/navigation";
  */
 export default async function TeamPage() {
   const currentUser = await getCurrentUser();
-  if (!currentUser?.isPlatformAdmin) notFound();
+  if (!currentUser?.isPlatformAdmin) forbidden();
 
   const [usersRaw, departments, projects, roles] = await Promise.all([
     db.user.findMany({
@@ -83,6 +83,61 @@ export default async function TeamPage() {
             Add person
           </SubmitButton>
         </form>
+      </div>
+
+      <div className="mb-8 rounded-lg border border-rule bg-surface p-5">
+        <h2 className="mb-3 font-mono text-[10px] font-bold uppercase tracking-wide text-accent">+ Add role</h2>
+        <p className="mb-3 text-sm text-inkmuted">
+          A role is a job/appointment, like &ldquo;Fire Officer&rdquo; or &ldquo;Compliance Officer&rdquo; — not a
+          specific person. Add one here (e.g. &ldquo;Head of Estates&rdquo;) and it becomes available straight
+          away wherever roles are used: assigning someone to a project below, and on the{" "}
+          <a href="/compliance-rules" className="text-accent underline">
+            Compliance rules
+          </a>{" "}
+          page as an override or sign-off authority.
+        </p>
+        <form action={createRole} className="flex flex-col gap-3">
+          <div>
+            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              Role name
+            </label>
+            <input
+              name="name"
+              placeholder="e.g. Head of Estates"
+              required
+              className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+            />
+          </div>
+          <label className="flex max-w-xl items-start gap-2 text-sm">
+            <input type="checkbox" name="isExactMatchAuthority" className="mt-0.5" />
+            <span>
+              This role can act on its own, and nobody else can act in its place — not even the Senior
+              Responsible Owner. Tick this for a genuinely distinct professional or statutory authority (like Fire
+              Officer, who an SRO has no standing to override). Leave it unticked for an ordinary role the SRO can
+              still act through if needed (like Compliance Officer).
+            </span>
+          </label>
+          <div>
+            <SubmitButton pendingText="Adding…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
+              Add role
+            </SubmitButton>
+          </div>
+        </form>
+
+        <h3 className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Existing roles</h3>
+        <div className="flex flex-wrap gap-1.5">
+          {roles.map((role) => (
+            <span
+              key={role.id}
+              className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+                role.isExactMatchAuthority ? "bg-risk/15 text-risk" : "bg-accentsoft text-accent"
+              }`}
+              title={role.isExactMatchAuthority ? "Nobody else, including SRO, can act in its place" : "SRO can act through this role too"}
+            >
+              {role.name}
+            </span>
+          ))}
+        </div>
       </div>
 
       <TeamRoster users={users} projects={projects} roles={roles} />

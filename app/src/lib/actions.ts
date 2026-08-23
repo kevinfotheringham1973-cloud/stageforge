@@ -1,6 +1,5 @@
 "use server";
 
-import type { BypassAuthority } from "@prisma/client";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -12,7 +11,6 @@ import {
   SESSION_COOKIE_NAME,
 } from "./session";
 import {
-  BYPASS_AUTHORITY_LABEL,
   canApproveSpend,
   canBypassDeliverable,
   canCoSignCompliance,
@@ -63,6 +61,25 @@ function startGateUpdate(gateId: string, currentStatus: string) {
         }),
       ]
     : [];
+}
+
+/**
+ * bypassAuthority/overrideAuthority are open Role.key strings now, not
+ * a fixed enum (23 Aug 2026, "fully dynamic authority roles") — every
+ * caller that needs to know which roles are exact-match (SRO doesn't
+ * inherit into them) or needs a display name fetches both here, the
+ * same DB-read-at-the-call-site pattern permissions.ts's canBypass
+ * and canOverrideCompliance already expect.
+ */
+async function fetchRoleAuthorityContext(): Promise<{
+  exactMatchAuthorityKeys: Set<string>;
+  roleNameByKey: Record<string, string>;
+}> {
+  const roles = await db.role.findMany({ select: { key: true, name: true, isExactMatchAuthority: true } });
+  return {
+    exactMatchAuthorityKeys: new Set(roles.filter((r) => r.isExactMatchAuthority).map((r) => r.key)),
+    roleNameByKey: Object.fromEntries(roles.map((r) => [r.key, r.name])),
+  };
 }
 
 /**
@@ -172,14 +189,15 @@ export async function bypassDeliverable(
 
   const deliverable = await db.deliverable.findUniqueOrThrow({ where: { id: deliverableId } });
   const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
-  const [roleKeys, globalRoleKeys] = await Promise.all([
+  const [roleKeys, globalRoleKeys, { exactMatchAuthorityKeys, roleNameByKey }] = await Promise.all([
     getCurrentUserRoleKeysForProject(gate.stage.projectId),
     getCurrentUserGlobalRoleKeys(),
+    fetchRoleAuthorityContext(),
   ]);
 
-  if (!canBypassDeliverable(roleKeys, deliverable.bypassAuthority, globalRoleKeys)) {
+  if (!canBypassDeliverable(roleKeys, deliverable.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys)) {
     throw new Error(
-      `This deliverable requires ${BYPASS_AUTHORITY_LABEL[deliverable.bypassAuthority]} authority to bypass — your current roles on this project don't qualify.`
+      `This deliverable requires ${roleNameByKey[deliverable.bypassAuthority] ?? deliverable.bypassAuthority} authority to bypass — your current roles on this project don't qualify.`
     );
   }
 
@@ -279,7 +297,10 @@ export async function overrideCompliance(gateId: string, projectNumber: string, 
     where: { id: gateId },
     include: { stage: true, complianceRequirements: true },
   });
-  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  const [roleKeys, { exactMatchAuthorityKeys, roleNameByKey }] = await Promise.all([
+    getCurrentUserRoleKeysForProject(gate.stage.projectId),
+    fetchRoleAuthorityContext(),
+  ]);
 
   const outstanding = gate.complianceRequirements.filter((c) => c.blocksGate && c.status === "PENDING");
   if (outstanding.length === 0) {
@@ -293,10 +314,12 @@ export async function overrideCompliance(gateId: string, projectNumber: string, 
   // canOverrideCompliance). Those have to be resolved separately by
   // whoever actually holds each authority.
   const requiredAuthorities = Array.from(new Set(outstanding.map((c) => c.overrideAuthority)));
-  const missingAuthorities = requiredAuthorities.filter((auth) => !canOverrideCompliance(roleKeys, auth));
+  const missingAuthorities = requiredAuthorities.filter(
+    (auth) => !canOverrideCompliance(roleKeys, exactMatchAuthorityKeys, auth)
+  );
   if (missingAuthorities.length > 0) {
     throw new Error(
-      `Overriding every outstanding item on this gate at once requires ${missingAuthorities.map((a) => BYPASS_AUTHORITY_LABEL[a]).join(" and ")} authority — you're missing ${missingAuthorities.length > 1 ? "these" : "this"}.`
+      `Overriding every outstanding item on this gate at once requires ${missingAuthorities.map((a) => roleNameByKey[a] ?? a).join(" and ")} authority — you're missing ${missingAuthorities.length > 1 ? "these" : "this"}.`
     );
   }
 
@@ -1450,6 +1473,51 @@ export async function assignUserToProject(userId: string, formData: FormData) {
   revalidatePath(`/projects/${(await db.project.findUniqueOrThrow({ where: { id: projectId } })).projectNumber}`);
 }
 
+/**
+ * Platform-admin-only. Creates a brand-new Role — the thing that
+ * makes "add a resource like Head of Estates, then use it as a
+ * sign-off or override authority" possible without a code change
+ * (23 Aug 2026, "fully dynamic authority roles"). The key is derived
+ * from the name (UPPER_SNAKE_CASE, matching every existing role —
+ * "Head of Estates" -> HEAD_OF_ESTATES) rather than typed separately,
+ * since a mistyped key is invisible until something silently fails to
+ * match it later. isExactMatchAuthority decides, once, whether SRO can
+ * act through this role (false — the ordinary case, like Compliance
+ * Officer) or whether it's a genuinely distinct authority SRO has no
+ * standing over (true — like Fire Officer); see Role.isExactMatchAuthority
+ * in schema.prisma for the full reasoning.
+ */
+export async function createRole(formData: FormData) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can add a role.");
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) throw new Error("A name is required.");
+  const key = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  if (!key) throw new Error("That name doesn't produce a usable role key — try adding a letter or number.");
+
+  const existing = await db.role.findUnique({ where: { key } });
+  if (existing) {
+    throw new Error(`A role called "${existing.name}" already exists (key ${key}).`);
+  }
+
+  const isExactMatchAuthority = formData.get("isExactMatchAuthority") === "on";
+
+  const created = await db.role.create({ data: { key, name, isExactMatchAuthority } });
+  await db.auditLogEntry.create({
+    data: { actorId, action: "role.created", entityType: "Role", entityId: created.id },
+  });
+
+  revalidatePath("/", "layout");
+}
+
 // ── Compliance rule approvals ───────────────────────────────────────
 
 /**
@@ -1474,13 +1542,13 @@ export async function updateComplianceRuleApprovals(templateId: string, formData
     throw new Error("Only a platform admin can change compliance rule approvals.");
   }
 
-  const overrideAuthorityRaw = String(formData.get("overrideAuthority") ?? "").trim();
-  if (!(overrideAuthorityRaw in BYPASS_AUTHORITY_LABEL)) {
-    throw new Error(`Unknown override authority: ${overrideAuthorityRaw}.`);
-  }
-  const overrideAuthority = overrideAuthorityRaw as BypassAuthority;
-
   const validRoleKeys = new Set((await db.role.findMany({ select: { key: true } })).map((r) => r.key));
+
+  const overrideAuthority = String(formData.get("overrideAuthority") ?? "").trim();
+  if (!validRoleKeys.has(overrideAuthority)) {
+    throw new Error(`Unknown override authority: ${overrideAuthority}.`);
+  }
+
   const additionalApproverRoleKeys = formData.getAll("additionalApproverRoleKeys").map(String);
   const invalidKeys = additionalApproverRoleKeys.filter((k) => !validRoleKeys.has(k));
   if (invalidKeys.length > 0) {

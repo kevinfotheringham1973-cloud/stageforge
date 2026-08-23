@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
   // the "Blocked cross-origin request" warnings this produced in the
   // dev server log. 21 Aug 2026.
   allowedDevOrigins: ["stageforge.pmopassport.co.uk"],
+  // forbidden() (used by admin-only pages like /team, /compliance-rules)
+  // needs this on to render a clear "you don't have access" message with
+  // a real 403 status, instead of the generic 404 not-found page —
+  // otherwise a permissions problem looks indistinguishable from a typo
+  // in the URL, which isn't an honest message for the target audience.
+  experimental: {
+    authInterrupts: true,
+  },
 };
 
 export default nextConfig;

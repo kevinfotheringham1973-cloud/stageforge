@@ -3,7 +3,6 @@ import { getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "
 import { evidenceFolderPath } from "@/lib/sharepoint";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
-  BYPASS_AUTHORITY_LABEL,
   canApproveSpend,
   canBypassDeliverable,
   canCoSignCompliance,
@@ -14,7 +13,6 @@ import {
   canSetGateTimeline,
   canUploadComplianceEvidence,
   canUploadEvidence,
-  EXACT_MATCH_AUTHORITIES,
   GATE_TIMELINE_BAR_CLASS,
   GATE_TIMELINE_LABELS,
   gateTimelineStatus,
@@ -154,10 +152,12 @@ export async function GateDetail({
     getCurrentUserGlobalRoleKeys(),
     db.role.findMany(),
   ]);
-  // additionalApproverRoleKeys can name any Role, not just the narrower
-  // BypassAuthority set BYPASS_AUTHORITY_LABEL covers (e.g. Client
-  // Authority isn't a bypass authority) — a real lookup, not a guess.
+  // Real lookups, not guesses — bypassAuthority/overrideAuthority are
+  // open Role.key strings now (23 Aug 2026, "fully dynamic authority
+  // roles"), so both the display name and "does SRO inherit into this"
+  // come from the current Role rows, not a fixed enum/list.
   const roleLabelByKey = Object.fromEntries(allRoles.map((r) => [r.key, r.name]));
+  const exactMatchAuthorityKeys = new Set(allRoles.filter((r) => r.isExactMatchAuthority).map((r) => r.key));
   const ready = isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements, gate.spendRecords);
   const outstanding = gate.deliverables.filter((d) => d.blocksGate && d.status === "PENDING").length;
   // "Outstanding" means not yet truly gate-clear — PENDING, or already
@@ -179,7 +179,7 @@ export async function GateDetail({
   const canOverride =
     pendingComplianceItems.length > 0 &&
     Array.from(new Set(pendingComplianceItems.map((c) => c.overrideAuthority))).every((auth) =>
-      canOverrideCompliance(roleKeys, auth)
+      canOverrideCompliance(roleKeys, exactMatchAuthorityKeys, auth)
     );
   const canRecord = canRecordSpend(roleKeys);
   const canApprove = canApproveSpend(roleKeys);
@@ -327,16 +327,19 @@ export async function GateDetail({
 
           <div className="flex flex-col gap-3">
             {gate.deliverables.map((d) => {
-              const canBypass = d.status === "PENDING" && canBypassDeliverable(roleKeys, d.bypassAuthority, globalRoleKeys);
-              const canReplaceEvidence = gate.status !== "SIGNED_OFF" && canUploadEvidence(roleKeys, d.bypassAuthority, globalRoleKeys);
+              const canBypass =
+                d.status === "PENDING" &&
+                canBypassDeliverable(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
+              const canReplaceEvidence =
+                gate.status !== "SIGNED_OFF" &&
+                canUploadEvidence(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
               const canUpload = d.status === "PENDING" && canReplaceEvidence;
 
               // Statutory ceiling gets a visibly heavier treatment than a routine
               // Compliance-Officer-level item — an SRO-, Fire-Officer-, or
               // Authorised-Person-only requirement should never read the same
               // as a document a PM can wave through themselves.
-              const isHeavyAuthority =
-                d.bypassAuthority === "SRO" || EXACT_MATCH_AUTHORITIES.includes(d.bypassAuthority);
+              const isHeavyAuthority = d.bypassAuthority === "SRO" || exactMatchAuthorityKeys.has(d.bypassAuthority);
               const cardClass = isHeavyAuthority
                 ? "border-2 border-risk bg-risk/5"
                 : d.bypassAuthority === "COMPLIANCE_OFFICER"
@@ -353,7 +356,7 @@ export async function GateDetail({
                           isHeavyAuthority ? "bg-risk text-white" : "bg-accentsoft text-flag"
                         }`}
                       >
-                        Requires {BYPASS_AUTHORITY_LABEL[d.bypassAuthority]}
+                        Requires {roleLabelByKey[d.bypassAuthority] ?? d.bypassAuthority}
                       </span>
                     )}
                   </div>
@@ -468,7 +471,7 @@ export async function GateDetail({
                 o.coveredRequirementIds.includes(c.id)
               );
 
-              const isExactMatchOverride = EXACT_MATCH_AUTHORITIES.includes(c.overrideAuthority);
+              const isExactMatchOverride = exactMatchAuthorityKeys.has(c.overrideAuthority);
               const cardClass = isExactMatchOverride ? "border-2 border-risk bg-risk/5" : "border-dashed border-flag bg-surface";
 
               return (
@@ -480,7 +483,7 @@ export async function GateDetail({
                         isExactMatchOverride ? "bg-risk text-white" : "bg-accentsoft text-flag"
                       }`}
                     >
-                      {isExactMatchOverride ? `Requires ${BYPASS_AUTHORITY_LABEL[c.overrideAuthority]}` : "Compliance"}
+                      {isExactMatchOverride ? `Requires ${roleLabelByKey[c.overrideAuthority] ?? c.overrideAuthority}` : "Compliance"}
                     </span>
                   </div>
                   {c.description && <p className="mb-1 text-sm text-inkmuted">{c.description}</p>}
@@ -607,7 +610,7 @@ export async function GateDetail({
                 {pendingComplianceItems.length} compliance requirement(s) still outstanding on this gate — one
                 override clears all of them at once, not item by item. Requires{" "}
                 {Array.from(new Set(pendingComplianceItems.map((c) => c.overrideAuthority)))
-                  .map((a) => BYPASS_AUTHORITY_LABEL[a])
+                  .map((a) => roleLabelByKey[a] ?? a)
                   .join(" and ")}{" "}
                 authority.
               </div>

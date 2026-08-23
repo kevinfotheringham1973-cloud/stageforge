@@ -1,9 +1,8 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { updateComplianceRuleApprovals } from "@/lib/actions";
-import { BYPASS_AUTHORITY_LABEL } from "@/lib/permissions";
 import { SubmitButton } from "@/components/SubmitButton";
-import { notFound } from "next/navigation";
+import { forbidden } from "next/navigation";
 
 /**
  * Platform-admin-only. Configures each ComplianceRuleTemplate's
@@ -17,7 +16,7 @@ import { notFound } from "next/navigation";
  */
 export default async function ComplianceRulesPage() {
   const currentUser = await getCurrentUser();
-  if (!currentUser?.isPlatformAdmin) notFound();
+  if (!currentUser?.isPlatformAdmin) forbidden();
 
   const [ruleSets, roles] = await Promise.all([
     db.complianceRuleSet.findMany({
@@ -57,9 +56,9 @@ export default async function ComplianceRulesPage() {
                         defaultValue={rule.overrideAuthority}
                         className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
                       >
-                        {Object.entries(BYPASS_AUTHORITY_LABEL).map(([key, label]) => (
-                          <option key={key} value={key}>
-                            {label}
+                        {roles.map((role) => (
+                          <option key={role.key} value={role.key}>
+                            {role.name}
                           </option>
                         ))}
                       </select>

@@ -7,7 +7,7 @@
 // time — the same "copy at instantiation, never a live join" rule
 // applies to every caller.
 
-import type { BypassAuthority, PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "./compliance";
 
 type StageTemplateForInstantiation = {
@@ -24,7 +24,7 @@ type StageTemplateForInstantiation = {
       description: string | null;
       minFiles: number;
       blocksGate: boolean;
-      bypassAuthority: BypassAuthority;
+      bypassAuthority: string;
     }[];
   } | null;
 };
