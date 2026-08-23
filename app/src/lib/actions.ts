@@ -29,6 +29,7 @@ import { issueNextProjectNumber } from "./projectNumber";
 import { assignStandardTeam } from "./standardTeam";
 import { resolveWorksPackageId } from "./worksPackages";
 import { sendScheduledReport } from "./scheduledReportSender";
+import { evidenceFolderPath, isSharePointConfigured, uploadEvidenceFile } from "./sharepoint";
 
 export async function setActingUser(formData: FormData) {
   const userId = String(formData.get("userId") ?? "");
@@ -63,12 +64,40 @@ function startGateUpdate(gateId: string, currentStatus: string) {
 }
 
 /**
+ * Reads the uploaded File from the form and resolves where it actually
+ * lives: uploaded to the configured SharePoint site (real fileRef =
+ * the Graph webUrl) when the AZURE_ and SHAREPOINT_ env vars are set, or the
+ * pre-existing local dev stub otherwise. Same fallback either way keeps
+ * the demo usable with zero setup, while flipping on for real the
+ * moment credentials + a real site are in place — no other code change
+ * needed.
+ */
+async function resolveEvidenceUpload(
+  formData: FormData,
+  project: { name: string; projectNumber: string },
+  stageName: string
+): Promise<{ fileName: string; fileRef: string }> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("A file is required.");
+  }
+
+  if (isSharePointConfigured()) {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const folderPath = evidenceFolderPath(project, stageName);
+    const uploaded = await uploadEvidenceFile(folderPath, file.name, buffer);
+    return { fileName: file.name, fileRef: uploaded.webUrl };
+  }
+
+  return { fileName: file.name, fileRef: `local://dev-upload/${file.name}` };
+}
+
+/**
  * Records evidence against a deliverable — the first upload, or a
  * replacement before sign-off (DataModel.html: "version history when
- * a file is replaced before sign-off"). Real evidence storage is out
- * of scope for this scaffold — this records a file NAME, not an
- * actual upload. "Who can upload" beyond "PM, or whoever has this
- * item's bypass authority" isn't pinned down in the PRD yet.
+ * a file is replaced before sign-off"). "Who can upload" beyond "PM, or
+ * whoever has this item's bypass authority" isn't pinned down in the
+ * PRD yet.
  */
 export async function recordEvidenceStub(
   deliverableId: string,
@@ -76,16 +105,18 @@ export async function recordEvidenceStub(
   gateId: string,
   formData: FormData
 ) {
-  const fileName = String(formData.get("fileName") ?? "").trim();
-  if (!fileName) throw new Error("A file name is required.");
-
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
 
-  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId } });
+  const gate = await db.gate.findUniqueOrThrow({
+    where: { id: gateId },
+    include: { stage: { include: { project: true } } },
+  });
   if (gate.status === "SIGNED_OFF") {
     throw new Error("This gate is already signed off — evidence can't be replaced after the fact.");
   }
+
+  const { fileName, fileRef } = await resolveEvidenceUpload(formData, gate.stage.project, gate.stage.name);
 
   const existingFiles = await db.evidenceFile.findMany({
     where: { deliverableId },
@@ -100,7 +131,7 @@ export async function recordEvidenceStub(
       data: {
         deliverableId,
         fileName,
-        fileRef: `local://dev-upload/${fileName}`,
+        fileRef,
         version: nextVersion,
         uploadedById: userId,
       },
@@ -165,11 +196,10 @@ export async function bypassDeliverable(
 
 /**
  * Records evidence against a compliance requirement — mirrors
- * recordEvidenceStub exactly (same dev-stub caveat: records a file
- * name, not an actual upload). A requirement clears normally with
- * evidence, independently of every other requirement on the gate —
- * the all-at-once clearing mechanic belongs to overrideCompliance
- * below, not this.
+ * recordEvidenceStub exactly, including the same real-SharePoint-vs-stub
+ * resolution. A requirement clears normally with evidence, independently
+ * of every other requirement on the gate — the all-at-once clearing
+ * mechanic belongs to overrideCompliance below, not this.
  */
 export async function recordComplianceEvidenceStub(
   complianceRequirementId: string,
@@ -177,16 +207,18 @@ export async function recordComplianceEvidenceStub(
   gateId: string,
   formData: FormData
 ) {
-  const fileName = String(formData.get("fileName") ?? "").trim();
-  if (!fileName) throw new Error("A file name is required.");
-
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
 
-  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId } });
+  const gate = await db.gate.findUniqueOrThrow({
+    where: { id: gateId },
+    include: { stage: { include: { project: true } } },
+  });
   if (gate.status === "SIGNED_OFF") {
     throw new Error("This gate is already signed off — evidence can't be replaced after the fact.");
   }
+
+  const { fileName, fileRef } = await resolveEvidenceUpload(formData, gate.stage.project, gate.stage.name);
 
   const existingFiles = await db.complianceEvidenceFile.findMany({
     where: { complianceRequirementId },
@@ -201,7 +233,7 @@ export async function recordComplianceEvidenceStub(
       data: {
         complianceRequirementId,
         fileName,
-        fileRef: `local://dev-upload/${fileName}`,
+        fileRef,
         version: nextVersion,
         uploadedById: userId,
       },
