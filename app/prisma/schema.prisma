@@ -94,6 +94,20 @@ model Role {
   // bypassAuthority/overrideAuthority are open role keys, not a fixed
   // enum — see the 23 Aug 2026 "fully dynamic authority roles" change.
   isExactMatchAuthority Boolean            @default(false)
+  // Purely a display grouping — lets the compliance-rules screen cluster
+  // its (now unbounded) role checkboxes/dropdown instead of one long flat
+  // list. Unlike bypassAuthority/overrideAuthority this set of buckets is
+  // deliberately small and closed, so it stays a real enum rather than an
+  // open string. Set once, at role creation; defaults to PROJECT_TEAM for
+  // anything the admin doesn't categorise.
+  category              RoleCategory       @default(PROJECT_TEAM)
+}
+
+enum RoleCategory {
+  AUTHORISED_PERSON_ENGINEER
+  STATUTORY_OFFICER
+  SENIOR_CONTRACTUAL
+  PROJECT_TEAM
 }
 
 // The access join — resolves the tenancy question. Grants one User

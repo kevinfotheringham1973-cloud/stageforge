@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
+import { RoleCategory } from "@prisma/client";
 import {
   getCurrentUserGlobalRoleKeys,
   getCurrentUserId,
@@ -1510,7 +1511,12 @@ export async function createRole(formData: FormData) {
 
   const isExactMatchAuthority = formData.get("isExactMatchAuthority") === "on";
 
-  const created = await db.role.create({ data: { key, name, isExactMatchAuthority } });
+  const categoryInput = String(formData.get("category") ?? "");
+  const category = (Object.values(RoleCategory) as string[]).includes(categoryInput)
+    ? (categoryInput as RoleCategory)
+    : RoleCategory.PROJECT_TEAM;
+
+  const created = await db.role.create({ data: { key, name, isExactMatchAuthority, category } });
   await db.auditLogEntry.create({
     data: { actorId, action: "role.created", entityType: "Role", entityId: created.id },
   });
