@@ -3076,6 +3076,12 @@ async function main() {
         blocksGate: true,
         appliesToStageKeys: ["stage.spatial_coordination"],
         appliesIfTags: [],
+        // Worked example (23 Aug 2026) for multi-party approval: the
+        // Compliance Officer enforces the base requirement, but the
+        // Client Authority (the NHS side) also independently signs off
+        // the same submission before it's truly done — see
+        // ComplianceRuleTemplate.additionalApproverRoleKeys.
+        additionalApproverRoleKeys: ["CLIENT_AUTHORITY"],
       },
       // Every project gets the baseline HAI-SCRIBE check above at
       // Spatial Coordination. The HAI-SCRIBE vs RIBA intensity

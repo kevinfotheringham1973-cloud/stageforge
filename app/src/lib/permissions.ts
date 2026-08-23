@@ -125,17 +125,40 @@ export function canDecideGate(actorRoleKeys: string[]): boolean {
  * FinancialModel.html's gate-level revision) — all three must clear,
  * none substitutes for another.
  */
+/**
+ * A blocking compliance requirement is truly clear only once its base
+ * status is resolved AND every role in additionalApproverRoleKeys has
+ * independently co-signed (parallel, not sequential — order doesn't
+ * matter). Overriding does NOT skip this: a requirement someone
+ * "waved through" without evidence still needs its second party's
+ * sign-off, otherwise this whole feature would just be overridden
+ * around. Exported separately from isGateReadyForSponsor so the UI can
+ * use the same "is this one item actually done" check the gate does.
+ */
+export function isComplianceRequirementClear(c: {
+  status: ComplianceRequirementStatus;
+  additionalApproverRoleKeys: string[];
+  coSignOffs: { roleKey: string }[];
+}): boolean {
+  if (c.status !== "EVIDENCED" && c.status !== "OVERRIDDEN") return false;
+  const signedRoles = new Set(c.coSignOffs.map((s) => s.roleKey));
+  return c.additionalApproverRoleKeys.every((role) => signedRoles.has(role));
+}
+
 export function isGateReadyForSponsor(
   deliverables: { status: DeliverableStatus; blocksGate: boolean }[],
-  complianceRequirements: { status: ComplianceRequirementStatus; blocksGate: boolean }[] = [],
+  complianceRequirements: {
+    status: ComplianceRequirementStatus;
+    blocksGate: boolean;
+    additionalApproverRoleKeys: string[];
+    coSignOffs: { roleKey: string }[];
+  }[] = [],
   spendRecords: { status: SpendRecordStatus; blocksGate: boolean }[] = []
 ): boolean {
   const deliveryReady = deliverables.every(
     (d) => !d.blocksGate || d.status === "EVIDENCED" || d.status === "BYPASSED"
   );
-  const complianceReady = complianceRequirements.every(
-    (c) => !c.blocksGate || c.status === "EVIDENCED" || c.status === "OVERRIDDEN"
-  );
+  const complianceReady = complianceRequirements.every((c) => !c.blocksGate || isComplianceRequirementClear(c));
   const spendReady = spendRecords.every((s) => !s.blocksGate || s.status === "APPROVED");
   return deliveryReady && complianceReady && spendReady;
 }
@@ -237,6 +260,18 @@ export function canOverrideCompliance(
 ): boolean {
   if (EXACT_MATCH_AUTHORITIES.includes(requiredAuthority)) return actorRoleKeys.includes(requiredAuthority);
   return actorRoleKeys.includes("SRO");
+}
+
+/**
+ * Co-signing an additional-approver requirement (see
+ * ComplianceRuleTemplate.additionalApproverRoleKeys) is a plain
+ * exact-match against that specific role on this project — no SRO
+ * apex, no Compliance Officer fallback. The whole point is that this
+ * is a genuinely independent second party, not another route to the
+ * same authority the primary evidence/override already used.
+ */
+export function canCoSignCompliance(actorRoleKeys: string[], roleKey: string): boolean {
+  return actorRoleKeys.includes(roleKey);
 }
 
 /**

@@ -2,6 +2,7 @@ import { db } from "./db";
 import {
   gateTimelineStatus,
   GATE_TIMELINE_LABELS,
+  isComplianceRequirementClear,
   isProjectStillLive,
   type GateTimelineStatus,
 } from "./permissions";
@@ -33,7 +34,13 @@ export async function getPortfolioRows(): Promise<PortfolioRow[]> {
       stages: {
         orderBy: { order: "asc" },
         include: {
-          gate: { include: { deliverables: true, complianceRequirements: true, spendRecords: true } },
+          gate: {
+            include: {
+              deliverables: true,
+              complianceRequirements: { include: { coSignOffs: true } },
+              spendRecords: true,
+            },
+          },
         },
       },
     },
@@ -57,7 +64,7 @@ export async function getPortfolioRows(): Promise<PortfolioRow[]> {
         .filter((d) => d.blocksGate && d.status === "PENDING").length;
       const outstandingCompliance = gates
         .flatMap((g) => g.complianceRequirements)
-        .filter((c) => c.blocksGate && c.status === "PENDING").length;
+        .filter((c) => c.blocksGate && !isComplianceRequirementClear(c)).length;
 
       const timeline = currentGate ? gateTimelineStatus(currentGate) : "NO_TARGET";
 

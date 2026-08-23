@@ -14,6 +14,7 @@ import {
   BYPASS_AUTHORITY_LABEL,
   canApproveSpend,
   canBypassDeliverable,
+  canCoSignCompliance,
   canDecideGate,
   canManageScheduledReports,
   canOverrideCompliance,
@@ -322,6 +323,63 @@ export async function overrideCompliance(gateId: string, projectNumber: string, 
 }
 
 /**
+ * Records one required additional party's independent sign-off on a
+ * compliance requirement (ComplianceRuleTemplate/ComplianceRequirement
+ * .additionalApproverRoleKeys) — parallel, not sequential, and layered
+ * on top of the normal evidence/override flow rather than replacing
+ * it: a requirement only counts as gate-clear once its own status is
+ * resolved AND every required role here has co-signed (see
+ * isComplianceRequirementClear in permissions.ts). Deliberately a
+ * plain exact-match on roleKey, no SRO apex — this is meant to be a
+ * genuinely independent second party, not another route to the same
+ * authority the primary evidence/override already used.
+ */
+export async function recordComplianceCoSignOff(
+  complianceRequirementId: string,
+  projectNumber: string,
+  gateId: string,
+  roleKey: string
+) {
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const requirement = await db.complianceRequirement.findUniqueOrThrow({
+    where: { id: complianceRequirementId },
+    include: { gate: { include: { stage: true } } },
+  });
+  if (!requirement.additionalApproverRoleKeys.includes(roleKey)) {
+    throw new Error(`This requirement doesn't ask for a ${roleKey} sign-off.`);
+  }
+  if (requirement.status !== "EVIDENCED" && requirement.status !== "OVERRIDDEN") {
+    throw new Error("This requirement needs evidence or an override before it can be signed off.");
+  }
+
+  const roleKeys = await getCurrentUserRoleKeysForProject(requirement.gate.stage.projectId);
+  if (!canCoSignCompliance(roleKeys, roleKey)) {
+    throw new Error(`Only someone holding the ${roleKey} role on this project can sign this off.`);
+  }
+
+  await db.$transaction([
+    db.complianceCoSignOff.create({
+      data: { complianceRequirementId, roleKey, signedOffById: userId },
+    }),
+    db.auditLogEntry.create({
+      data: {
+        actorId: userId,
+        action: "compliance.cosigned",
+        gateId,
+        entityType: "ComplianceRequirement",
+        entityId: complianceRequirementId,
+        reason: `Signed off as ${roleKey}`,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
  * Records an invoice-level spend against a gate (FinancialModel.html,
  * revised: spend is checked and approved at each gate). PM/SRO —
  * the PM logs what's been spent, Finance checks it. Starts PENDING —
@@ -554,7 +612,12 @@ export async function submitForApproval(gateId: string, projectNumber: string) {
 
   const gate = await db.gate.findUniqueOrThrow({
     where: { id: gateId },
-    include: { stage: true, deliverables: true, complianceRequirements: true, spendRecords: true },
+    include: {
+      stage: true,
+      deliverables: true,
+      complianceRequirements: { include: { coSignOffs: true } },
+      spendRecords: true,
+    },
   });
 
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
@@ -588,7 +651,12 @@ async function decide(
 
   const gate = await db.gate.findUniqueOrThrow({
     where: { id: gateId },
-    include: { stage: true, deliverables: true, complianceRequirements: true, spendRecords: true },
+    include: {
+      stage: true,
+      deliverables: true,
+      complianceRequirements: { include: { coSignOffs: true } },
+      spendRecords: true,
+    },
   });
 
   const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
