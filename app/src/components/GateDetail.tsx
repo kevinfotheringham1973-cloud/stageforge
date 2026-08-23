@@ -6,6 +6,7 @@ import {
   BYPASS_AUTHORITY_LABEL,
   canApproveSpend,
   canBypassDeliverable,
+  canCoSignCompliance,
   canDecideGate,
   canOverrideCompliance,
   canRecordLessonLearned,
@@ -17,6 +18,7 @@ import {
   GATE_TIMELINE_BAR_CLASS,
   GATE_TIMELINE_LABELS,
   gateTimelineStatus,
+  isComplianceRequirementClear,
   isGateReadyForSponsor,
 } from "@/lib/permissions";
 import {
@@ -25,6 +27,7 @@ import {
   bypassDeliverable,
   deleteSpendRecord,
   overrideCompliance,
+  recordComplianceCoSignOff,
   recordComplianceEvidenceStub,
   recordEvidenceStub,
   recordLessonLearned,
@@ -128,6 +131,7 @@ export async function GateDetail({
         orderBy: { createdAt: "asc" },
         include: {
           evidenceFiles: { orderBy: { uploadedAt: "desc" } },
+          coSignOffs: { include: { signedOffBy: true } },
         },
       },
       complianceOverrides: { orderBy: { createdAt: "desc" }, include: { overriddenBy: true } },
@@ -145,23 +149,36 @@ export async function GateDetail({
   });
   if (!gate || gate.stage.project.projectNumber !== projectNumber) notFound();
 
-  const [roleKeys, globalRoleKeys] = await Promise.all([
+  const [roleKeys, globalRoleKeys, allRoles] = await Promise.all([
     getCurrentUserRoleKeysForProject(gate.stage.projectId),
     getCurrentUserGlobalRoleKeys(),
+    db.role.findMany(),
   ]);
+  // additionalApproverRoleKeys can name any Role, not just the narrower
+  // BypassAuthority set BYPASS_AUTHORITY_LABEL covers (e.g. Client
+  // Authority isn't a bypass authority) — a real lookup, not a guess.
+  const roleLabelByKey = Object.fromEntries(allRoles.map((r) => [r.key, r.name]));
   const ready = isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements, gate.spendRecords);
   const outstanding = gate.deliverables.filter((d) => d.blocksGate && d.status === "PENDING").length;
-  const outstandingCompliance = gate.complianceRequirements.filter(
-    (c) => c.blocksGate && c.status === "PENDING"
-  ).length;
+  // "Outstanding" means not yet truly gate-clear — PENDING, or already
+  // EVIDENCED/OVERRIDDEN but still waiting on a required additional
+  // approver's co-sign (see isComplianceRequirementClear).
+  const outstandingComplianceItems = gate.complianceRequirements.filter(
+    (c) => c.blocksGate && !isComplianceRequirementClear(c)
+  );
+  const outstandingCompliance = outstandingComplianceItems.length;
   const outstandingSpend = gate.spendRecords.filter((s) => s.blocksGate && s.status === "PENDING").length;
-  const outstandingComplianceItems = gate.complianceRequirements.filter((c) => c.blocksGate && c.status === "PENDING");
+  // Bulk "override all outstanding" only acts on items with no
+  // decision recorded yet — a PENDING subset of the above, since
+  // override can't do anything for an item that's already
+  // EVIDENCED/OVERRIDDEN and just waiting on a co-sign.
+  const pendingComplianceItems = gate.complianceRequirements.filter((c) => c.blocksGate && c.status === "PENDING");
   // Bulk "override all outstanding" only makes sense when the actor
   // holds authority for every distinct authority among them — see the
   // matching check in actions.ts#overrideCompliance.
   const canOverride =
-    outstandingComplianceItems.length > 0 &&
-    Array.from(new Set(outstandingComplianceItems.map((c) => c.overrideAuthority))).every((auth) =>
+    pendingComplianceItems.length > 0 &&
+    Array.from(new Set(pendingComplianceItems.map((c) => c.overrideAuthority))).every((auth) =>
       canOverrideCompliance(roleKeys, auth)
     );
   const canRecord = canRecordSpend(roleKeys);
@@ -515,6 +532,47 @@ export async function GateDetail({
                     </div>
                   )}
 
+                  {(c.status === "EVIDENCED" || c.status === "OVERRIDDEN") &&
+                    c.additionalApproverRoleKeys.length > 0 && (
+                      <div className="mt-2 rounded-md border border-dashed border-accent bg-accent/5 p-3 text-sm">
+                        <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+                          Additional sign-off required
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {c.additionalApproverRoleKeys.map((roleKey) => {
+                            const signOff = c.coSignOffs.find((s) => s.roleKey === roleKey);
+                            const roleLabel = roleLabelByKey[roleKey] ?? roleKey;
+                            if (signOff) {
+                              return (
+                                <div key={roleKey} className="font-mono text-xs text-ok">
+                                  ✓ {roleLabel} — signed off by {signOff.signedOffBy.name} &middot;{" "}
+                                  {signOff.createdAt.toLocaleDateString("en-GB")}
+                                </div>
+                              );
+                            }
+                            if (canCoSignCompliance(roleKeys, roleKey)) {
+                              return (
+                                <form
+                                  key={roleKey}
+                                  action={recordComplianceCoSignOff.bind(null, c.id, projectNumber, gateId, roleKey)}
+                                  className="flex items-center gap-2"
+                                >
+                                  <SubmitButton pendingText="Signing off…" className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white">
+                                    Sign off as {roleLabel}
+                                  </SubmitButton>
+                                </form>
+                              );
+                            }
+                            return (
+                              <div key={roleKey} className="font-mono text-xs text-inkmuted">
+                                {roleLabel} — awaiting sign-off
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                   {c.status === "PENDING" && (
                     <div className="mt-3 flex flex-wrap items-center gap-3">
                       {canUpload ? (
@@ -543,12 +601,12 @@ export async function GateDetail({
             })}
           </div>
 
-          {outstandingCompliance > 0 && (
+          {pendingComplianceItems.length > 0 && (
             <div className="mt-3 rounded-lg border border-dashed border-flag bg-accentsoft/30 p-4">
               <div className="mb-2 text-sm text-inkmuted">
-                {outstandingCompliance} compliance requirement(s) still outstanding on this gate — one override
-                clears all of them at once, not item by item. Requires{" "}
-                {Array.from(new Set(outstandingComplianceItems.map((c) => c.overrideAuthority)))
+                {pendingComplianceItems.length} compliance requirement(s) still outstanding on this gate — one
+                override clears all of them at once, not item by item. Requires{" "}
+                {Array.from(new Set(pendingComplianceItems.map((c) => c.overrideAuthority)))
                   .map((a) => BYPASS_AUTHORITY_LABEL[a])
                   .join(" and ")}{" "}
                 authority.

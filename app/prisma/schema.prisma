@@ -60,6 +60,7 @@ model User {
   auditEntries               AuditLogEntry[]
   complianceUploads          ComplianceEvidenceFile[]
   complianceOverrides        ComplianceOverride[]
+  complianceCoSignOffs       ComplianceCoSignOff[]
   createdProjects            Project[]                @relation("ProjectCreatedBy")
   createdWorksPackages       WorksPackage[]           @relation("WorksPackageCreatedBy")
   provisioningReviews        ProvisioningReview[]
@@ -289,6 +290,14 @@ model ComplianceRuleTemplate {
   // behaviour); FIRE_OFFICER for the fire-domain rules, since an SRO
   // has no professional standing to wave through a fire-safety item.
   overrideAuthority  BypassAuthority         @default(SRO)
+  // Role keys that must ALSO independently sign off before an instance
+  // of this rule counts as gate-clear, on top of the evidence/override
+  // above — e.g. HAI-SCRIBE needing a separate Client Authority
+  // approval alongside the Compliance Officer's. Parallel, not
+  // sequential: each required role can co-sign in any order, once the
+  // requirement is already EVIDENCED/OVERRIDDEN. Empty = no change from
+  // the single-authority behaviour every other rule already has.
+  additionalApproverRoleKeys String[]         @default([])
   requirements       ComplianceRequirement[]
 
   @@unique([ruleSetId, key])
@@ -325,8 +334,29 @@ model ComplianceRequirement {
   // Copied from the template at instantiation, same "frozen, not a
   // live join" rule as everything else here — see canOverrideCompliance.
   overrideAuthority BypassAuthority         @default(SRO)
+  // Copied from the template too — see ComplianceRuleTemplate's field
+  // of the same name for what this means.
+  additionalApproverRoleKeys String[]       @default([])
   evidenceFiles ComplianceEvidenceFile[]
+  coSignOffs    ComplianceCoSignOff[]
   createdAt     DateTime                    @default(now())
+}
+
+// One row per role satisfied per requirement — the independent
+// "additional party" sign-off ComplianceRuleTemplate.additionalApproverRoleKeys
+// asks for, layered on top of the normal evidence/override flow rather
+// than replacing it. A role can only co-sign once per requirement.
+model ComplianceCoSignOff {
+  id                      String                @id @default(cuid())
+  complianceRequirementId String
+  complianceRequirement   ComplianceRequirement @relation(fields: [complianceRequirementId], references: [id])
+  roleKey                 String
+  signedOffById           String
+  signedOffBy             User                  @relation(fields: [signedOffById], references: [id])
+  reason                  String?
+  createdAt               DateTime              @default(now())
+
+  @@unique([complianceRequirementId, roleKey])
 }
 
 model ComplianceEvidenceFile {

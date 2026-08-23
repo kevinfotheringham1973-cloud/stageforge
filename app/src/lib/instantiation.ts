@@ -94,6 +94,7 @@ export async function instantiateStage(
         minFiles: rt.minFiles,
         blocksGate: rt.blocksGate,
         overrideAuthority: rt.overrideAuthority,
+        additionalApproverRoleKeys: rt.additionalApproverRoleKeys,
         status: "PENDING" as const,
       })),
     });
