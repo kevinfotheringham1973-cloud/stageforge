@@ -1267,3 +1267,116 @@ export async function deleteProject(projectId: string, formData: FormData) {
   revalidatePath("/");
   redirect("/");
 }
+
+// ── Team ─────────────────────────────────────────────────────────────
+
+/**
+ * Platform-admin-only, same as deleteProject. Creates a new person —
+ * on its own they hold no role anywhere; assignUserToProject below is
+ * what actually lets them act as PM/SRO/etc. on a project.
+ */
+export async function createUser(formData: FormData) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can add a person.");
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const homeDepartmentId = String(formData.get("homeDepartmentId") ?? "").trim();
+  if (!name || !email || !homeDepartmentId) {
+    throw new Error("Name, email, and department are all required.");
+  }
+
+  const existing = await db.user.findUnique({ where: { email } });
+  if (existing) {
+    throw new Error(`A person with the email ${email} already exists.`);
+  }
+
+  const created = await db.user.create({ data: { name, email, homeDepartmentId } });
+  await db.auditLogEntry.create({
+    data: { actorId, action: "user.created", entityType: "User", entityId: created.id },
+  });
+
+  revalidatePath("/team");
+  revalidatePath("/");
+}
+
+/**
+ * Renames a person / updates their email in place — this rewrites how
+ * their PAST actions display too (audit entries, evidence uploads,
+ * sign-offs all join live to User.name). Right for a typo or contact
+ * update; wrong for "this person left and someone else took the role"
+ * — that case wants a new person (createUser) plus reassigning their
+ * ProjectRoleAssignment rows instead, so history stays attributed to
+ * whoever actually did it.
+ */
+export async function updateUser(userId: string, formData: FormData) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can edit a person.");
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  if (!name || !email) {
+    throw new Error("Name and email are both required.");
+  }
+
+  const existing = await db.user.findUnique({ where: { email } });
+  if (existing && existing.id !== userId) {
+    throw new Error(`A person with the email ${email} already exists.`);
+  }
+
+  await db.user.update({ where: { id: userId }, data: { name, email } });
+  await db.auditLogEntry.create({
+    data: { actorId, action: "user.updated", entityType: "User", entityId: userId },
+  });
+
+  revalidatePath("/team");
+  revalidatePath("/");
+}
+
+/**
+ * Grants a person a role on a project — the mechanism that actually
+ * lets them act as PM/SRO/etc. there. Same upsert shape as
+ * assignStandardTeam (standardTeam.ts), just driven by a form instead
+ * of the hardcoded standing-team list.
+ */
+export async function assignUserToProject(userId: string, formData: FormData) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can assign someone to a project.");
+  }
+
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const roleId = String(formData.get("roleId") ?? "").trim();
+  if (!projectId || !roleId) {
+    throw new Error("A project and a role are both required.");
+  }
+
+  const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+  if (!user.homeDepartmentId) {
+    throw new Error(`${user.name} has no home department set, so can't be assigned to a project.`);
+  }
+
+  await db.$transaction([
+    db.projectRoleAssignment.upsert({
+      where: { projectId_userId_roleId: { projectId, userId, roleId } },
+      update: {},
+      create: { projectId, userId, roleId, departmentId: user.homeDepartmentId },
+    }),
+    db.auditLogEntry.create({
+      data: { actorId, action: "user.assigned_to_project", entityType: "ProjectRoleAssignment", entityId: userId },
+    }),
+  ]);
+
+  revalidatePath("/team");
+  revalidatePath(`/projects/${(await db.project.findUniqueOrThrow({ where: { id: projectId } })).projectNumber}`);
+}
