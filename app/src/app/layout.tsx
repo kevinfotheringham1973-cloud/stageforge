@@ -58,6 +58,9 @@ export default async function RootLayout({
                 <a href="/team" className="text-sm font-semibold text-accent hover:underline">
                   Team
                 </a>
+                <a href="/compliance-rules" className="text-sm font-semibold text-accent hover:underline">
+                  Compliance rules
+                </a>
               </div>
             )}
           </div>
