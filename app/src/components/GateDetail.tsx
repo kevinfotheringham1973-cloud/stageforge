@@ -47,24 +47,52 @@ function toDateInputValue(d: Date | null): string {
   return d ? d.toISOString().slice(0, 10) : "";
 }
 
+/**
+ * currentFileRef is the most recent evidence file's fileRef — a real
+ * https:// SharePoint webUrl once resolveEvidenceUpload actually
+ * uploaded it (actions.ts), or the local://dev-upload stub otherwise.
+ * That one string is enough to tell which state we're in — no need to
+ * separately check env vars here.
+ */
 function SharePointEvidenceLocation({
   project,
   stageName,
+  currentFileRef,
 }: {
   project: { name: string; projectNumber: string };
   stageName: string;
+  currentFileRef: string;
 }) {
+  const isSynced = currentFileRef.startsWith("https://");
+  const folderIcon = (
+    <svg width="14" height="14" viewBox="0 0 16 16" className="shrink-0 text-accent" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M2 3.5A1.5 1.5 0 0 1 3.5 2h3.19a1.5 1.5 0 0 1 1.06.44l1.06 1.06H12.5A1.5 1.5 0 0 1 14 5v7.5A1.5 1.5 0 0 1 12.5 14h-9A1.5 1.5 0 0 1 2 12.5v-9Z"
+      />
+    </svg>
+  );
+
+  if (isSynced) {
+    return (
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-inkmuted">
+        {folderIcon}
+        <a href={currentFileRef} target="_blank" rel="noopener noreferrer" className="font-mono text-accent underline">
+          Open in SharePoint
+        </a>
+        <span className="rounded bg-ok/15 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ok">
+          Synced to SharePoint
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
       className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-inkmuted"
       title="Preview of future storage — evidence is not yet actually synced to SharePoint."
     >
-      <svg width="14" height="14" viewBox="0 0 16 16" className="shrink-0 text-accent" aria-hidden="true">
-        <path
-          fill="currentColor"
-          d="M2 3.5A1.5 1.5 0 0 1 3.5 2h3.19a1.5 1.5 0 0 1 1.06.44l1.06 1.06H12.5A1.5 1.5 0 0 1 14 5v7.5A1.5 1.5 0 0 1 12.5 14h-9A1.5 1.5 0 0 1 2 12.5v-9Z"
-        />
-      </svg>
+      {folderIcon}
       <span className="font-mono">/{evidenceFolderPath(project, stageName)}/</span>
       <span className="rounded bg-accentsoft px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
         Preview &middot; SharePoint sync not yet wired up
@@ -326,18 +354,22 @@ export async function GateDetail({
                           {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
                         </div>
                       ))}
-                      <SharePointEvidenceLocation project={gate.stage.project} stageName={gate.stage.name} />
+                      <SharePointEvidenceLocation
+                        project={gate.stage.project}
+                        stageName={gate.stage.name}
+                        currentFileRef={d.evidenceFiles[0]?.fileRef ?? ""}
+                      />
                       {canReplaceEvidence && (
                         <form
                           action={recordEvidenceStub.bind(null, d.id, projectNumber, gateId)}
                           className="mt-2 flex items-center gap-2"
                         >
                           <input
-                            name="fileName"
-                            aria-label={`Replacement evidence filename for ${d.label}`}
-                            placeholder="replacement-filename.pdf"
+                            type="file"
+                            name="file"
+                            aria-label={`Replacement evidence file for ${d.label}`}
                             required
-                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
                           />
                           <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
                             Replace evidence
@@ -364,11 +396,11 @@ export async function GateDetail({
                           className="flex items-center gap-2"
                         >
                           <input
-                            name="fileName"
-                            aria-label={`Evidence filename for ${d.label}`}
-                            placeholder="filename.pdf"
+                            type="file"
+                            name="file"
+                            aria-label={`Evidence file for ${d.label}`}
                             required
-                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
                           />
                           <SubmitButton pendingText="Uploading…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
                             Upload evidence
@@ -449,18 +481,22 @@ export async function GateDetail({
                           {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
                         </div>
                       ))}
-                      <SharePointEvidenceLocation project={gate.stage.project} stageName={gate.stage.name} />
+                      <SharePointEvidenceLocation
+                        project={gate.stage.project}
+                        stageName={gate.stage.name}
+                        currentFileRef={c.evidenceFiles[0]?.fileRef ?? ""}
+                      />
                       {canReplaceEvidence && (
                         <form
                           action={recordComplianceEvidenceStub.bind(null, c.id, projectNumber, gateId)}
                           className="mt-2 flex items-center gap-2"
                         >
                           <input
-                            name="fileName"
-                            aria-label={`Replacement evidence filename for ${c.label}`}
-                            placeholder="replacement-filename.pdf"
+                            type="file"
+                            name="file"
+                            aria-label={`Replacement evidence file for ${c.label}`}
                             required
-                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
                           />
                           <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
                             Replace evidence
@@ -487,11 +523,11 @@ export async function GateDetail({
                           className="flex items-center gap-2"
                         >
                           <input
-                            name="fileName"
-                            aria-label={`Evidence filename for ${c.label}`}
-                            placeholder="filename.pdf"
+                            type="file"
+                            name="file"
+                            aria-label={`Evidence file for ${c.label}`}
                             required
-                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
                           />
                           <SubmitButton pendingText="Uploading…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
                             Upload evidence
