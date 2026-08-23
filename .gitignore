@@ -2,6 +2,9 @@
 .claude/settings.local.json
 .DS_Store
 
+# Local DB backups (pg_dump) — may contain real/demo data, never commit
+backups/
+
 # Generated design canvas output (2MB+ minified editor payload,
 # regenerated from design/*.dc.html + design/canvas.json via
 # seed-canvas.mjs — not worth tracking or diffing).
