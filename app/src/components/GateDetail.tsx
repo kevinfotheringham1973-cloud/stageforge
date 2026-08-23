@@ -90,12 +90,12 @@ function SharePointEvidenceLocation({
   return (
     <div
       className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-inkmuted"
-      title="Preview of future storage — evidence is not yet actually synced to SharePoint."
+      title="Upload is wired up and ready — evidence will land here as soon as a SharePoint site is connected."
     >
       {folderIcon}
       <span className="font-mono">/{evidenceFolderPath(project, stageName)}/</span>
       <span className="rounded bg-accentsoft px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
-        Preview &middot; SharePoint sync not yet wired up
+        Preview &middot; SharePoint endpoint needs connected
       </span>
     </div>
   );
