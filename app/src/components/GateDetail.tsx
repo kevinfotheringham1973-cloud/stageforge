@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
+import { evidenceFolderPath } from "@/lib/sharepoint";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
   BYPASS_AUTHORITY_LABEL,
@@ -46,16 +47,6 @@ function toDateInputValue(d: Date | null): string {
   return d ? d.toISOString().slice(0, 10) : "";
 }
 
-/**
- * Where evidence would live in the org's SharePoint once real storage
- * replaces the dev-upload stub (see recordEvidenceStub). Preview-only —
- * mirrors the Project > Gate hierarchy already tracked in the data model,
- * nothing here calls Microsoft Graph.
- */
-function sharePointFolderPath(project: { name: string; projectNumber: string }, stageName: string): string {
-  return `/StageForge/${project.name} (${project.projectNumber})/${stageName}/`;
-}
-
 function SharePointEvidenceLocation({
   project,
   stageName,
@@ -74,7 +65,7 @@ function SharePointEvidenceLocation({
           d="M2 3.5A1.5 1.5 0 0 1 3.5 2h3.19a1.5 1.5 0 0 1 1.06.44l1.06 1.06H12.5A1.5 1.5 0 0 1 14 5v7.5A1.5 1.5 0 0 1 12.5 14h-9A1.5 1.5 0 0 1 2 12.5v-9Z"
         />
       </svg>
-      <span className="font-mono">{sharePointFolderPath(project, stageName)}</span>
+      <span className="font-mono">/{evidenceFolderPath(project, stageName)}/</span>
       <span className="rounded bg-accentsoft px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
         Preview &middot; SharePoint sync not yet wired up
       </span>
