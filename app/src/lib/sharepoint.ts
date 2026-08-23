@@ -52,12 +52,25 @@ async function getAccessToken(): Promise<string> {
 }
 
 /**
+ * SharePoint/OneDrive item names disallow " * : < > ? / \ | and can't be
+ * just "." or "..". Project name and stage name are free text a PM types
+ * in (project creation form, seed data) — sanitizing each one here, before
+ * it's joined into a path, means a name containing "/" can't inject an
+ * extra path segment or redirect where a file ends up. Nothing downstream
+ * should split/rejoin the result — build every folder path through this.
+ */
+function sanitizePathSegment(segment: string): string {
+  const cleaned = segment.replace(/["*:<>?/\\|]/g, "-").trim();
+  return cleaned === "" || cleaned === "." || cleaned === ".." ? "_" : cleaned;
+}
+
+/**
  * Where a project/gate's evidence lives in SharePoint — kept in sync
  * with the read-only preview shown in GateDetail.tsx (sharePointFolderPath
  * there) so the two never drift apart once real upload replaces the stub.
  */
 export function evidenceFolderPath(project: { name: string; projectNumber: string }, stageName: string): string {
-  return `StageForge/${project.name} (${project.projectNumber})/${stageName}`;
+  return ["StageForge", `${project.name} (${project.projectNumber})`, stageName].map(sanitizePathSegment).join("/");
 }
 
 /**
@@ -65,6 +78,10 @@ export function evidenceFolderPath(project: { name: string; projectNumber: strin
  * missing folders in the path automatically via this endpoint. Files
  * over 4MB need the resumable upload-session API instead — out of
  * scope until evidence files are actually large enough to need it.
+ *
+ * folderPath must come from evidenceFolderPath() (or otherwise be
+ * pre-sanitized per-segment) — this function trusts its "/" characters
+ * are real segment boundaries, not raw user input.
  */
 export async function uploadEvidenceFile(
   folderPath: string,
