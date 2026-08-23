@@ -156,6 +156,33 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   reference before approval, or delete one outright if it was logged in
   error — no more forcing a reject-then-record-again for a mistaken
   entry.
+- **Team management** (`src/app/team/page.tsx`, `TeamRoster.tsx`,
+  `createUser`/`updateUser`/`assignUserToProject` in `actions.ts`) — a
+  platform-admin-only `/team` page (same `isPlatformAdmin` flag that
+  gates project deletion), replacing hand-editing `seed.ts` as the way
+  to add a person, fix their name/email, or put them on a project.
+  Editing a person's name/email in place is scoped explicitly as a
+  typo/contact-detail fix, not a "this person left" workflow — it
+  rewrites how their *past* actions display too, since audit entries,
+  evidence uploads, and sign-offs all join live to `User.name`. A
+  genuine handover (someone leaves, someone else takes the role) is a
+  new person plus reassigning their `ProjectRoleAssignment`, so
+  history stays correctly attributed to whoever actually acted. The
+  person list filters client-side by name/email (`TeamRoster.tsx`) —
+  no server round trip, no pagination, since the roster is small.
+- **SharePoint evidence storage** (`src/lib/sharepoint.ts`) — a
+  Microsoft Graph API client (app-only/client-credentials auth, no
+  user sign-in) that `recordEvidenceStub`/`recordComplianceEvidenceStub`
+  call when a real SharePoint site is configured, storing the real
+  Graph `webUrl` as the evidence's `fileRef`; falls back to the
+  pre-existing dev stub otherwise, so nothing about the demo depends
+  on this being set up. Folder paths are built from project
+  name/stage name — both free text — with each path segment sanitised
+  against SharePoint's disallowed characters so a project name
+  containing e.g. `/` can't redirect where a file lands. A setup
+  script, `npm run sharepoint:check -- <site-url>`, resolves a real
+  site's Graph Site ID and lists its document libraries' Drive IDs.
+  See "Setup" below for the env vars.
 - **CI** (`../.github/workflows/ci.yml`) — typecheck and `next build`
   on every push and PR. No database service required: every route is
   dynamic (cookies()-based session), so the build never queries one.
@@ -181,9 +208,13 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
 
 - **Authentication.** `src/lib/session.ts` is a dev-only "act as" cookie,
   set by the switcher in the header — trusts whatever it's told. Replace
-  entirely before this is near a second real user.
-- **Evidence storage.** Uploads record a file *name* against a
-  deliverable, not an actual file — there's no object storage wired up.
+  entirely before this is near a second real user. The new `/team` page
+  adds/edits the `User` rows this switcher lists, but doesn't touch
+  this — it's still cookie-based impersonation, not real login.
+- **Evidence storage, without real SharePoint configured.** Uploads
+  record a file *name* against a deliverable, not an actual file —
+  see "SharePoint evidence storage" above for the real path once
+  configured; it's opt-in, not required.
 - **Template authoring UI.** All 17 Templates are hand-authored in
   `seed.ts`. The Compliance Rule Set editor sketched in the design
   screens has no backing code yet — the compliance corpus is
@@ -229,13 +260,24 @@ For AI-assisted provisioning (`/projects/new`) specifically, also add an
 `.env.example`). Everything else in the app works without it; only
 creating/revising a provisioning draft needs it.
 
-Open http://localhost:3000. Use the "Acting as" switcher in the header to
+For real SharePoint evidence storage (optional — see "SharePoint
+evidence storage" above), add `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`,
+`AZURE_CLIENT_SECRET` (from an Azure AD app registration with the
+`Sites.Selected` Graph permission, granted to the target site), and
+`SHAREPOINT_SITE_ID` / `SHAREPOINT_DRIVE_ID` (resolve these with
+`npm run sharepoint:check -- <site-url>` once the app registration is
+set up). Without these, evidence upload uses the dev stub — nothing
+else in the app is affected either way.
+
+Open http://localhost:3001 (`npm run dev` runs on 3001, not the Next.js
+default 3000 — see `package.json`). Use the "Acting as" switcher in the header to
 flip between Derek Gibb (PM), David Mackay (Sponsor · Client Authority),
 Gary Grant (Compliance Officer), Mark O'Hear (SRO), Alan McGeachie (Fire
 Officer), Bob Smith (AP Electrical), Claire Duncan (AP Water), and Andrea
 (Finance) — the same standing hospital team every project gets, plus
 Dennis Kelly (a second PM), Ross Blair (Principal Designer), and Callum
-Reid (platform admin, no delivery role — can delete a project) — and
+Reid (platform admin, no delivery role — can delete a project and
+manage the team roster at `/team`) — and
 watch what each one can and can't do, right there in the expanded gate
 row, no navigation.
 

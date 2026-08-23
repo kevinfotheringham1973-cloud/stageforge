@@ -22,7 +22,7 @@ NHS Trust programme. Built to re-skin for other regulated Hard FM sectors
 | Path | What it is |
 | --- | --- |
 | [`Overview.docx`](Overview.docx) | The original one-page concept note this whole project expands from. |
-| [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.15) |
+| [`PRD.html`](PRD.html) | Product requirements — vision, roles, roadmap, competitive landscape, governance rules. (draft v0.16) |
 | [`DataModel.html`](DataModel.html) | Entity model — tenancy/access resolution, the gate-closure mechanism, tiered bypass/override authority. (draft v0.5) |
 | [`ConfigSchema.html`](ConfigSchema.html) | Config schema for Stage/Gate/Deliverable templates and Compliance rule sets. (draft v0.4) |
 | [`ProvisioningModel.html`](ProvisioningModel.html) | Design for AI-assisted project provisioning — the draft/review/activate flow and the LLM call itself (structured-output enforcement, model/prompt-caching design). (draft v0.3 — built in `app/`, see Status below; its template-matching step has since been superseded by a deterministic dropdown, per `PRD.html` §10) |
@@ -121,6 +121,18 @@ starts or finishes, and a colour-coded planned-vs-actual health status
 (on track / overdue / completed on time or late) — both as a Gantt-style
 high-level chart on the project overview and a per-gate breakdown.
 
+Evidence storage now has a real backend option: a Microsoft Graph API
+client uploads to SharePoint (the org's approved safe storage for this
+kind of data) once a site is connected, app-only auth, with the
+storage location sanitised against path injection from free-text
+project/stage names and the Azure app registration scoped to a single
+site (`Sites.Selected`) rather than the whole tenant. It's inactive
+until configured — the dev stub still works unchanged, so nothing
+about the demo depends on this being set up. A platform-admin-only
+Team page (`/team`) also replaced hand-editing seed data as the way
+to add a person, fix a name or email, or put someone on a project —
+see `app/README.md` for both.
+
 ## Contributing
 
 `main` is protected: every change goes through a pull request, and the
@@ -139,9 +151,11 @@ gh pr create
 The scaffold needs a `DATABASE_URL`. Copy [`app/.env.example`](app/.env.example)
 to `app/.env` and point it at your own PostgreSQL instance — `.env` is
 gitignored and never committed. AI-assisted provisioning additionally
-needs an `ANTHROPIC_API_KEY` (get one from console.anthropic.com) —
-everything else in the app works without it. Full setup steps are in
-[`app/README.md`](app/README.md).
+needs an `ANTHROPIC_API_KEY` (get one from console.anthropic.com), and
+real SharePoint evidence storage needs `AZURE_TENANT_ID` /
+`AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` / `SHAREPOINT_SITE_ID` /
+`SHAREPOINT_DRIVE_ID` — everything else in the app works without
+either. Full setup steps are in [`app/README.md`](app/README.md).
 
 ## License
 
