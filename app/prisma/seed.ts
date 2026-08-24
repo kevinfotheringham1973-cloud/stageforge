@@ -14,6 +14,7 @@
 import { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "../src/lib/compliance";
 import { instantiateStage } from "../src/lib/instantiation";
+import { generateEnglandVariant } from "../src/lib/englandConversion";
 import {
   CDM_BUILDING_MODIFICATION_TAG,
   CDM_PRINCIPAL_DESIGNER_TAG,
@@ -4024,7 +4025,18 @@ async function main() {
     },
   });
 
+  // Generates the "health_england" SectorVariant (22 templates, 17
+  // compliance rules) from the Scotland corpus just seeded above, via
+  // the same conversion engine a live DB re-runs with `npm run
+  // england:generate` — see src/lib/englandConversion.ts. Its Templates
+  // are seeded with empty matchKeywords, so this stays invisible in the
+  // project-creation dropdown until a real England tenant needs it.
+  const englandResult = await generateEnglandVariant(db);
+
   console.log("Seed complete.");
+  console.log(
+    `England variant: ${englandResult.templatesCreated} templates, ${englandResult.rulesCreated} compliance rules.`
+  );
   console.log("Dev users — switch between them with the header switcher:");
   console.log(`  PM:                    ${derek.name} <${derek.email}>`);
   console.log(`  Sponsor:               ${david.name} <${david.email}>`);
