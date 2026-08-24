@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { forbidden } from "next/navigation";
 import { REGULATION_CONVERSION_ROWS, REGULATION_CONVERSION_NOTES } from "@/lib/regulationConversion";
+import { ENGLAND_SECTOR_VARIANT_KEY } from "@/lib/englandConversion";
 
 const EFFORT_LABEL: Record<string, string> = { low: "Low", medium: "Medium", high: "Higher" };
 const EFFORT_CLASS: Record<string, string> = {
@@ -11,16 +12,20 @@ const EFFORT_CLASS: Record<string, string> = {
 };
 
 /**
- * Platform-admin-only, reference-only (no forms, nothing writes to the
- * DB). Every live template is scoped to a single SectorVariant
- * ("health" = Scotland) — see SectorVariant in schema.prisma. This page
- * is prep for whenever a second, England-based tenant is onboarded:
- * it's the SHTM->HTM conversion Kevin supplied (24 Aug 2026), so that
- * conversation starts from "here's exactly what would need to change"
- * rather than a blank page. Deliberately not a second SectorVariant or
- * duplicated Template rows yet — the source document only maps
- * guidance references, not actual English deliverable text, and
- * building 22 templates on a guess would be fabrication, not prep.
+ * Platform-admin-only. The table below is still the static reference
+ * (Regulation Conversion_England_Scotland.docx, 24 Aug 2026) — but the
+ * conversion it describes is no longer just notes: src/lib/
+ * englandConversion.ts actually generates a second, "health_england"
+ * SectorVariant (22 Templates + 17 compliance rules, SHTM->HTM
+ * converted) from the live Scotland corpus, re-runnable any time that
+ * corpus changes with `npm run england:generate`. The banner below
+ * confirms it actually exists in this DB right now. Its Templates carry
+ * empty matchKeywords deliberately (same trick the retired Cold Water
+ * Storage template uses) — listMatchableTemplates only offers templates
+ * with matchKeywords set, so this stays invisible in the current
+ * single-tenant (Scotland) demo's project-creation dropdown until a
+ * real England tenant is onboarded and someone deliberately populates
+ * them.
  */
 export default async function RegulatoryReferencePage() {
   const currentUser = await getCurrentUser();
@@ -33,16 +38,38 @@ export default async function RegulatoryReferencePage() {
   });
   const templateNameByKey = new Map(templates.map((t) => [t.key, t.name]));
 
+  const englandVariant = await db.sectorVariant.findUnique({
+    where: { key: ENGLAND_SECTOR_VARIANT_KEY },
+    include: { _count: { select: { templates: true, complianceRuleSets: true } } },
+  });
+  const englandRuleCount = englandVariant
+    ? await db.complianceRuleTemplate.count({ where: { ruleSet: { sectorVariantId: englandVariant.id } } })
+    : 0;
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
       <h1 className="mb-1 text-2xl font-bold">Scotland → England regulatory reference</h1>
-      <p className="mb-8 text-sm text-inkmuted">
+      <p className="mb-4 text-sm text-inkmuted">
         This deployment&rsquo;s templates are built against Scottish guidance (SHTM, Building (Scotland) Act 2003,
-        HAI-SCRIBE). This is the conversion reference for what each of the 18 checklists would need to change to
-        stand up an England-jurisdiction tenant (HTM, Building Regulations 2010, local IPC processes) — only
-        needed once a second, England-based tenant exists. Reference only; nothing on this page is live or
-        editable.
+        HAI-SCRIBE). This is the conversion reference for what each of the 18 checklists needed to change to stand
+        up an England-jurisdiction tenant (HTM, Building Regulations 2010, local IPC processes).
       </p>
+
+      {englandVariant ? (
+        <div className="mb-8 rounded-lg border border-ok/30 bg-ok/10 px-4 py-3 text-sm">
+          <span className="font-semibold text-ok">Generated and live in this database:</span>{" "}
+          {englandVariant._count.templates} converted templates and {englandRuleCount} compliance rules under the
+          &ldquo;{englandVariant.name}&rdquo; SectorVariant. Not yet selectable in this demo&rsquo;s project-creation
+          dropdown — its templates carry empty matchKeywords until a real England tenant needs them. Re-run{" "}
+          <code className="rounded bg-surface2 px-1 py-0.5 font-mono text-xs">npm run england:generate</code> any
+          time the Scotland corpus changes to refresh it.
+        </div>
+      ) : (
+        <div className="mb-8 rounded-lg border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+          Not yet generated in this database — run{" "}
+          <code className="rounded bg-surface2 px-1 py-0.5 font-mono text-xs">npm run england:generate</code>.
+        </div>
+      )}
 
       <div className="mb-8 overflow-x-auto rounded-lg border border-rule bg-surface">
         <table className="w-full min-w-[640px] border-collapse text-sm">
