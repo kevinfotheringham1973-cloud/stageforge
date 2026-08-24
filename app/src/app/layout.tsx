@@ -78,6 +78,9 @@ export default async function RootLayout({
                 <a href="/compliance-rules" className="text-sm font-semibold text-accent hover:underline">
                   Compliance rules
                 </a>
+                <a href="/regulatory-reference" className="text-sm font-semibold text-accent hover:underline">
+                  Regulatory reference
+                </a>
               </div>
             )}
           </div>
