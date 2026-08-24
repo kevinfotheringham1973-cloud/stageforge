@@ -147,25 +147,6 @@ export default async function RegulatoryReferencePage() {
           </tbody>
         </table>
       </div>
-
-      <div className="rounded-lg border border-dashed border-rule p-5 text-sm text-inkmuted">
-        <p className="mb-1.5">
-          <span className="font-semibold text-ink">Low effort</span> (simple document reference swap): systems 1–4,
-          6–12, 15, 17
-        </p>
-        <p className="mb-1.5">
-          <span className="font-semibold text-ink">Medium effort</span> (Firecode + minor adjustments): fire
-          detection &amp; alarm, fire suppression
-        </p>
-        <p className="mb-1.5">
-          <span className="font-semibold text-ink">Higher effort</span>: ward/theatre refurbishment, because of
-          HAI-SCRIBE
-        </p>
-        <p>
-          Overall: the 18 checklists can be converted for use in England with relatively modest editing. The RIBA
-          structure, deliverables lists, and most technical content remain valid.
-        </p>
-      </div>
     </div>
   );
 }
