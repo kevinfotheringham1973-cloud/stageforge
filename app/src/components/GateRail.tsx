@@ -16,6 +16,17 @@ const DOT_CLASS: Record<string, string> = {
  * old scroll-past-every-gate accordion. The only client-side piece of
  * the whole project dashboard: everything else stays server-rendered,
  * this just needs usePathname() to know which link is "active".
+ *
+ * prefetch={false} on every link here (24 Aug 2026): Next's default
+ * prefetch-on-viewport fires one background RSC fetch per visible
+ * Link, so a project with 8 gates was firing 8 simultaneous requests
+ * the instant its page loaded — each one running the same heavy
+ * dashboard layout query. Confirmed live: about half of those bursts
+ * came back 503 (works fine for a single request in isolation), which
+ * is what made clicking a gate look broken — the click reused an
+ * already-failed prefetch instead of firing a fresh request. Real
+ * navigation is still one request at a time, so this only removes the
+ * self-inflicted burst, not real functionality.
  */
 export function GateRail({
   projectNumber,
@@ -31,6 +42,7 @@ export function GateRail({
     <nav className="flex gap-1 overflow-x-auto pb-1 md:sticky md:top-6 md:flex-col md:self-start md:overflow-visible md:pb-0">
       <Link
         href={overviewHref}
+        prefetch={false}
         className={`flex shrink-0 items-center gap-2.5 rounded-md border px-3 py-2.5 text-sm font-semibold md:shrink ${
           pathname === overviewHref
             ? "border-accent bg-surface"
@@ -48,6 +60,7 @@ export function GateRail({
           <Link
             key={g.id}
             href={href}
+            prefetch={false}
             className={`flex shrink-0 items-center gap-2.5 rounded-md border px-3 py-2.5 text-sm font-semibold md:shrink ${
               active ? "border-accent bg-surface" : "border-transparent text-ink hover:bg-accentsoft"
             }`}
