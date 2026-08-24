@@ -68,6 +68,7 @@ model User {
   resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
   recordedSpend              SpendRecord[]            @relation("SpendRecordedBy")
   spendApprovals             SpendApproval[]          @relation("SpendApprovedBy")
+  spendInvoiceUploads        SpendInvoiceFile[]
   lessonsLearned             LessonLearned[]
   scheduledReports           ScheduledReport[]
   createdAt                  DateTime                 @default(now())
@@ -546,7 +547,25 @@ model SpendRecord {
   recordedBy       User              @relation("SpendRecordedBy", fields: [recordedById], references: [id])
   status           SpendRecordStatus @default(PENDING)
   approvals        SpendApproval[]
+  invoiceFiles     SpendInvoiceFile[]
   createdAt        DateTime          @default(now())
+}
+
+// The actual invoice document backing a SpendRecord — the amount/ref
+// fields alone aren't enough for Finance to approve against (23 Aug
+// 2026 decision). Unlike EvidenceFile/ComplianceEvidenceFile there's no
+// version/replacement history: a spend record can genuinely have more
+// than one invoice (part-invoiced work, split POs), so this is a plain
+// list, not a "latest wins" chain. approveSpend requires at least one.
+model SpendInvoiceFile {
+  id            String      @id @default(cuid())
+  spendRecordId String
+  spendRecord   SpendRecord @relation(fields: [spendRecordId], references: [id])
+  fileName      String
+  fileRef       String
+  uploadedById  String
+  uploadedBy    User        @relation(fields: [uploadedById], references: [id])
+  uploadedAt    DateTime    @default(now())
 }
 
 enum SpendRecordStatus {

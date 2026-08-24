@@ -35,6 +35,7 @@ import {
   reviseSpend,
   setGateTimeline,
   submitForApproval,
+  uploadSpendInvoice,
 } from "@/lib/actions";
 import { notFound } from "next/navigation";
 
@@ -138,6 +139,7 @@ export async function GateDetail({
         include: {
           recordedBy: true,
           approvals: { orderBy: { createdAt: "desc" }, include: { approvedBy: true } },
+          invoiceFiles: { orderBy: { uploadedAt: "desc" } },
         },
       },
       signOffs: { orderBy: { createdAt: "desc" }, include: { signedOffBy: true } },
@@ -669,6 +671,35 @@ export async function GateDetail({
                   recorded by {s.recordedBy.name} &middot; {s.createdAt.toLocaleDateString("en-GB")}
                 </div>
 
+                <div className="mt-2 flex flex-col gap-1">
+                  {s.invoiceFiles.map((f) => (
+                    <div key={f.id} className="font-mono text-xs text-inkmuted">
+                      <span className="font-bold text-ok">invoice</span> {f.fileName} &middot; uploaded{" "}
+                      {f.uploadedAt.toLocaleDateString("en-GB")}
+                    </div>
+                  ))}
+                  {s.invoiceFiles.length === 0 && (
+                    <div className="font-mono text-xs text-warn">No invoice document attached yet.</div>
+                  )}
+                  {s.status === "PENDING" && canRecord && (
+                    <form
+                      action={uploadSpendInvoice.bind(null, s.id, projectNumber, gateId)}
+                      className="mt-1 flex flex-wrap items-center gap-2"
+                    >
+                      <input
+                        type="file"
+                        name="file"
+                        aria-label={`Invoice document for the £${Number(s.amount).toLocaleString("en-GB", { minimumFractionDigits: 2 })} spend record`}
+                        required
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
+                      />
+                      <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+                        Attach invoice
+                      </SubmitButton>
+                    </form>
+                  )}
+                </div>
+
                 {s.approvals.length > 0 && (
                   <div className="mt-2 flex flex-col gap-1.5">
                     {s.approvals.map((a) => (
@@ -684,11 +715,15 @@ export async function GateDetail({
 
                 {s.status === "PENDING" && canApprove && (
                   <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <form action={approveSpend.bind(null, s.id, projectNumber, gateId)}>
-                      <SubmitButton pendingText="Approving…" className="rounded-md bg-ok px-3 py-1.5 text-sm font-semibold text-white">
-                        Approve spend
-                      </SubmitButton>
-                    </form>
+                    {s.invoiceFiles.length > 0 ? (
+                      <form action={approveSpend.bind(null, s.id, projectNumber, gateId)}>
+                        <SubmitButton pendingText="Approving…" className="rounded-md bg-ok px-3 py-1.5 text-sm font-semibold text-white">
+                          Approve spend
+                        </SubmitButton>
+                      </form>
+                    ) : (
+                      <span className="text-xs text-inkmuted">Waiting on the PM to attach an invoice before this can be approved.</span>
+                    )}
                     <form action={rejectSpend.bind(null, s.id, projectNumber, gateId)} className="flex flex-wrap items-center gap-2">
                       <input
                         name="reason"
@@ -829,7 +864,8 @@ export async function GateDetail({
                 it doesn&rsquo;t change who approves it. <span className="font-semibold">Lifecycle replacement</span>:
                 routine like-for-like swap at end of working life (most projects). <span className="font-semibold">Small
                 works</span>: minor, lower-value work. <span className="font-semibold">Variation</span>: a change to
-                what was originally agreed. Not sure which? Ask your Compliance Officer.
+                what was originally agreed. Not sure which? Ask your Compliance Officer. Once it&rsquo;s recorded,
+                attach the actual invoice document below it — Finance can&rsquo;t approve without one.
               </p>
               <div className="flex flex-wrap items-end gap-2">
                 <div>
