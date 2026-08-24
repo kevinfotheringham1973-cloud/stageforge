@@ -12,12 +12,13 @@ import { useRouter } from "next/navigation";
  * Option labels lead with the role, not the name (confirmed 24 Aug
  * 2026 — "not clear what their role is" with names-first) — a demo
  * audience picking a persona to watch cares which role they're
- * switching into, not who the seeded person happens to be. A person
- * holding no role anywhere shows "(no role assigned)" rather than a
- * bare name, so an unassigned Authorised Person doesn't read as a
- * name with its role silently missing. Two people sharing the exact
- * same role (there are two plain "PM"s in the demo cast) stay
- * distinguishable because the name is still there, just second.
+ * switching into, not who the seeded person happens to be. `users`
+ * is pre-filtered by the caller to people who actually hold a role
+ * (25 Aug 2026) — there's nothing to demo by acting as someone who
+ * can't do anything yet, so every entry here always has a real
+ * roleLabel. Two people sharing the exact same role (there are two
+ * plain "PM"s in the demo cast) stay distinguishable because the name
+ * is still there, just second.
  *
  * Two layers of state-sync, found necessary by testing this live (the
  * display was noticed drifting from the real acting-as user, 21 Aug
@@ -82,7 +83,7 @@ export function ActingAsSwitcher({
         >
           {users.map((u) => (
             <option key={u.id} value={u.id}>
-              {u.roleLabel || "(no role assigned)"} — {u.name}
+              {u.roleLabel} — {u.name}
             </option>
           ))}
         </select>

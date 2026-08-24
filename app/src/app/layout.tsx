@@ -25,14 +25,28 @@ export default async function RootLayout({
   // is every role a user holds anywhere, deduped — not one project's
   // view of them. ActingAsSwitcher leads with this (not the name) in
   // the dropdown label, since a demo audience cares which role they're
-  // watching, not who Derek Gibb is (confirmed 24 Aug 2026) — an empty
-  // roleLabel means the person holds no role anywhere yet (e.g. an
-  // Authorised Person seeded but not yet assigned to a project).
-  const users = usersWithRoles.map((u) => ({
-    id: u.id,
-    name: u.name,
-    roleLabel: Array.from(new Set(u.roleAssignments.map((a) => a.role.name))).join(" · "),
-  }));
+  // watching, not who Derek Gibb is (confirmed 24 Aug 2026).
+  // isPlatformAdmin is a standing authority outside the Role/
+  // ProjectRoleAssignment model entirely (confirmed 20 Aug 2026 —
+  // Callum Reid is deliberately outside the company/department
+  // structure), so it needs its own label here (25 Aug 2026 — showing
+  // him as "no role assigned" was actively wrong for the one person
+  // who can delete a project).
+  // People genuinely holding no role anywhere (an Authorised Person
+  // seeded but not yet assigned to a project — see disciplineTeam.ts)
+  // are filtered out of the switcher entirely (25 Aug 2026): there's
+  // nothing to demo by acting as someone who can't do anything yet, so
+  // rather than list them with a "no role assigned" caveat, they just
+  // don't appear until a project actually assigns them one.
+  const users = usersWithRoles
+    .filter((u) => u.isPlatformAdmin || u.roleAssignments.length > 0)
+    .map((u) => ({
+      id: u.id,
+      name: u.name,
+      roleLabel: u.isPlatformAdmin
+        ? "Platform Admin"
+        : Array.from(new Set(u.roleAssignments.map((a) => a.role.name))).join(" · "),
+    }));
 
   return (
     <html lang="en">
