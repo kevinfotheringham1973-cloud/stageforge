@@ -4,6 +4,15 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 /**
+ * Admin-only "view as" (24 Aug 2026) — layers on top of real sign-in
+ * (see auth.ts/session.ts) rather than being the login model itself,
+ * which is what this used to be before real authentication existed.
+ * Only ever rendered for a real, signed-in platform admin (layout.tsx
+ * gates on realUser.isPlatformAdmin, not the currently-viewed
+ * identity); actions.ts's setViewAsUser re-checks that same real
+ * identity server-side regardless, so this component being rendered at
+ * all isn't load-bearing for the actual access control.
+ *
  * Was a row of 10 buttons — stopped scaling once the cast grew past
  * ~8 people (20 Aug 2026). A native <select> gets type-ahead
  * (type a letter to jump) for free, and auto-submits on change so
@@ -62,12 +71,12 @@ export function ActingAsSwitcher({
     <div className="flex flex-col items-end gap-0.5">
       <div className="flex items-center gap-2">
         <label htmlFor="acting-as-select" className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-          Acting as
+          View as
         </label>
         <select
           id="acting-as-select"
           name="userId"
-          title="This demo has no separate logins — switch this to see the app as a different person/role."
+          title="Preview the app as a different person/role — only you can see this, and it doesn't change who's actually signed in."
           value={value}
           onChange={(e) => {
             const next = e.target.value;
@@ -88,7 +97,7 @@ export function ActingAsSwitcher({
           ))}
         </select>
       </div>
-      <span className="text-[10px] text-inkmuted">Switches who you&rsquo;re signed in as &mdash; stands in for separate logins</span>
+      <span className="text-[10px] text-inkmuted">Admin preview only &mdash; doesn&rsquo;t change who&rsquo;s actually signed in</span>
     </div>
   );
 }

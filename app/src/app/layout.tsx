@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
-import { setActingUser } from "@/lib/actions";
+import { getCurrentUser, getRealCurrentUserId } from "@/lib/session";
+import { setViewAsUser, clearViewAsUser } from "@/lib/actions";
+import { signOut } from "@/lib/auth";
 import { ActingAsSwitcher } from "@/components/ActingAsSwitcher";
 
 export const metadata: Metadata = {
@@ -14,18 +15,42 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [usersWithRoles, currentUser] = await Promise.all([
+  const [usersWithRoles, currentUser, realUserId] = await Promise.all([
     db.user.findMany({
       orderBy: { name: "asc" },
       include: { roleAssignments: { include: { role: true } } },
     }),
     getCurrentUser(),
+    getRealCurrentUserId(),
   ]);
-  // The "Acting as" switcher is project-agnostic (root layout), so this
+
+  // proxy.ts already redirects every route but /login to /login when
+  // nobody's signed in, so this only renders bare chrome for the login
+  // page itself (currentUser null there) rather than the full header.
+  if (!currentUser) {
+    return (
+      <html lang="en">
+        <body className="font-sans" suppressHydrationWarning>
+          <main>{children}</main>
+        </body>
+      </html>
+    );
+  }
+
+  // realUser, not currentUser, decides who gets the view-as switcher --
+  // currentUser reflects whichever identity a view-as override has put
+  // in effect (session.ts), and a non-admin being viewed shouldn't
+  // inherit the switcher just because an admin is currently viewing
+  // as them.
+  const realUser = realUserId ? await db.user.findUnique({ where: { id: realUserId } }) : null;
+  const isViewingAs = realUserId !== currentUser.id;
+
+  // The "view as" switcher is project-agnostic (root layout), so this
   // is every role a user holds anywhere, deduped — not one project's
   // view of them. ActingAsSwitcher leads with this (not the name) in
-  // the dropdown label, since a demo audience cares which role they're
-  // watching, not who Derek Gibb is (confirmed 24 Aug 2026).
+  // the dropdown label, since an admin previewing a persona cares which
+  // role they're watching, not who Derek Gibb is (confirmed 24 Aug
+  // 2026, from back when this switcher was the entire login model).
   // isPlatformAdmin is a standing authority outside the Role/
   // ProjectRoleAssignment model entirely (confirmed 20 Aug 2026 —
   // Callum Reid is deliberately outside the company/department
@@ -35,9 +60,9 @@ export default async function RootLayout({
   // People genuinely holding no role anywhere (an Authorised Person
   // seeded but not yet assigned to a project — see disciplineTeam.ts)
   // are filtered out of the switcher entirely (25 Aug 2026): there's
-  // nothing to demo by acting as someone who can't do anything yet, so
-  // rather than list them with a "no role assigned" caveat, they just
-  // don't appear until a project actually assigns them one.
+  // nothing to preview by viewing as someone who can't do anything
+  // yet, so rather than list them with a "no role assigned" caveat,
+  // they just don't appear until a project actually assigns them one.
   const users = usersWithRoles
     .filter((u) => u.isPlatformAdmin || u.roleAssignments.length > 0)
     .map((u) => ({
@@ -51,6 +76,18 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans" suppressHydrationWarning>
+        {isViewingAs && (
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-warn/15 px-4 py-2 text-xs text-warn sm:px-6 md:px-10">
+            <span>
+              Viewing as <strong>{currentUser.name}</strong> — you&rsquo;re really signed in as {realUser?.name}.
+            </span>
+            <form action={clearViewAsUser}>
+              <button type="submit" className="font-semibold underline">
+                Stop viewing as
+              </button>
+            </form>
+          </div>
+        )}
         <header className="flex flex-col gap-3 border-b border-rule bg-surface px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between md:px-10">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <a href="/" className="flex items-center gap-2.5">
@@ -87,7 +124,21 @@ export default async function RootLayout({
               </div>
             )}
           </div>
-          <ActingAsSwitcher action={setActingUser} users={users} currentUserId={currentUser?.id} />
+          <div className="flex flex-wrap items-center gap-4">
+            {realUser?.isPlatformAdmin && (
+              <ActingAsSwitcher action={setViewAsUser} users={users} currentUserId={currentUser.id} />
+            )}
+            <form
+              action={async () => {
+                "use server";
+                await signOut({ redirectTo: "/login" });
+              }}
+            >
+              <button type="submit" className="text-sm font-semibold text-accent hover:underline">
+                Sign out ({realUser?.name ?? currentUser.name})
+              </button>
+            </form>
+          </div>
         </header>
         <main>{children}</main>
       </body>
