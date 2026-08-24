@@ -28,10 +28,19 @@ export default async function RootLayout({
   // watching, not who Derek Gibb is (confirmed 24 Aug 2026) — an empty
   // roleLabel means the person holds no role anywhere yet (e.g. an
   // Authorised Person seeded but not yet assigned to a project).
+  // isPlatformAdmin is a standing authority outside the Role/
+  // ProjectRoleAssignment model entirely (confirmed 20 Aug 2026 —
+  // Callum Reid is deliberately outside the company/department
+  // structure), so it needs its own label here rather than falling
+  // through to ActingAsSwitcher's "no role assigned" fallback, which
+  // would be actively wrong for the one person who can delete a
+  // project (25 Aug 2026 — flagged as misleading).
   const users = usersWithRoles.map((u) => ({
     id: u.id,
     name: u.name,
-    roleLabel: Array.from(new Set(u.roleAssignments.map((a) => a.role.name))).join(" · "),
+    roleLabel: u.isPlatformAdmin
+      ? "Platform Admin"
+      : Array.from(new Set(u.roleAssignments.map((a) => a.role.name))).join(" · "),
   }));
 
   return (
