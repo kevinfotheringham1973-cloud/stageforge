@@ -23,8 +23,11 @@ export default async function RootLayout({
   ]);
   // The "Acting as" switcher is project-agnostic (root layout), so this
   // is every role a user holds anywhere, deduped — not one project's
-  // view of them. Shown in the dropdown (open or closed) so a demo
-  // audience can tell who's who without already knowing the cast.
+  // view of them. ActingAsSwitcher leads with this (not the name) in
+  // the dropdown label, since a demo audience cares which role they're
+  // watching, not who Derek Gibb is (confirmed 24 Aug 2026) — an empty
+  // roleLabel means the person holds no role anywhere yet (e.g. an
+  // Authorised Person seeded but not yet assigned to a project).
   const users = usersWithRoles.map((u) => ({
     id: u.id,
     name: u.name,
