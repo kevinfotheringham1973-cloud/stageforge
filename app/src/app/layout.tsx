@@ -90,9 +90,9 @@ export default async function RootLayout({
         )}
         <header className="flex flex-col gap-3 border-b border-rule bg-surface px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between md:px-10">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <a href="/" className="flex flex-col leading-none">
+            <a href="/" className="flex flex-col leading-[0.95]">
               <span className="font-serif text-xl font-bold text-accent">StageForge</span>
-              <span className="font-serif text-xs font-semibold tracking-wide text-inkmuted">Health</span>
+              <span className="font-serif text-xl font-bold text-accent">Health</span>
             </a>
             <a href="/projects/new" className="text-sm font-semibold text-accent hover:underline">
               + New project
