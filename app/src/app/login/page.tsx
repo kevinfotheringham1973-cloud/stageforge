@@ -49,9 +49,9 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-6 px-4">
-      <div className="flex items-center gap-2.5">
-        <img src="/nhs-forth-valley-logo.jpeg" alt="NHS Forth Valley" className="h-9 w-auto rounded-sm" />
+      <div className="flex flex-col items-center leading-[0.95]">
         <span className="font-serif text-xl font-bold text-accent">StageForge</span>
+        <span className="font-serif text-xl font-bold text-accent">Health</span>
       </div>
 
       {error && (
