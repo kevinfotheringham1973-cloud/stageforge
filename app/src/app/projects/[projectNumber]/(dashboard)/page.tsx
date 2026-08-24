@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { DELIVERY_FACING_ROLE_KEYS } from "@/lib/permissions";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { reinstateStage, setResourceAllocation } from "@/lib/actions";
+import { neededDisciplineRoleKeys } from "@/lib/disciplineTeam";
 import { SubmitButton } from "@/components/SubmitButton";
 
 /**
@@ -51,6 +52,22 @@ export default async function ProjectOverviewPage({
   const instantiatedKeys = new Set(project.stages.map((s) => s.key));
   const excludedTemplateStages = project.template.stageTemplates.filter((st) => !instantiatedKeys.has(st.key));
 
+  // Discipline role requirements this project calls out (lib/
+  // disciplineTeam.ts) but nobody's actually assigned to yet — either
+  // because no candidate is known for that role at all (e.g. AE Water),
+  // or a suggested candidate couldn't be assigned (missing home
+  // department). Surfaced even without a name to put against it
+  // (confirmed 24 Aug 2026), so the gap doesn't just silently disappear.
+  const assignedRoleKeys = new Set(project.roleAssignments.map((a) => a.role.key));
+  const neededRoleKeys = await neededDisciplineRoleKeys(project.templateId, project.worksType);
+  const unfilledRoleKeys = Array.from(neededRoleKeys).filter((k) => !assignedRoleKeys.has(k));
+  const unfilledRoles =
+    unfilledRoleKeys.length > 0
+      ? (await db.role.findMany({ where: { key: { in: unfilledRoleKeys } } })).sort((a, b) =>
+          a.name.localeCompare(b.name)
+        )
+      : [];
+
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-lg border border-rule bg-surface p-5">
@@ -95,6 +112,31 @@ export default async function ProjectOverviewPage({
                 )}
               </div>
             ))}
+          </div>
+        )}
+        {unfilledRoles.length > 0 && (
+          <div className="mt-4 border-t border-dashed border-rule pt-3">
+            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-wide text-warn">
+              Still needs assignment
+            </div>
+            <p className="mb-2 text-xs text-inkmuted">
+              This project&rsquo;s own checklist calls for these roles, but nobody&rsquo;s assigned to them yet —
+              add a name on the{" "}
+              <a href="/team" className="text-accent hover:underline">
+                Team
+              </a>{" "}
+              page.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {unfilledRoles.map((role) => (
+                <span
+                  key={role.id}
+                  className="rounded bg-warn/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-warn"
+                >
+                  {role.name}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>

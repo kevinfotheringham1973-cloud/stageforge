@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { updateComplianceRuleApprovals } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { forbidden } from "next/navigation";
+import { groupRolesByCategory } from "@/lib/roleCategories";
 
 /**
  * Platform-admin-only. Configures each ComplianceRuleTemplate's
@@ -25,6 +26,8 @@ export default async function ComplianceRulesPage() {
     }),
     db.role.findMany({ orderBy: { name: "asc" } }),
   ]);
+
+  const roleGroups = groupRolesByCategory(roles);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
@@ -56,10 +59,14 @@ export default async function ComplianceRulesPage() {
                         defaultValue={rule.overrideAuthority}
                         className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
                       >
-                        {roles.map((role) => (
-                          <option key={role.key} value={role.key}>
-                            {role.name}
-                          </option>
+                        {roleGroups.map((group) => (
+                          <optgroup key={group.category} label={group.label}>
+                            {group.roles.map((role) => (
+                              <option key={role.key} value={role.key}>
+                                {role.name}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                     </div>
@@ -68,17 +75,24 @@ export default async function ComplianceRulesPage() {
                       <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                         Additional sign-off required from
                       </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                        {roles.map((role) => (
-                          <label key={role.id} className="flex items-center gap-1.5 text-sm">
-                            <input
-                              type="checkbox"
-                              name="additionalApproverRoleKeys"
-                              value={role.key}
-                              defaultChecked={rule.additionalApproverRoleKeys.includes(role.key)}
-                            />
-                            {role.name}
-                          </label>
+                      <div className="flex flex-col gap-2">
+                        {roleGroups.map((group) => (
+                          <div key={group.category}>
+                            <div className="mb-1 text-xs font-semibold text-inkmuted">{group.label}</div>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                              {group.roles.map((role) => (
+                                <label key={role.id} className="flex items-center gap-1.5 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    name="additionalApproverRoleKeys"
+                                    value={role.key}
+                                    defaultChecked={rule.additionalApproverRoleKeys.includes(role.key)}
+                                  />
+                                  {role.name}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>

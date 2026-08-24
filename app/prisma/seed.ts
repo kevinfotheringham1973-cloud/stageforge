@@ -53,45 +53,45 @@ async function main() {
   // app already treats "PM" and "SRO" as distinct roles rather than one
   // role plus a type field.
   const roleDefs = [
-    { key: "PM", name: "PM" },
-    { key: "SPONSOR", name: "PS" },
-    { key: "SRO", name: "Senior Responsible Owner" },
-    { key: "FM_CONTRACTOR", name: "FM Contractor" },
-    { key: "CLIENT_AUTHORITY", name: "Client Authority" },
-    { key: "COMPLIANCE_OFFICER", name: "Compliance Officer" },
-    { key: "RESOURCE_MANAGER", name: "Resource / Portfolio Manager" },
-    { key: "FINANCE", name: "Finance" },
-    { key: "AUTHORISED_PERSON_WATER", name: "AP (Water)", isExactMatchAuthority: true },
-    { key: "AUTHORISED_PERSON_ELECTRICAL", name: "AP (Electrical)", isExactMatchAuthority: true },
-    { key: "AUTHORISED_PERSON_MEDICAL_GASES", name: "AP (Medical Gases)", isExactMatchAuthority: true },
+    { key: "PM", name: "PM", category: "PROJECT_TEAM" as const },
+    { key: "SPONSOR", name: "PS", category: "SENIOR_CONTRACTUAL" as const },
+    { key: "SRO", name: "Senior Responsible Owner", category: "SENIOR_CONTRACTUAL" as const },
+    { key: "FM_CONTRACTOR", name: "FM Contractor", category: "SENIOR_CONTRACTUAL" as const },
+    { key: "CLIENT_AUTHORITY", name: "Client Authority", category: "SENIOR_CONTRACTUAL" as const },
+    { key: "COMPLIANCE_OFFICER", name: "Compliance Officer", category: "PROJECT_TEAM" as const },
+    { key: "RESOURCE_MANAGER", name: "Resource / Portfolio Manager", category: "PROJECT_TEAM" as const },
+    { key: "FINANCE", name: "Finance", category: "PROJECT_TEAM" as const },
+    { key: "AUTHORISED_PERSON_WATER", name: "AP (Water)", isExactMatchAuthority: true, category: "AUTHORISED_PERSON_ENGINEER" as const },
+    { key: "AUTHORISED_PERSON_ELECTRICAL", name: "AP (Electrical)", isExactMatchAuthority: true, category: "AUTHORISED_PERSON_ENGINEER" as const },
+    { key: "AUTHORISED_PERSON_MEDICAL_GASES", name: "AP (Medical Gases)", isExactMatchAuthority: true, category: "AUTHORISED_PERSON_ENGINEER" as const },
     // "Ventilation" here covers the combined Heating & Ventilation (H&V)
     // discipline — confirmed 21 Aug 2026: LTHW heating-circuit
     // isolation and hot-tapping fall under this AP, not Water AP. There
     // is deliberately no "AP (Gas)" — standard fuel gas/oil competency
     // comes from the external Gas Safe Register/OFTEC schemes, not a
     // Trust-appointed AP/AE, unlike Medical Gases above.
-    { key: "AUTHORISED_PERSON_VENTILATION", name: "AP (Heating & Ventilation)", isExactMatchAuthority: true },
-    { key: "AUTHORISING_ENGINEER_WATER", name: "AE (Water)" },
-    { key: "AUTHORISING_ENGINEER_ELECTRICAL", name: "AE (Electrical)" },
-    { key: "AUTHORISING_ENGINEER_MEDICAL_GASES", name: "AE (Medical Gases)" },
-    { key: "AUTHORISING_ENGINEER_VENTILATION", name: "AE (Heating & Ventilation)" },
-    { key: "PRINCIPAL_DESIGNER", name: "Principal Designer" },
+    { key: "AUTHORISED_PERSON_VENTILATION", name: "AP (Heating & Ventilation)", isExactMatchAuthority: true, category: "AUTHORISED_PERSON_ENGINEER" as const },
+    { key: "AUTHORISING_ENGINEER_WATER", name: "AE (Water)", category: "AUTHORISED_PERSON_ENGINEER" as const },
+    { key: "AUTHORISING_ENGINEER_ELECTRICAL", name: "AE (Electrical)", category: "AUTHORISED_PERSON_ENGINEER" as const },
+    { key: "AUTHORISING_ENGINEER_MEDICAL_GASES", name: "AE (Medical Gases)", category: "AUTHORISED_PERSON_ENGINEER" as const },
+    { key: "AUTHORISING_ENGINEER_VENTILATION", name: "AE (Heating & Ventilation)", category: "AUTHORISED_PERSON_ENGINEER" as const },
+    { key: "PRINCIPAL_DESIGNER", name: "Principal Designer", category: "STATUTORY_OFFICER" as const },
     // The site NHS Fire Officer — the only authority that can approve
     // or reject fire-related compliance (confirmed 20 Aug
     // 2026: an SRO has no legal standing to assess fire safety). See
     // BypassAuthority.FIRE_OFFICER in schema.prisma.
-    { key: "FIRE_OFFICER", name: "Fire Officer", isExactMatchAuthority: true },
+    { key: "FIRE_OFFICER", name: "Fire Officer", isExactMatchAuthority: true, category: "STATUTORY_OFFICER" as const },
     // Clinical governance, not an engineering AP/AE — the named
     // sign-off DCB0129/DCB0160 requires for safety-related health IT
     // systems (nurse call, staff alert). Confirmed 21 Aug
     // 2026. See BypassAuthority.CLINICAL_SAFETY_OFFICER in schema.prisma.
-    { key: "CLINICAL_SAFETY_OFFICER", name: "Clinical Safety Officer", isExactMatchAuthority: true },
+    { key: "CLINICAL_SAFETY_OFFICER", name: "Clinical Safety Officer", isExactMatchAuthority: true, category: "STATUTORY_OFFICER" as const },
     // Information governance, not clinical or engineering — the named
     // DPO/Caldicott Guardian sign-off UK GDPR/the Data Protection Act
     // 2018 requires for DPIA, data retention/destruction, and CCTV/
     // access control acceptance. Confirmed 21 Aug 2026. See
     // BypassAuthority.INFORMATION_GOVERNANCE_OFFICER in schema.prisma.
-    { key: "INFORMATION_GOVERNANCE_OFFICER", name: "Information Governance Officer", isExactMatchAuthority: true },
+    { key: "INFORMATION_GOVERNANCE_OFFICER", name: "Information Governance Officer", isExactMatchAuthority: true, category: "STATUTORY_OFFICER" as const },
   ];
   const roles = Object.fromEntries(
     await Promise.all(
@@ -398,20 +398,30 @@ async function main() {
       { key: "del.electrical_outline_strategy", label: "Outline electrical strategy (primary/secondary supplies, essential vs non-essential)", description: "SHTM 06 series." },
       { key: "del.electrical_preliminary_single_line_diagrams", label: "Preliminary single-line diagrams and load schedules", description: "SHTM 06." },
       { key: "del.electrical_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.electrical_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 06." },
+      { key: "del.electrical_concept_risk_assessment", label: "Design risk assessment (high-level only)", description: "CDM 2015, SHTM 00, SHTM 06." },
+      { key: "del.electrical_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination (the running mid-flight example)
     [
       { key: "del.electrical_coordinated_layout_drawings", label: "Coordinated design (switch rooms, distribution routes, generator location, UPS rooms, containment)", description: "SHTM 06." },
       { key: "del.electrical_mep_structural_coordination", label: "Spatial coordination with structure, mechanical services, fire compartments and other systems" },
       { key: "del.electrical_fire_compartmentation_assessment", label: "Fire compartmentation and ventilation impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.electrical_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary supply strategy" },
-      { key: "del.electrical_emergency_power_confirmation", label: "Confirmation of emergency power provisions for critical areas", description: "SHTM 06.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.electrical_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary supply strategy (principles only)" },
+      { key: "del.electrical_emergency_power_confirmation", label: "Confirmation of emergency power provisions for critical areas — high-level temporary arrangements strategy only", description: "SHTM 06.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.electrical_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design (Critical Gate). Contains the
+    // Pre-Contract Hold Point — no contractor appointment or Gate 5
+    // work until 2+ competitive quotes and written PFI Board/NHS
+    // lifecycle cost approval are received. Everything up to and
+    // including del.electrical_pre_contract_hold_point is
+    // pre-appointment work; del.electrical_post_appointment_full_design
+    // is the only item that happens after a contractor is appointed,
+    // though it's still recorded under this same Gate 4.
     [
-      { key: "del.electrical_full_technical_design_package", label: "Full technical design drawings, single-line diagrams, schematics and containment layouts", description: "SHTM 06 series." },
-      { key: "del.electrical_detailed_specifications", label: "Detailed specifications (switchgear, distribution boards, UPS, IPS, generators, cabling, lighting, controls)", description: "SHTM 06, BS 7671." },
+      { key: "del.electrical_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.electrical_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.electrical_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.electrical_discrimination_selectivity_studies", label: "Discrimination / selectivity studies and protection coordination", description: "SHTM 06, BS 7671." },
       { key: "del.electrical_ups_ips_autonomy_design", label: "UPS / IPS autonomy and configuration design", description: "SHTM 06." },
       { key: "del.electrical_generator_sizing_fuel_control", label: "Standby generator sizing, fuel storage and control philosophy", description: "SHTM 06." },
@@ -422,10 +432,15 @@ async function main() {
       { key: "del.electrical_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 06.", bypassAuthority: "SRO" },
       { key: "del.electrical_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.electrical_stakeholder_design_approval", label: "Stakeholder review and approval of design", description: "SHTM 06.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.electrical_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.electrical_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.electrical_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.electrical_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.electrical_method_statements_temp_power", label: "Contractor method statements, detailed phasing & temporary power arrangements", description: "Critical for continuity — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.electrical_method_statements_temp_power", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary power arrangements", description: "Critical for continuity — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.electrical_material_equipment_certificates", label: "Material & equipment certificates (switchgear, UPS, generators, cable, luminaires)", description: "BS 7671, manufacturer certification." },
       { key: "del.electrical_permit_to_work_isolation", label: "Permit-to-Work and Isolation Certificates for every switch-out", bypassAuthority: "AUTHORISED_PERSON_ELECTRICAL" },
       { key: "del.electrical_distribution_equipment_install", label: "Installation of distribution equipment, containment, cabling, UPS, generators and lighting", description: "SHTM 06, BS 7671." },
@@ -481,6 +496,27 @@ async function main() {
   // water" in a loose sense. Grounded in SHTM 04-01 (Parts A–G), HSE
   // ACOP L8 / HSG 274, BS EN 806, BS 8558, Scottish Water Byelaws,
   // CDM 2015.
+  //
+  // Updated to V2.0 (Domestic hot and cold water systems_V2.0.docx,
+  // 24 Aug 2026): the same Pre-Contract Hold Point governance rule
+  // added to Boiler & Heating Plant Replacement (see that template's
+  // comment for the full rationale) — no contractor appointment or
+  // Gate 5 work until two competitive quotes, written PFI Board/NHS
+  // lifecycle cost approval, and written WSG approval of a formal SBAR
+  // are all in. Unlike Boiler, this template already had a live demo
+  // project instantiated from it (#20777) by the time V2.0 landed, so
+  // the DB-side migration script updated existing DeliverableTemplate
+  // rows in place (relabelling del.water_full_technical_design_package
+  // into the new pre-appointment "developed design" item, and
+  // del.water_detailed_specifications into "Detailed Scope of Works")
+  // rather than deleting anything — Deliverable.templateId has no
+  // cascade, so deleting a DeliverableTemplate with a live instance
+  // would have FK-failed. del.water_wsg_design_approval was similarly
+  // repurposed into the new SBAR-submission step, with a genuinely new
+  // del.water_wsg_written_approval item added for the approval itself.
+  // Gate 6 already had "Formal Water Safety Group acceptance and
+  // updated Water Safety Plan" from V1 — unlike Boiler, no Gate 7 → 6
+  // move was needed here.
   const waterTemplate = await db.template.create({
     data: {
       key: "template.health.domestic_hot_cold_water_replacement",
@@ -507,7 +543,7 @@ async function main() {
       { key: "del.water_risk_assessment_review", label: "Water risk assessment review and gap analysis", description: "SHTM 04-01, HSE ACOP L8." },
       { key: "del.water_expanded_risk_register", label: "Initial risk register (Legionella, loss of supply, temperature control, materials)", description: "SHTM 00, CDM 2015, SHTM 04-01." },
       { key: "del.water_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
-      { key: "del.water_wsg_engagement", label: "Formal engagement with Water Safety Group (WSG)", description: "SHTM 04-01." },
+      { key: "del.water_wsg_engagement", label: "Early awareness engagement with Water Safety Group (WSG)", description: "SHTM 04-01 Part B — flags the project to WSG ahead of the formal SBAR submitted at Gate 4." },
     ],
     // Gate 2 — Concept Design
     [
@@ -522,13 +558,20 @@ async function main() {
       { key: "del.water_coordinated_layout_drawings", label: "Coordinated design (plant locations, pipe routes, storage vessels, pump rooms, access for maintenance)", description: "SHTM 04-01 Part A." },
       { key: "del.water_mep_structural_coordination", label: "Spatial coordination with structure, electrical, ventilation and other services" },
       { key: "del.water_fire_structural_assessment", label: "Fire compartmentation and structural impact assessment for pipework and storage vessel penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.water_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary supply strategy" },
+      { key: "del.water_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary supply strategy (principles only)" },
       { key: "del.water_monitoring_sampling_confirmation", label: "Confirmation of temperature monitoring and sampling point strategy", description: "SHTM 04-01.", bypassAuthority: "COMPLIANCE_OFFICER" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design. Contains the Pre-Contract Hold Point
+    // (V2.0) — same shape as the Boiler template's Gate 4: everything
+    // up to and including del.water_pre_contract_hold_point is
+    // pre-appointment "sufficient for accurate pricing" work;
+    // del.water_post_appointment_full_design is the only item that
+    // happens after a contractor is appointed, though it's still
+    // recorded under this same Gate 4.
     [
-      { key: "del.water_full_technical_design_package", label: "Full technical design drawings, schematics and pipework layouts", description: "SHTM 04-01 Part A." },
-      { key: "del.water_detailed_specifications", label: "Detailed specifications (pipework materials, storage vessels, calorifiers/heat exchangers, pumps, TMVs, valves, insulation, controls)", description: "SHTM 04-01 Part A, BS EN 806." },
+      { key: "del.water_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.water_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.water_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.water_treatment_dosing_temp_strategy", label: "Water treatment / chemical dosing / temperature control strategy", description: "SHTM 04-01 Part A." },
       { key: "del.water_legionella_control_measures", label: "Legionella control measures and schematic risk assessment update", description: "SHTM 04-01, HSE ACOP L8." },
       { key: "del.water_monitoring_sampling_bms_design", label: "Temperature monitoring, sampling points and BMS integration design", description: "SHTM 04-01." },
@@ -537,11 +580,17 @@ async function main() {
       { key: "del.water_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.water_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 04-01.", bypassAuthority: "SRO" },
       { key: "del.water_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
-      { key: "del.water_wsg_design_approval", label: "Water Safety Group review and approval of design", description: "SHTM 04-01.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — one of three conditions for the Pre-Contract Hold Point below." },
+      { key: "del.water_sbar_submission_to_wsg", label: "Prepare and submit formal SBAR to the Water Safety Group", description: "Covering proposed works, water treatment strategy, risk assessment and temporary arrangements. SHTM 04-01 Part B." },
+      { key: "del.water_wsg_written_approval", label: "Obtain written WSG approval / endorsement", description: "SHTM 04-01 — one of three conditions for the Pre-Contract Hold Point below.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.water_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until both PFI/NHS cost approval and Water Safety Group approval are received", description: "Clear commercial & governance cut-off. Requires the written WSG approval and a formal PFI Board/NHS lifecycle cost approval to both be in place before Gate 5 can begin.", bypassAuthority: "SRO" },
+      { key: "del.water_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.water_method_statements_temp_supply", label: "Contractor method statements, detailed phasing & temporary water supply arrangements", description: "Critical for continuity — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_method_statements_temp_supply", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary water supply arrangements", description: "Critical for continuity — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.water_material_equipment_certificates", label: "Material & equipment certificates (pipework, fittings, vessels, TMVs — WRAS approved where required)", description: "SHTM 04-01, Water Byelaws." },
       { key: "del.water_permit_to_work_isolation", label: "Permit-to-Work and Isolation Certificates for every zone/tank shutdown", bypassAuthority: "AUTHORISED_PERSON_ELECTRICAL" },
       { key: "del.water_pipework_storage_pump_install", label: "Installation of pipework, storage, pumps, TMVs, insulation and controls", description: "SHTM 04-01 Part A." },
@@ -924,6 +973,30 @@ async function main() {
   // heating circuit is AUTHORISED_PERSON_VENTILATION (Heating &
   // Ventilation AP), not Water AP — confirmed 21 Aug 2026,
   // there is no separate "Gas AP" in the SHTM/HTM scheme (fuel gas/oil
+  //
+  // Updated to V2.0 (Boiler_template_V2.0.docx, 24 Aug 2026): the
+  // source document added a "Pre-Contract Hold Point" governance rule
+  // inside Gate 4 — no contractor appointment and no Gate 5 works may
+  // start until (a) a minimum of two competitive quotes, (b) written
+  // PFI Board/NHS lifecycle cost approval, and (c) written Water
+  // Safety Group approval of a formal SBAR are all in place. Modelled
+  // as five new Gate 4 deliverables (two competitive quotes, SBAR
+  // submission, WSG written approval, PFI/NHS submission) plus the
+  // hold point itself as a single SRO-tiered deliverable — this app has
+  // no cross-deliverable dependency enforcement, so the hold point's
+  // evidence is the PM/SRO's own written confirmation that both
+  // approvals landed, same trust model as every other deliverable.
+  // WSG written approval reuses COMPLIANCE_OFFICER, matching the
+  // existing del.water_wsg_acceptance_updated_plan precedent in the
+  // Domestic Hot & Cold Water template. Gate 4's old single
+  // "full technical design drawings" item split in two: a pre-hold-point
+  // "developed design sufficient for pricing" item (not full
+  // construction-issue drawings) and a post-hold-point "complete full
+  // technical drawings" item — matches V2's own pre/post-appointment
+  // split. Also added: early WSG awareness engagement at Gate 1, and
+  // moved "Updated Water Safety Plan" from Gate 7 (Use) to Gate 6
+  // (Handover) as a mandatory WSG submission rather than the old
+  // "if required" wording — both explicit in V2.
   // competency is the external Gas Safe Register/OFTEC schemes, not a
   // Trust-appointed AP/AE), so gas/oil connection items stay untiered
   // (PM-level, evidenced via contractor certification) rather than
@@ -972,6 +1045,7 @@ async function main() {
       { key: "del.boiler_water_quality_baseline_sampling", label: "Initial water quality baseline sampling", description: "SHTM 04-01 Part A." },
       { key: "del.boiler_expanded_risk_register", label: "Risk register (heating continuity, temporary plant, gas/fuel, combustion, structural)", description: "SHTM 00, CDM 2015." },
       { key: "del.boiler_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
+      { key: "del.boiler_wsg_early_engagement", label: "Early awareness engagement with Water Safety Group", description: "SHTM 04-01 Part B — flags the project to WSG ahead of the formal SBAR submitted at Gate 4." },
     ],
     // Gate 2 — Concept Design
     [
@@ -987,28 +1061,40 @@ async function main() {
       { key: "del.boiler_coordinated_layout_drawings", label: "Coordinated layout (new boiler positions, temporary boilers, pipework, flues, access)" },
       { key: "del.boiler_mep_structural_coordination", label: "Spatial coordination of mechanical, electrical, BMS, structural supports / plinths", description: "SHTM 06-01." },
       { key: "del.boiler_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for flue and plant penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.boiler_updated_risk_register_spatial", label: "Updated cost plan, risk register & phasing strategy" },
-      { key: "del.boiler_temp_boiler_siting_confirmation", label: "Confirmation of temporary boiler siting and permanent boiler plantroom arrangement", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.boiler_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing strategy (principles only)" },
+      { key: "del.boiler_temp_boiler_siting_confirmation", label: "Confirmation of temporary boiler siting and permanent boiler plantroom arrangement", description: "High-level strategy only at this stage — no detailed method statements; those follow contractor appointment after the Gate 4 Pre-Contract Hold Point.", bypassAuthority: "COMPLIANCE_OFFICER" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design. Contains the Pre-Contract Hold Point
+    // (V2.0): everything up to and including
+    // del.boiler_pre_contract_hold_point is pre-appointment "sufficient
+    // for accurate pricing" work; del.boiler_post_appointment_full_design
+    // is the only item that happens after a contractor is appointed,
+    // though it's still recorded under this same Gate 4.
     [
-      { key: "del.boiler_full_technical_design_package", label: "Full technical design drawings & schematics (including phasing, temporary & permanent boiler arrangements)", description: "SHTM 04-01 Part A." },
-      { key: "del.boiler_detailed_plant_specifications", label: "Detailed specifications — new dual-fuel boilers, valves/headers/pipework/pumps, side-stream filtration & corrosion monitoring, temporary boilers", description: "SHTM 04-01, manufacturer data." },
-      { key: "del.boiler_flue_gas_oil_design", label: "Flue system design, combustion air, gas & oil supply modifications" },
+      { key: "del.boiler_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.boiler_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.boiler_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.boiler_water_treatment_strategy", label: "Water treatment / chemical dosing / corrosion inhibitor strategy", description: "SHTM 04-01 Part A, BSRIA water treatment guidance." },
       { key: "del.boiler_bms_control_philosophy", label: "BMS control philosophy, sequences & point schedules (new boilers + retained systems)", description: "SHTM 06-01." },
       { key: "del.boiler_electrical_design", label: "Electrical design (boiler power, controls, temporary plant)", description: "SHTM 06-01." },
-      { key: "del.boiler_wsg_engagement_approval", label: "Water Safety Group (WSG) engagement and approval for heating-system modifications", description: "The LTHW circuit falls under SHTM 04-01 water safety, so design changes need WSG sign-off before construction proceeds, the same as any other water-system modification.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.boiler_flue_gas_oil_design", label: "Flue system design, combustion air, gas & oil supply modifications" },
       { key: "del.boiler_structural_support_design", label: "Structural / plinth / support design information" },
       { key: "del.boiler_thermal_insulation_spec", label: "Thermal insulation specification" },
-      { key: "del.boiler_building_regs_compliance_info", label: "Building Regulations / statutory compliance information (including energy / emissions)", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.boiler_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.boiler_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.boiler_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 00.", bypassAuthority: "SRO" },
       { key: "del.boiler_tender_documentation", label: "Tender documentation / updated Scope of Works / pricing schedules" },
+      { key: "del.boiler_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — one of three conditions for the Pre-Contract Hold Point below." },
+      { key: "del.boiler_sbar_submission_to_wsg", label: "Prepare and submit formal SBAR to the Water Safety Group", description: "Covering proposed works, water treatment strategy, risk assessment and temporary arrangements. SHTM 04-01 Part B." },
+      { key: "del.boiler_wsg_written_approval", label: "Obtain written WSG approval / endorsement", description: "SHTM 04-01 — one of three conditions for the Pre-Contract Hold Point below.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.boiler_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.boiler_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until both PFI/NHS cost approval and Water Safety Group approval are received", description: "Clear commercial & governance cut-off. Requires the written WSG approval and a formal PFI Board/NHS lifecycle cost approval to both be in place before Gate 5 can begin.", bypassAuthority: "SRO" },
+      { key: "del.boiler_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.boiler_method_statements", label: "Contractor method statements, detailed phasing & temporary works designs" },
+      { key: "del.boiler_method_statements", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary works designs", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
       { key: "del.boiler_temp_boiler_installation_commissioning", label: "Temporary boiler installation, connection, load testing & commissioning certificates", description: "SHTM 00." },
       { key: "del.boiler_hot_tapping_isolation_records", label: "Hot tapping / isolation verification records for the LTHW heating circuit", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
       { key: "del.boiler_new_boiler_installation", label: "New permanent boiler delivery, installation, flue connections, gas/oil connections" },
@@ -1038,11 +1124,11 @@ async function main() {
       { key: "del.boiler_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
       { key: "del.boiler_final_water_quality_report", label: "Final water quality, inhibitor residual & corrosion monitoring baseline report", description: "SHTM 04-01." },
       { key: "del.boiler_temp_boiler_decommissioning_certs", label: "Temporary boiler decommissioning & site removal certificates" },
+      { key: "del.boiler_updated_water_safety_plan_handover", label: "Updated Water Safety Plan / Written Scheme submitted to WSG", description: "SHTM 04-01 Parts B & G.", bypassAuthority: "COMPLIANCE_OFFICER" },
     ],
     // Gate 7 — Use
     [
       { key: "del.boiler_soft_landings_review", label: "Soft landings / post-occupancy review (boiler performance, isolation capability, water quality)", description: "SHTM 00." },
-      { key: "del.boiler_updated_water_safety_plan", label: "Updated Water Safety Plan / Written Scheme (if required by Water Safety Group)", description: "SHTM 04-01 Parts B & G." },
       { key: "del.boiler_ongoing_monitoring_regime", label: "Ongoing monitoring regime (side-stream filtration, corrosion coupons, boiler efficiency)", description: "SHTM 04-01 Part B." },
       { key: "del.boiler_defects_liability_final_account", label: "Defects liability records & final account" },
       { key: "del.boiler_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
@@ -1069,6 +1155,27 @@ async function main() {
   // heating (pressure systems) only, not ventilation. Fire
   // compartmentation item added at Gate 3 for consistency with every
   // other template, same as the Boiler template.
+  //
+  // Updated to V2.0 (Heating&Ventillation_V2.0.docx, 24 Aug 2026): the
+  // revised source document dropped the heating half entirely (it's a
+  // different SHTM — 03-01 vs Boiler's 04-01 — so V2.0 treats them as
+  // fully separate documents now, not one dual-framed checklist), and
+  // added the same Pre-Contract Hold Point governance rule as Boiler
+  // and Domestic Hot & Cold Water: no contractor appointment or Gate 5
+  // work until two competitive quotes, written PFI Board/NHS lifecycle
+  // cost approval, and written Ventilation Safety Group (VSG) / IPC
+  // approval of a formal SBAR are all in. Like Water (and unlike
+  // Boiler), this template already has live instantiated Deliverable
+  // rows across several projects (the Main Kitchen Refit package among
+  // them), so the DB-side migration script updated existing
+  // DeliverableTemplate rows in place rather than deleting anything —
+  // del.ventilation_full_technical_design_package became the new
+  // pre-appointment "developed design" item, del.ventilation_
+  // detailed_plant_specifications became "Detailed Scope of Works",
+  // and del.ventilation_vsg_engagement_approval was repurposed into
+  // the new SBAR-submission step, with a genuinely new del.
+  // ventilation_vsg_ipc_written_approval item added for the approval
+  // itself, same shape as Water's WSG split.
   const ventilationTemplate = await db.template.create({
     data: {
       key: "template.health.ventilation_systems_replacement",
@@ -1096,53 +1203,69 @@ async function main() {
   const ventilationDeliverableDefsByStage: DeliverableDef[][] = [
     // Gate 0 — Strategic Definition
     [
-      { key: "del.ventilation_business_case", label: "Business case / need identification (system condition, clinical risk, energy performance)", description: "SHTM 00 — Policies and principles." },
-      { key: "del.ventilation_strategic_brief", label: "Strategic brief & project outcomes (continuity of service, resilience, efficiency)" },
-      { key: "del.ventilation_clinical_operational_impact_assessment", label: "High-level clinical / operational impact assessment" },
+      { key: "del.ventilation_business_case", label: "Business case / need identification (system condition, clinical risk, air quality, energy performance)", description: "SHTM 00, SHTM 03-01." },
+      { key: "del.ventilation_strategic_brief", label: "Strategic brief & project outcomes (continuity of ventilation, resilience, clinical safety, efficiency)" },
+      { key: "del.ventilation_clinical_operational_impact_assessment", label: "High-level clinical / operational impact assessment", description: "SHTM 00, SHTM 03-01." },
     ],
     // Gate 1 — Preparation & Briefing
     [
-      { key: "del.ventilation_project_brief", label: "Project Brief (scope: ventilation replacement, continuity requirements)" },
-      { key: "del.ventilation_condition_surveys_baseline", label: "Existing system condition surveys & baseline data (performance, air quality)", description: "SHTM 03-01." },
-      { key: "del.ventilation_expanded_risk_register", label: "Initial risk register (service continuity, infection control, access, temporary plant)", description: "SHTM 00, CDM 2015." },
+      { key: "del.ventilation_project_brief", label: "Project Brief (scope of ventilation replacement, critical areas, continuity requirements)", description: "SHTM 00, SHTM 03-01." },
+      { key: "del.ventilation_condition_surveys_baseline", label: "Existing system condition surveys & baseline data (air volumes, pressures, filtration, hygiene)", description: "SHTM 03-01 Part A." },
+      { key: "del.ventilation_expanded_risk_register", label: "Initial risk register (service continuity, infection control, access, temporary plant)", description: "SHTM 00, CDM 2015, HAI-SCRIBE." },
       { key: "del.ventilation_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
+      { key: "del.ventilation_vsg_early_engagement", label: "Early engagement with Ventilation Safety Group (VSG) / IPC", description: "SHTM 03-01, HAI-SCRIBE — flags the project to VSG/IPC ahead of the formal SBAR submitted at Gate 4." },
     ],
     // Gate 2 — Concept Design
     [
-      { key: "del.ventilation_concept_design_report", label: "Concept design options (phased replacement, temporary plant strategy)" },
-      { key: "del.ventilation_outline_services_strategy", label: "Outline services strategy (new plant, distribution, controls, resilience)", description: "SHTM 03-01 Part A." },
-      { key: "del.ventilation_outline_specs_cost_plan", label: "Preliminary cost plan & outline specifications" },
-      { key: "del.ventilation_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00." },
+      { key: "del.ventilation_concept_design_report", label: "Concept design options (phased replacement, temporary ventilation strategy, AHU type)" },
+      { key: "del.ventilation_outline_services_strategy", label: "Outline ventilation strategy (air change rates, pressure regimes, filtration, resilience)", description: "SHTM 03-01 Part A." },
+      { key: "del.ventilation_preliminary_schematics_load_assessment", label: "Preliminary schematics and load assessment", description: "SHTM 03-01." },
+      { key: "del.ventilation_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
+      { key: "del.ventilation_concept_risk_assessment", label: "Design risk assessment (including infection control)", description: "CDM 2015, SHTM 00, HAI-SCRIBE." },
     ],
     // Gate 3 — Spatial Coordination
     [
-      { key: "del.ventilation_coordinated_layout_drawings", label: "Coordinated design (plant locations, distribution routes, access, temporary arrangements)" },
-      { key: "del.ventilation_mep_structural_coordination", label: "Spatial coordination with structure, electrical, BMS and other services", description: "SHTM 06-01." },
+      { key: "del.ventilation_coordinated_layout_drawings", label: "Coordinated design (AHU locations, duct routes, plant access, temporary arrangements)", description: "SHTM 03-01 Part A." },
+      { key: "del.ventilation_mep_structural_coordination", label: "Spatial coordination with structure, electrical, BMS, fire compartments and other services", description: "SHTM 00." },
       { key: "del.ventilation_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for ductwork and fire-damper penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.ventilation_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing strategy" },
+      { key: "del.ventilation_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary ventilation strategy (principles only)" },
+      { key: "del.ventilation_critical_area_resilience_confirmation", label: "Confirmation of critical area resilience requirements", description: "SHTM 03-01." },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design. Contains the Pre-Contract Hold Point
+    // (V2.0) — same shape as Boiler and Water's Gate 4: everything up
+    // to and including del.ventilation_pre_contract_hold_point is
+    // pre-appointment "sufficient for accurate pricing" work;
+    // del.ventilation_post_appointment_full_design is the only item
+    // that happens after a contractor is appointed, though it's still
+    // recorded under this same Gate 4.
     [
-      { key: "del.ventilation_full_technical_design_package", label: "Full technical design drawings & schematics (including phasing)", description: "SHTM 03-01 Part A." },
-      { key: "del.ventilation_detailed_plant_specifications", label: "Detailed specifications for plant, distribution, controls and associated equipment", description: "SHTM 03-01, manufacturer data." },
+      { key: "del.ventilation_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.ventilation_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.ventilation_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.ventilation_filter_hygiene_strategy", label: "Filter & hygiene strategy", description: "SHTM 03-01." },
       { key: "del.ventilation_bms_control_philosophy", label: "BMS / controls philosophy and point schedules", description: "SHTM 06-01." },
-      { key: "del.ventilation_electrical_design", label: "Electrical design associated with new plant", description: "SHTM 06-01." },
-      { key: "del.ventilation_vsg_engagement_approval", label: "Ventilation Safety Group (VSG) engagement and approval for ventilation-system modifications", description: "Design changes to ventilation systems need VSG sign-off before construction proceeds, the same as a water-system modification needs Water Safety Group approval.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.ventilation_electrical_design", label: "Electrical design associated with AHUs, fans and controls", description: "SHTM 06-01." },
       { key: "del.ventilation_duct_insulation_spec", label: "Duct insulation specification" },
       { key: "del.ventilation_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.ventilation_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
-      { key: "del.ventilation_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 00.", bypassAuthority: "SRO" },
+      { key: "del.ventilation_pre_construction_information", label: "Pre-Construction Information & input to Construction Phase Plan (CDM)", description: "CDM 2015." },
+      { key: "del.ventilation_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 03-01, HAI-SCRIBE.", bypassAuthority: "SRO" },
       { key: "del.ventilation_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
+      { key: "del.ventilation_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — one of three conditions for the Pre-Contract Hold Point below." },
+      { key: "del.ventilation_sbar_submission_to_vsg", label: "Prepare and submit formal SBAR (or equivalent) to the Ventilation Safety Group / IPC", description: "SHTM 03-01, HAI-SCRIBE." },
+      { key: "del.ventilation_vsg_ipc_written_approval", label: "Obtain written VSG / IPC approval", description: "One of three conditions for the Pre-Contract Hold Point below.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.ventilation_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.ventilation_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until both PFI/NHS cost approval and VSG/IPC approval are received", description: "Clear commercial & governance cut-off. Requires the written VSG/IPC approval and a formal PFI Board/NHS lifecycle cost approval to both be in place before Gate 5 can begin.", bypassAuthority: "SRO" },
+      { key: "del.ventilation_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.ventilation_method_statements", label: "Contractor method statements, detailed phasing & temporary works designs" },
+      { key: "del.ventilation_method_statements", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary ventilation arrangements", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
       { key: "del.ventilation_temp_plant_installation_commissioning", label: "Temporary plant installation, connection, testing & commissioning certificates (if used)", description: "SHTM 00." },
       { key: "del.ventilation_material_equipment_certificates", label: "Material & equipment certificates", description: "SHTM 03-01." },
       { key: "del.ventilation_shutdown_isolation_records", label: "Shutdown / isolation records for ventilation plant and ductwork", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
-      { key: "del.ventilation_plant_distribution_install", label: "Installation of new plant, distribution systems, controls and associated works", description: "SHTM 03-01." },
-      { key: "del.ventilation_cleanliness_hygiene_records", label: "Cleanliness & hygiene records", description: "Critical infection-control step for ventilation hygiene, per SHTM 03-01 Part B — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
+      { key: "del.ventilation_plant_distribution_install", label: "Installation of new AHUs, ductwork, fans, filters, controls and associated works", description: "SHTM 03-01 Part A." },
+      { key: "del.ventilation_cleanliness_hygiene_records", label: "Cleanliness & hygiene records during installation", description: "Critical infection-control step for ventilation hygiene, per SHTM 03-01 Part B — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
       { key: "del.ventilation_bms_installation_testing", label: "BMS installation, wiring, point-to-point testing & sequence proving", description: "SHTM 06-01." },
       { key: "del.ventilation_eic_certificates", label: "Electrical installation & test certificates (BS 7671)", description: "SHTM 06-01.", bypassAuthority: "SRO" },
       { key: "del.ventilation_progress_records_quality_log", label: "Progress records, quality inspections & change control log" },
@@ -1150,23 +1273,24 @@ async function main() {
     ],
     // Gate 6 — Handover
     [
-      { key: "del.ventilation_full_system_commissioning_records", label: "Full system testing & commissioning records", description: "SHTM 03-01 Part A." },
-      { key: "del.ventilation_performance_verification_data", label: "Performance verification data (air volumes, filtration efficiency etc.)", description: "SHTM 03-01." },
+      { key: "del.ventilation_full_system_commissioning_records", label: "Full system testing, commissioning and validation records", description: "SHTM 03-01 Part A." },
+      { key: "del.ventilation_performance_verification_data", label: "Performance verification data (air volumes, pressures, filtration efficiency, etc.)", description: "SHTM 03-01." },
       { key: "del.ventilation_as_fitted_drawings", label: "As-fitted drawings & schematics", description: "SHTM 03-01." },
-      { key: "del.ventilation_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00, SHTM 03-01." },
+      { key: "del.ventilation_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00, SHTM 03-01 Part B." },
       { key: "del.ventilation_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer instructions" },
       { key: "del.ventilation_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.ventilation_training_records", label: "Training & demonstration records for estates / operational staff", description: "SHTM 00." },
       { key: "del.ventilation_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
       { key: "del.ventilation_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
-      { key: "del.ventilation_final_validation_report", label: "Final validation reports", description: "SHTM 03-01." },
+      { key: "del.ventilation_final_validation_report", label: "Final validation reports", description: "SHTM 03-01 Part A." },
       { key: "del.ventilation_temp_plant_decommissioning_certs", label: "Temporary plant decommissioning & removal certificates (if applicable)" },
+      { key: "del.ventilation_vsg_ipc_acceptance", label: "Formal VSG / IPC acceptance", description: "SHTM 03-01 Part B.", bypassAuthority: "COMPLIANCE_OFFICER" },
     ],
     // Gate 7 — Use
     [
-      { key: "del.ventilation_soft_landings_review", label: "Soft landings / post-occupancy evaluation (performance, resilience, energy)", description: "SHTM 00." },
-      { key: "del.ventilation_management_arrangements", label: "Ventilation management arrangements", description: "SHTM 03-01 Part B." },
-      { key: "del.ventilation_ongoing_monitoring_regime", label: "Ongoing monitoring & maintenance regime", description: "SHTM 03-01 Part B." },
+      { key: "del.ventilation_soft_landings_review", label: "Soft landings / post-occupancy evaluation (performance, resilience, energy, clinical feedback)", description: "SHTM 00." },
+      { key: "del.ventilation_management_arrangements", label: "Updated Ventilation management arrangements / Written Scheme", description: "SHTM 03-01 Part B." },
+      { key: "del.ventilation_ongoing_monitoring_regime", label: "Ongoing monitoring, verification and maintenance regime", description: "SHTM 03-01 Part B." },
       { key: "del.ventilation_defects_liability_final_account", label: "Defects liability records & final account" },
       { key: "del.ventilation_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
     ],
@@ -1188,6 +1312,19 @@ async function main() {
   // depends on, both sit with AUTHORISED_PERSON_MEDICAL_GASES, not
   // SRO. Fire compartmentation item added at Gate 3 for consistency
   // with every other template, same as Boiler and Ventilation.
+  //
+  // Updated to V2.0 (Medical Gases_V2.0.docx, 24 Aug 2026): the same
+  // Pre-Contract Hold Point governance rule as Boiler, Water, and
+  // Ventilation — no contractor appointment or Gate 5 work until two
+  // competitive quotes, written PFI Board/NHS lifecycle cost approval,
+  // and written Medical Gas Safety Group (MGSG) / Authorised Person
+  // (MGPS) approval of a formal SBAR are all in. Zero live Deliverable
+  // instances existed for this template (never permanently demoed), so
+  // the DB-side migration script deleted and recreated its
+  // DeliverableTemplate rows per gate, same as Boiler — no in-place
+  // update needed here, unlike Water/Ventilation. MGSG acceptance was
+  // already at Gate 6 in V1, so no Gate 7 → 6 move needed (same as
+  // Water, unlike Boiler).
   const medicalGasesTemplate = await db.template.create({
     data: {
       key: "template.health.medical_gas_systems_replacement",
@@ -1227,7 +1364,7 @@ async function main() {
       { key: "del.medgas_baseline_identity_quality_flow_testing", label: "Baseline identity, quality and flow testing records", description: "SHTM 02-01 Part A." },
       { key: "del.medgas_expanded_risk_register", label: "Initial risk register (isolation risks, cross-connection, pendant structural loads)", description: "SHTM 00, CDM 2015, Medical Gas Safety Group." },
       { key: "del.medgas_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
-      { key: "del.medgas_mgsg_engagement", label: "Engagement with Medical Gas Safety Group (MGSG)", description: "SHTM 02-01." },
+      { key: "del.medgas_mgsg_engagement", label: "Early engagement with Medical Gas Safety Group (MGSG) and Authorised Person (MGPS)", description: "SHTM 02-01." },
     ],
     // Gate 2 — Concept Design
     [
@@ -1242,13 +1379,20 @@ async function main() {
       { key: "del.medgas_coordinated_layout_drawings", label: "Coordinated design (pipe routes, plant locations, pendant positions, structural supports)", description: "SHTM 02-01 Part A." },
       { key: "del.medgas_mep_structural_coordination", label: "Spatial coordination with structure, electrical, data, lighting and other services", description: "SHTM 06-01." },
       { key: "del.medgas_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for MGPS pipework and pendant penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.medgas_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / isolation strategy" },
+      { key: "del.medgas_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / isolation strategy (principles only)" },
       { key: "del.medgas_temp_supply_confirmation", label: "Confirmation of temporary supply arrangements", description: "SHTM 02-01.", bypassAuthority: "COMPLIANCE_OFFICER" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design. Contains the Pre-Contract Hold Point
+    // (V2.0) — same shape as Boiler, Water, and Ventilation's Gate 4:
+    // everything up to and including del.medgas_pre_contract_hold_point
+    // is pre-appointment "sufficient for accurate pricing" work;
+    // del.medgas_post_appointment_full_design is the only item that
+    // happens after a contractor is appointed, though it's still
+    // recorded under this same Gate 4.
     [
-      { key: "del.medgas_full_technical_design_package", label: "Full technical design drawings & schematics (including phasing and isolation points)", description: "SHTM 02-01 Part A." },
-      { key: "del.medgas_detailed_specifications", label: "Detailed specifications — pipeline systems, valves, AVSUs, terminal units, ceiling pendants/medical supply units, plant, manifolds, alarms, AGSS", description: "SHTM 02-01 Part A, BS EN ISO 7396-1, BS EN ISO 11197." },
+      { key: "del.medgas_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.medgas_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.medgas_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.medgas_pendant_structural_design", label: "Structural design information for pendant supports / ceiling fixings" },
       { key: "del.medgas_electrical_data_design", label: "Electrical & data design associated with pendants", description: "SHTM 06-01." },
       { key: "del.medgas_alarm_system_design", label: "Alarm system design and interface requirements", description: "SHTM 02-01 Part A." },
@@ -1256,11 +1400,17 @@ async function main() {
       { key: "del.medgas_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.medgas_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 02-01.", bypassAuthority: "SRO" },
       { key: "del.medgas_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
-      { key: "del.medgas_mgsg_design_approval", label: "MGSG review and approval of design", description: "SHTM 02-01.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.medgas_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — one of three conditions for the Pre-Contract Hold Point below." },
+      { key: "del.medgas_sbar_submission_to_mgsg", label: "Prepare and submit formal SBAR (or equivalent) to the Medical Gas Safety Group / Authorised Person (MGPS)", description: "SHTM 02-01." },
+      { key: "del.medgas_mgsg_ap_written_approval", label: "Obtain written MGSG / AP (MGPS) approval", description: "One of three conditions for the Pre-Contract Hold Point below.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.medgas_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.medgas_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until both PFI/NHS cost approval and MGSG/AP approval are received", description: "Clear commercial & governance cut-off. Requires the written MGSG/AP (MGPS) approval and a formal PFI Board/NHS lifecycle cost approval to both be in place before Gate 5 can begin.", bypassAuthority: "SRO" },
+      { key: "del.medgas_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.medgas_permit_to_work_isolation", label: "Contractor method statements, detailed phasing, isolation & Permit-to-Work procedures", description: "SHTM 02-01 Part B — all MGPS work is controlled via the Permit-to-Work system, overseen by the site Authorised Person (MGPS).", bypassAuthority: "AUTHORISED_PERSON_MEDICAL_GASES" },
+      { key: "del.medgas_permit_to_work_isolation", label: "Contractor's detailed Method Statements, full RAMS, detailed phasing, isolation & Permit-to-Work procedures", description: "SHTM 02-01 Part B — all MGPS work is controlled via the Permit-to-Work system, overseen by the site Authorised Person (MGPS). Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "AUTHORISED_PERSON_MEDICAL_GASES" },
       { key: "del.medgas_temp_supply_design_install_validation", label: "Temporary medical gas supply arrangements (if required) — design, installation & validation", description: "SHTM 02-01 Part A." },
       { key: "del.medgas_material_equipment_certificates", label: "Material & equipment certificates (pipework, fittings, terminal units, pendants, plant)", description: "SHTM 02-01 Part A." },
       { key: "del.medgas_pipeline_valve_terminal_install", label: "Installation of new pipeline systems, valves, AVSUs and terminal units", description: "SHTM 02-01 Part A." },
@@ -1875,20 +2025,26 @@ async function main() {
       { key: "del.chilledwater_outline_cooling_strategy", label: "Outline cooling strategy (temperatures, flow rates, primary/secondary, buffer vessels)", description: "CIBSE." },
       { key: "del.chilledwater_preliminary_schematics_load", label: "Preliminary schematics and load schedules" },
       { key: "del.chilledwater_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.chilledwater_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00." },
+      { key: "del.chilledwater_concept_risk_assessment", label: "Design risk assessment (high-level only)", description: "CDM 2015, SHTM 00." },
+      { key: "del.chilledwater_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
     [
       { key: "del.chilledwater_coordinated_layout_drawings", label: "Coordinated design (chiller locations, pipe routes, pump rooms, access, external plant)", description: "SHTM 00." },
       { key: "del.chilledwater_mep_structural_coordination", label: "Spatial coordination with structure, electrical, ventilation, fire compartments and other services", description: "SHTM 00." },
       { key: "del.chilledwater_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for pipework penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.chilledwater_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary cooling strategy" },
-      { key: "del.chilledwater_resilience_freecooling_confirmation", label: "Confirmation of resilience and free-cooling provisions", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.chilledwater_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary cooling strategy (principles only)" },
+      { key: "del.chilledwater_resilience_freecooling_confirmation", label: "Confirmation of resilience and free-cooling provisions — high-level temporary arrangements strategy only", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.chilledwater_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design (Critical Gate). Contains the
+    // Pre-Contract Hold Point — no contractor appointment or Gate 5
+    // work until 2+ competitive quotes and written PFI Board/NHS
+    // lifecycle cost approval are received.
     [
-      { key: "del.chilledwater_full_technical_design_package", label: "Full technical design drawings, schematics and pipework layouts", description: "CIBSE, manufacturer data." },
-      { key: "del.chilledwater_detailed_specifications", label: "Detailed specifications (chillers, pumps, pipework, valves, insulation, pressurisation, water treatment, controls)", description: "CIBSE, BSRIA." },
+      { key: "del.chilledwater_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.chilledwater_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.chilledwater_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.chilledwater_treatment_corrosion_strategy", label: "Water treatment / chemical dosing / corrosion and microbiological control strategy", description: "BSRIA, SHTM 04-01 principles." },
       { key: "del.chilledwater_control_strategy_bms_schedules", label: "Control strategy, sequences and BMS point schedules", description: "SHTM 03-01 linked, CIBSE Guide H." },
       { key: "del.chilledwater_electrical_design", label: "Electrical design associated with chillers, pumps and controls", description: "SHTM 06 series." },
@@ -1898,10 +2054,15 @@ async function main() {
       { key: "del.chilledwater_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 00.", bypassAuthority: "SRO" },
       { key: "del.chilledwater_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.chilledwater_stakeholder_design_approval", label: "Stakeholder review and approval of design", description: "SHTM 00.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.chilledwater_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.chilledwater_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.chilledwater_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.chilledwater_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.chilledwater_method_statements_temp_cooling", label: "Contractor method statements, detailed phasing & temporary cooling arrangements", description: "Critical for clinical areas — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.chilledwater_method_statements_temp_cooling", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary cooling arrangements", description: "Critical for clinical areas — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.chilledwater_material_equipment_certificates", label: "Material & equipment certificates (chillers, pumps, pipework, valves, insulation)", description: "Manufacturer certification." },
       { key: "del.chilledwater_chillers_pipework_install", label: "Installation of chillers, pipework, pumps, pressurisation units, insulation and controls" },
       { key: "del.chilledwater_pressure_testing_flushing_dosing", label: "Pressure testing, flushing, cleaning and chemical treatment records", description: "Critical water-treatment step for a closed chilled water system, per BSRIA guidance — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
@@ -2004,20 +2165,26 @@ async function main() {
       { key: "del.steam_outline_system_strategy", label: "Outline steam system strategy (generation, distribution, reduction, condensate)" },
       { key: "del.steam_preliminary_schematics_load", label: "Preliminary schematics and load assessment" },
       { key: "del.steam_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.steam_concept_risk_assessment", label: "Design risk assessment (including pressure system hazards)", description: "CDM 2015, PSSR." },
+      { key: "del.steam_concept_risk_assessment", label: "Design risk assessment (including pressure system hazards, high-level only)", description: "CDM 2015, PSSR." },
+      { key: "del.steam_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
     [
       { key: "del.steam_coordinated_layout_drawings", label: "Coordinated design (boiler plant, pipe routes, PRV stations, condensate receiver locations, access)", description: "SHTM 00." },
       { key: "del.steam_mep_structural_coordination", label: "Spatial coordination with structure, electrical, ventilation and other services", description: "SHTM 00." },
       { key: "del.steam_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for pipework penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.steam_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary steam strategy" },
-      { key: "del.steam_critical_user_resilience_confirmation", label: "Confirmation of critical user resilience requirements", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.steam_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary steam strategy (principles only)" },
+      { key: "del.steam_critical_user_resilience_confirmation", label: "Confirmation of critical user resilience requirements — high-level temporary arrangements strategy only", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.steam_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design (Critical Gate). Contains the
+    // Pre-Contract Hold Point — no contractor appointment or Gate 5
+    // work until 2+ competitive quotes and written PFI Board/NHS
+    // lifecycle cost approval are received.
     [
-      { key: "del.steam_full_technical_design_package", label: "Full technical design drawings, schematics and pipework layouts", description: "CIBSE, manufacturer data." },
-      { key: "del.steam_detailed_specifications", label: "Detailed specifications (boilers, burners, pipework, valves, PRVs, traps, insulation, controls, water treatment)", description: "Relevant BS EN standards." },
+      { key: "del.steam_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.steam_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.steam_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.steam_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.steam_water_treatment_blowdown_strategy", label: "Water treatment / chemical dosing / blowdown strategy", description: "Manufacturer / BESSafe principles." },
       { key: "del.steam_control_strategy_bms_integration", label: "Control strategy, sequences and BMS integration" },
@@ -2027,10 +2194,15 @@ async function main() {
       { key: "del.steam_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, PSSR.", bypassAuthority: "SRO" },
       { key: "del.steam_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.steam_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.steam_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.steam_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.steam_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.steam_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.steam_method_statements_temp_steam", label: "Contractor method statements, detailed phasing & temporary steam arrangements", description: "Critical for process users — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.steam_method_statements_temp_steam", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary steam arrangements", description: "Critical for process users — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.steam_material_equipment_certificates", label: "Material & equipment certificates (boilers, pipework, valves, safety devices)", description: "PED / BS EN standards." },
       { key: "del.steam_boilers_pipework_prv_install", label: "Installation of boilers, pipework, PRVs, traps, insulation and controls" },
       { key: "del.steam_ndt_pressure_welding_records", label: "NDT, pressure testing and welding records", description: "Critical life-safety verification for a pressure system, per PSSR / BS standards — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
@@ -2127,19 +2299,25 @@ async function main() {
       { key: "del.firesuppression_outline_strategy", label: "Outline suppression strategy aligned with fire strategy and compartmentation", description: "SHTM 81." },
       { key: "del.firesuppression_preliminary_layouts_hazard_class", label: "Preliminary schematic layouts and hazard classification", description: "Relevant BS EN standards." },
       { key: "del.firesuppression_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.firesuppression_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 81." },
+      { key: "del.firesuppression_concept_risk_assessment", label: "Design risk assessment (high-level only)", description: "CDM 2015, SHTM 00, SHTM 81." },
+      { key: "del.firesuppression_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
     [
       { key: "del.firesuppression_coordinated_layout_drawings", label: "Coordinated design (pipe routes, valve sets, pump rooms, cylinder locations, nozzle positions)", description: "SHTM 81." },
       { key: "del.firesuppression_mep_structural_coordination", label: "Spatial coordination with structure, ceilings, other services and fire compartments", description: "SHTM 81." },
-      { key: "del.firesuppression_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary protection strategy" },
-      { key: "del.firesuppression_alarm_interface_confirmation", label: "Confirmation of interface requirements with fire alarm system", description: "SHTM 82.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.firesuppression_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary protection strategy (principles only)" },
+      { key: "del.firesuppression_alarm_interface_confirmation", label: "Confirmation of interface requirements with fire alarm system — high-level temporary arrangements strategy only", description: "SHTM 82.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.firesuppression_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design (Critical Gate). Contains the
+    // Pre-Contract Hold Point — no contractor appointment or Gate 5
+    // work until 2+ competitive quotes and written PFI Board/NHS
+    // lifecycle cost approval are received.
     [
-      { key: "del.firesuppression_full_technical_design_package", label: "Full technical design drawings, schematics and layouts", description: "SHTM 81, BS EN 12845 / relevant standards." },
-      { key: "del.firesuppression_detailed_specifications", label: "Detailed specifications (pipework, valves, pumps, cylinders, nozzles, controls, detection interfaces)", description: "Relevant BS EN / ISO standards." },
+      { key: "del.firesuppression_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.firesuppression_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.firesuppression_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.firesuppression_hydraulic_agent_calculations", label: "Hydraulic calculations (sprinkler / water mist) or agent quantity calculations (gaseous)", description: "BS EN 12845 or BS EN 15004." },
       { key: "del.firesuppression_cause_effect_matrix", label: "Cause & effect / interface matrix with fire detection & alarm system", description: "SHTM 82." },
       { key: "del.firesuppression_water_agent_storage_design", label: "Water supply / storage or agent storage design", description: "Relevant standards." },
@@ -2148,10 +2326,15 @@ async function main() {
       { key: "del.firesuppression_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 81.", bypassAuthority: "SRO" },
       { key: "del.firesuppression_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.firesuppression_fsa_design_approval", label: "Fire Safety Advisor / Authorising Engineer review and approval of design", description: "SHTM 81, SHTM 86 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.firesuppression_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.firesuppression_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.firesuppression_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.firesuppression_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.firesuppression_method_statements_temp_protection", label: "Contractor method statements, detailed phasing & temporary protection arrangements", description: "Critical for life safety — cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.firesuppression_method_statements_temp_protection", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary protection arrangements", description: "Critical for life safety — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.firesuppression_material_equipment_certificates", label: "Material & equipment certificates (pipework, valves, pumps, cylinders, nozzles)", description: "Relevant standards." },
       { key: "del.firesuppression_pipework_valves_nozzles_install", label: "Installation of pipework, valve sets, pumps, cylinders, nozzles and controls", description: "Relevant BS EN standards." },
       { key: "del.firesuppression_pressure_flushing_integrity_testing", label: "Pressure testing, flushing and integrity testing records", description: "Critical life-safety verification of the suppression system's physical integrity, per BS EN 12845 / relevant standards. Cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
@@ -2382,20 +2565,26 @@ async function main() {
       { key: "del.pts_outline_system_strategy", label: "Outline system strategy (routing, prioritisation, redundancy, future expansion)", description: "Clinical requirements." },
       { key: "del.pts_preliminary_station_routing", label: "Preliminary station location plan and tube routing strategy" },
       { key: "del.pts_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.pts_concept_risk_assessment", label: "Design risk assessment (including clinical and IPC risks)", description: "CDM 2015, IPC." },
+      { key: "del.pts_concept_risk_assessment", label: "Design risk assessment (including clinical and IPC risks, high-level only)", description: "CDM 2015, IPC." },
+      { key: "del.pts_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
     [
       { key: "del.pts_coordinated_layout_drawings", label: "Coordinated design (tube routes, station locations, blower plant, access for maintenance)" },
       { key: "del.pts_mep_structural_coordination", label: "Spatial coordination with structure, ceilings, other services, fire compartments and clinical layouts", description: "SHTM 00." },
       { key: "del.pts_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment for tube routing penetrations", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.pts_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary transport strategy" },
-      { key: "del.pts_critical_dept_resilience_confirmation", label: "Confirmation of critical department resilience requirements", description: "Clinical stakeholders.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
+      { key: "del.pts_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary transport strategy (principles only)" },
+      { key: "del.pts_critical_dept_resilience_confirmation", label: "Confirmation of critical department resilience requirements — high-level temporary arrangements strategy only", description: "Clinical stakeholders.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
+      { key: "del.pts_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design (Critical Gate). Contains the
+    // Pre-Contract Hold Point — no contractor appointment or Gate 5
+    // work until 2+ competitive quotes and written PFI Board/NHS
+    // lifecycle cost approval are received.
     [
-      { key: "del.pts_full_technical_design_package", label: "Full technical design drawings, network schematics and station schedules", description: "Manufacturer standards." },
-      { key: "del.pts_detailed_specifications", label: "Detailed specifications (tubing, stations, diverters, blowers/compressors, carriers, control system, software)", description: "Manufacturer data." },
+      { key: "del.pts_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.pts_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.pts_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.pts_tracking_prioritisation_alarm_design", label: "Carrier tracking, prioritisation, alarm and audit trail design", description: "Clinical requirements." },
       { key: "del.pts_power_control_network_design", label: "Power, control and network design", description: "SHTM 06 series." },
       { key: "del.pts_infection_control_cleanability", label: "Infection control and cleanability features", description: "IPC guidance.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
@@ -2405,10 +2594,15 @@ async function main() {
       { key: "del.pts_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, IPC.", bypassAuthority: "SRO" },
       { key: "del.pts_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.pts_clinical_ipc_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
+      { key: "del.pts_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.pts_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.pts_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.pts_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.pts_method_statements_temp_transport", label: "Contractor method statements, detailed phasing & temporary specimen/medicine transport arrangements", description: "Critical for clinical service — cannot be bypassed at PM level.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
+      { key: "del.pts_method_statements_temp_transport", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary specimen/medicine transport arrangements", description: "Critical for clinical service — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
       { key: "del.pts_material_equipment_certificates", label: "Material & equipment certificates (tubing, stations, blowers, carriers, software)", description: "Manufacturer certification." },
       { key: "del.pts_network_stations_install", label: "Installation of tube network, stations, diverters, blower plant and controls", description: "Manufacturer standards." },
       { key: "del.pts_pressure_leakage_integrity_testing", label: "Pressure / leakage testing and integrity records", description: "Critical physical integrity verification, per manufacturer standards — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
@@ -2770,20 +2964,26 @@ async function main() {
       { key: "del.wardrefresh_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
       { key: "del.wardrefresh_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
       { key: "del.wardrefresh_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.wardrefresh_concept_risk_assessment", label: "Design risk assessment (including HAI risks)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.wardrefresh_concept_risk_assessment", label: "Design risk assessment (including HAI risks, high-level only)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.wardrefresh_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
     [
       { key: "del.wardrefresh_coordinated_layout_drawings", label: "Coordinated design (doors, windows, layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
       { key: "del.wardrefresh_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
       { key: "del.wardrefresh_fire_compartmentation_assessment", label: "Fire compartmentation and means of escape impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.wardrefresh_updated_risk_register_spatial", label: "Updated cost plan, risk register & detailed phasing / decant strategy" },
-      { key: "del.wardrefresh_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.wardrefresh_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / decant strategy (principles only)" },
+      { key: "del.wardrefresh_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements — high-level strategy only", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.wardrefresh_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design (Critical Gate). Contains the
+    // Pre-Contract Hold Point — no contractor appointment or Gate 5
+    // work until 2+ competitive quotes and written PFI Board/NHS
+    // lifecycle cost approval are received.
     [
-      { key: "del.wardrefresh_full_technical_design_package", label: "Full technical design drawings, room layouts, door/window schedules, finishes schedules" },
-      { key: "del.wardrefresh_detailed_specifications", label: "Detailed specifications (flooring, wall cladding, ironmongery, ceilings)", description: "Relevant BS / manufacturer standards." },
+      { key: "del.wardrefresh_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.wardrefresh_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.wardrefresh_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.wardrefresh_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.wardrefresh_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.wardrefresh_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
@@ -2792,10 +2992,15 @@ async function main() {
       { key: "del.wardrefresh_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
       { key: "del.wardrefresh_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.wardrefresh_clinical_stakeholder_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.wardrefresh_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.wardrefresh_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.wardrefresh_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.wardrefresh_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.wardrefresh_method_statements_decant_arrangements", label: "Contractor method statements, detailed phasing and temporary clinical arrangements", description: "Critical." },
+      { key: "del.wardrefresh_method_statements_decant_arrangements", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary clinical arrangements", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
       { key: "del.wardrefresh_material_product_certificates", label: "Material & product certificates (flooring, cladding, doors, windows)", description: "Manufacturer." },
       { key: "del.wardrefresh_finishes_furniture_install", label: "Installation of doors, windows, ironmongery, flooring, wall cladding and associated works" },
       { key: "del.wardrefresh_protection_existing_services", label: "Protection of existing services and clinical areas", description: "HAI-SCRIBE Stage 3." },
@@ -2870,20 +3075,26 @@ async function main() {
       { key: "del.mhu_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
       { key: "del.mhu_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
       { key: "del.mhu_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.mhu_concept_risk_assessment", label: "Design risk assessment (including ligature and HAI risks)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.mhu_concept_risk_assessment", label: "Design risk assessment (including ligature and HAI risks, high-level only)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.mhu_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
     [
       { key: "del.mhu_coordinated_layout_drawings", label: "Coordinated design (doors, windows, ensuite layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
       { key: "del.mhu_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
       { key: "del.mhu_fire_compartmentation_assessment", label: "Fire compartmentation and means of escape impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.mhu_updated_risk_register_spatial", label: "Updated cost plan, risk register & detailed phasing / decant strategy" },
-      { key: "del.mhu_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.mhu_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / decant strategy (principles only)" },
+      { key: "del.mhu_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements — high-level strategy only", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.mhu_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design (Critical Gate). Contains the
+    // Pre-Contract Hold Point — no contractor appointment or Gate 5
+    // work until 2+ competitive quotes and written PFI Board/NHS
+    // lifecycle cost approval are received.
     [
-      { key: "del.mhu_full_technical_design_package", label: "Full technical design drawings, room layouts, door/window schedules, finishes schedules" },
-      { key: "del.mhu_detailed_specifications", label: "Detailed specifications (anti-ligature products, flooring, wall cladding, ironmongery, ceilings)", description: "Relevant BS / manufacturer standards." },
+      { key: "del.mhu_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.mhu_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.mhu_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.mhu_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.mhu_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.mhu_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
@@ -2892,10 +3103,15 @@ async function main() {
       { key: "del.mhu_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
       { key: "del.mhu_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.mhu_clinical_stakeholder_design_approval", label: "Clinical, IPC and Mental Health stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.mhu_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.mhu_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.mhu_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.mhu_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.mhu_method_statements_decant_arrangements", label: "Contractor method statements, detailed phasing, decant and temporary clinical arrangements", description: "Critical." },
+      { key: "del.mhu_method_statements_decant_arrangements", label: "Contractor's detailed Method Statements, full RAMS, decant and temporary clinical arrangements", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
       { key: "del.mhu_tool_control_room_security", label: "Contractor tool control and room security procedure", description: "Rooms under works must never be left open or unattended, and every tool and sharp item must be signed in, signed out, and accounted for at all times — a patient and contractor safety control distinct from general site security.", bypassAuthority: "SRO" },
       { key: "del.mhu_material_product_certificates", label: "Material & product certificates (anti-ligature items, flooring, cladding, doors, windows)", description: "Manufacturer." },
       { key: "del.mhu_finishes_furniture_install", label: "Installation of doors, windows, ironmongery, flooring, wall cladding and associated works" },
@@ -2969,20 +3185,26 @@ async function main() {
       { key: "del.theatrerefresh_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
       { key: "del.theatrerefresh_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
       { key: "del.theatrerefresh_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.theatrerefresh_concept_risk_assessment", label: "Design risk assessment (including HAI risks)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.theatrerefresh_concept_risk_assessment", label: "Design risk assessment (including HAI risks, high-level only)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.theatrerefresh_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
     [
       { key: "del.theatrerefresh_coordinated_layout_drawings", label: "Coordinated design (doors, layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
       { key: "del.theatrerefresh_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
       { key: "del.theatrerefresh_fire_compartmentation_assessment", label: "Fire compartmentation and means of escape impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.theatrerefresh_updated_risk_register_spatial", label: "Updated cost plan, risk register & detailed phasing / decant strategy" },
-      { key: "del.theatrerefresh_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.theatrerefresh_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / decant strategy (principles only)" },
+      { key: "del.theatrerefresh_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements — high-level strategy only", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.theatrerefresh_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
     ],
-    // Gate 4 — Technical Design
+    // Gate 4 — Technical Design (Critical Gate). Contains the
+    // Pre-Contract Hold Point — no contractor appointment or Gate 5
+    // work until 2+ competitive quotes and written PFI Board/NHS
+    // lifecycle cost approval are received.
     [
-      { key: "del.theatrerefresh_full_technical_design_package", label: "Full technical design drawings, room layouts, door schedules, finishes schedules" },
-      { key: "del.theatrerefresh_detailed_specifications", label: "Detailed specifications (theatre-grade wall/ceiling finishes — impervious, seamless, cleanable — ironmongery, doors)", description: "Relevant BS / manufacturer standards." },
+      { key: "del.theatrerefresh_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.theatrerefresh_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
+      { key: "del.theatrerefresh_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.theatrerefresh_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.theatrerefresh_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.theatrerefresh_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
@@ -2991,10 +3213,15 @@ async function main() {
       { key: "del.theatrerefresh_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
       { key: "del.theatrerefresh_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.theatrerefresh_clinical_stakeholder_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.theatrerefresh_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.theatrerefresh_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.theatrerefresh_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.theatrerefresh_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
-    // Gate 5 — Manufacturing & Construction
+    // Gate 5 — Manufacturing & Construction. Only starts once the Gate
+    // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.theatrerefresh_method_statements_decant_arrangements", label: "Contractor method statements, detailed phasing and temporary clinical arrangements", description: "Critical." },
+      { key: "del.theatrerefresh_method_statements_decant_arrangements", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary clinical arrangements", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
       { key: "del.theatrerefresh_material_product_certificates", label: "Material & product certificates (theatre-grade finishes, cladding, doors)", description: "Manufacturer." },
       { key: "del.theatrerefresh_finishes_furniture_install", label: "Installation of doors, ironmongery, wall/ceiling cladding and associated works" },
       { key: "del.theatrerefresh_protection_existing_services", label: "Protection of existing services and clinical areas", description: "HAI-SCRIBE Stage 3." },

@@ -4,6 +4,7 @@ import { createRole, createUser } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { TeamRoster } from "@/components/TeamRoster";
 import { forbidden } from "next/navigation";
+import { ROLE_CATEGORY_LABEL, ROLE_CATEGORY_ORDER, groupRolesByCategory } from "@/lib/roleCategories";
 
 /**
  * Platform-admin-only. The in-app replacement for hand-editing
@@ -108,6 +109,26 @@ export default async function TeamPage() {
               className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
             />
           </div>
+          <div>
+            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              Group
+            </label>
+            <select
+              name="category"
+              defaultValue="PROJECT_TEAM"
+              className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+            >
+              {ROLE_CATEGORY_ORDER.map((category) => (
+                <option key={category} value={category}>
+                  {ROLE_CATEGORY_LABEL[category]}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 max-w-xl text-xs text-inkmuted">
+              Just for tidying the lists elsewhere — which heading this role sits under on the Compliance rules
+              page. Doesn&rsquo;t change what the role can do.
+            </p>
+          </div>
           <label className="flex max-w-xl items-start gap-2 text-sm">
             <input type="checkbox" name="isExactMatchAuthority" className="mt-0.5" />
             <span>
@@ -125,17 +146,24 @@ export default async function TeamPage() {
         </form>
 
         <h3 className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Existing roles</h3>
-        <div className="flex flex-wrap gap-1.5">
-          {roles.map((role) => (
-            <span
-              key={role.id}
-              className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
-                role.isExactMatchAuthority ? "bg-risk/15 text-risk" : "bg-accentsoft text-accent"
-              }`}
-              title={role.isExactMatchAuthority ? "Nobody else, including SRO, can act in its place" : "SRO can act through this role too"}
-            >
-              {role.name}
-            </span>
+        <div className="flex flex-col gap-2">
+          {groupRolesByCategory(roles).map((group) => (
+            <div key={group.category}>
+              <div className="mb-1 text-xs font-semibold text-inkmuted">{group.label}</div>
+              <div className="flex flex-wrap gap-1.5">
+                {group.roles.map((role) => (
+                  <span
+                    key={role.id}
+                    className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+                      role.isExactMatchAuthority ? "bg-risk/15 text-risk" : "bg-accentsoft text-accent"
+                    }`}
+                    title={role.isExactMatchAuthority ? "Nobody else, including SRO, can act in its place" : "SRO can act through this role too"}
+                  >
+                    {role.name}
+                  </span>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

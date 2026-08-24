@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
+import { RoleCategory } from "@prisma/client";
 import {
   getCurrentUserGlobalRoleKeys,
   getCurrentUserId,
@@ -27,6 +28,7 @@ import { matchComplianceTags } from "./provisioning";
 import { effectiveComplianceTags, isCdmWorksType } from "./cdm";
 import { issueNextProjectNumber } from "./projectNumber";
 import { assignStandardTeam } from "./standardTeam";
+import { suggestDisciplineTeam } from "./disciplineTeam";
 import { resolveWorksPackageId } from "./worksPackages";
 import { sendScheduledReport } from "./scheduledReportSender";
 import { evidenceFolderPath, isSharePointConfigured, uploadEvidenceFile } from "./sharepoint";
@@ -454,6 +456,55 @@ export async function recordSpend(gateId: string, projectNumber: string, formDat
   revalidatePath("/finance");
 }
 
+/**
+ * Attaches an invoice document to a spend record — the amount and
+ * invoice reference alone aren't enough for Finance to approve against
+ * (23 Aug 2026 decision); approveSpend below now requires at least one
+ * of these. Same PM/SRO authority as recording spend in the first
+ * place, and same real-SharePoint-vs-stub resolution as evidence
+ * uploads. Plain list, not "latest wins": a record can genuinely have
+ * more than one invoice (part-invoiced work, split POs), so there's no
+ * version/replace here — only PENDING records take new invoices, same
+ * boundary as reviseSpend.
+ */
+export async function uploadSpendInvoice(
+  spendRecordId: string,
+  projectNumber: string,
+  gateId: string,
+  formData: FormData
+) {
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const spendRecord = await db.spendRecord.findUniqueOrThrow({
+    where: { id: spendRecordId },
+    include: { gate: { include: { stage: { include: { project: true } } } } },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(spendRecord.gate.stage.projectId);
+  if (!canRecordSpend(roleKeys)) {
+    throw new Error("Attaching an invoice requires the Project Manager or SRO role.");
+  }
+  if (spendRecord.status !== "PENDING") {
+    throw new Error("Only a pending spend record can take a new invoice — an approved one is locked.");
+  }
+
+  const { fileName, fileRef } = await resolveEvidenceUpload(
+    formData,
+    spendRecord.gate.stage.project,
+    spendRecord.gate.stage.name
+  );
+
+  await db.$transaction([
+    db.spendInvoiceFile.create({ data: { spendRecordId, fileName, fileRef, uploadedById: userId } }),
+    db.auditLogEntry.create({
+      data: { actorId: userId, action: "spend.invoice_uploaded", gateId, entityType: "SpendRecord", entityId: spendRecordId },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
 async function decideSpend(
   spendRecordId: string,
   projectNumber: string,
@@ -466,7 +517,7 @@ async function decideSpend(
 
   const spendRecord = await db.spendRecord.findUniqueOrThrow({
     where: { id: spendRecordId },
-    include: { gate: { include: { stage: true } } },
+    include: { gate: { include: { stage: true } }, invoiceFiles: true },
   });
   const roleKeys = await getCurrentUserRoleKeysForProject(spendRecord.gate.stage.projectId);
   if (!canApproveSpend(roleKeys)) {
@@ -477,6 +528,9 @@ async function decideSpend(
   }
   if (decision === "REJECTED" && !reason?.trim()) {
     throw new Error("Rejecting a spend record requires a written reason.");
+  }
+  if (decision === "APPROVED" && spendRecord.invoiceFiles.length === 0) {
+    throw new Error("This spend record has no invoice attached yet — the PM needs to upload one before it can be approved.");
   }
 
   // Rejection leaves the record PENDING, editable, not a dead end —
@@ -611,6 +665,7 @@ export async function deleteSpendRecord(spendRecordId: string, projectNumber: st
 
   await db.$transaction([
     db.spendApproval.deleteMany({ where: { spendRecordId } }),
+    db.spendInvoiceFile.deleteMany({ where: { spendRecordId } }),
     db.auditLogEntry.deleteMany({ where: { entityType: "SpendRecord", entityId: spendRecordId } }),
     db.spendRecord.delete({ where: { id: spendRecordId } }),
     db.auditLogEntry.create({
@@ -893,6 +948,12 @@ export async function createProvisioningDraft(formData: FormData) {
   // (Sponsor, SRO, Compliance Officer, Finance, ...) simply missing
   // until someone notices and fills it in by hand.
   await assignStandardTeam(project.id);
+  // Discipline-specific roster (lib/disciplineTeam.ts) — AP/AE, Clinical
+  // Safety/Information Governance, Principal Designer — suggested from
+  // what this template's own deliverables actually gate on. Re-run at
+  // approveProvisioning too, in case the template changes between now
+  // and then; upserts, so running it twice is harmless.
+  await suggestDisciplineTeam(project.id, template.id, worksType);
 
   await db.auditLogEntry.create({
     data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
@@ -923,6 +984,7 @@ export async function createProvisioningDraft(formData: FormData) {
     });
 
     await assignStandardTeam(extraProject.id);
+    await suggestDisciplineTeam(extraProject.id, extraTemplate.id, worksType);
 
     await db.auditLogEntry.create({
       data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: extraProject.id },
@@ -1078,6 +1140,12 @@ export async function approveProvisioning(projectId: string, projectNumber: stri
   await db.provisioningReview.create({
     data: { projectId, decision: "APPROVED", reviewedById: userId },
   });
+
+  // Re-run the discipline-roster suggestion (lib/disciplineTeam.ts)
+  // against the final template — the PM's revise-and-rematch or a
+  // Compliance Officer's direct override (updateProvisioningDraft) can
+  // both change templateId after the draft-creation suggestion ran.
+  await suggestDisciplineTeam(projectId, project.template.id, project.worksType);
 
   const includedStageKeys = new Set(project.includedStageKeys);
   let order = 0;
@@ -1335,6 +1403,7 @@ export async function deleteProject(projectId: string, formData: FormData) {
     db.complianceRequirement.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.complianceOverride.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.spendApproval.deleteMany({ where: { spendRecord: { gate: { stage: { projectId } } } } }),
+    db.spendInvoiceFile.deleteMany({ where: { spendRecord: { gate: { stage: { projectId } } } } }),
     db.spendRecord.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.gateSignOff.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.lessonLearned.deleteMany({ where: { gate: { stage: { projectId } } } }),
@@ -1510,7 +1579,12 @@ export async function createRole(formData: FormData) {
 
   const isExactMatchAuthority = formData.get("isExactMatchAuthority") === "on";
 
-  const created = await db.role.create({ data: { key, name, isExactMatchAuthority } });
+  const categoryInput = String(formData.get("category") ?? "");
+  const category = (Object.values(RoleCategory) as string[]).includes(categoryInput)
+    ? (categoryInput as RoleCategory)
+    : RoleCategory.PROJECT_TEAM;
+
+  const created = await db.role.create({ data: { key, name, isExactMatchAuthority, category } });
   await db.auditLogEntry.create({
     data: { actorId, action: "role.created", entityType: "Role", entityId: created.id },
   });
