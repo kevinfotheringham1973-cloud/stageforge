@@ -12,6 +12,14 @@ export default {
         inkmuted: "#56635E",
         accent: "#1F5C63",
         accentsoft: "#DCE7E6",
+        // For the "Health" half of the wordmark (layout.tsx/login) --
+        // deliberately not NHS's own blue (#005EB8, saturated/bright):
+        // that reads as implying NHS ownership, which is exactly what
+        // dropping the NHS logo was meant to stop doing (24 Aug 2026).
+        // A distinct, more muted blue signals "healthcare" without
+        // borrowing NHS's specific brand equity. 5.7:1 contrast on
+        // white, comfortably above WCAG AA even at normal text size.
+        accentblue: "#2E6B99",
         // Darkened from #A66A1E/#B8862B (21 Aug 2026 accessibility pass) — both
         // sat right at or just under the WCAG AA 4.5:1 text-contrast minimum on
         // white, which these carry at 10-14px throughout (statutory badges,
