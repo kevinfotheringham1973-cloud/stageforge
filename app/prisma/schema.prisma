@@ -50,6 +50,13 @@ model User {
   id                         String                   @id @default(cuid())
   name                       String
   email                      String                   @unique
+  emailVerified              DateTime?
+  // Only set for the credentials-login fallback (platform admin + local
+  // dev) -- real Trust/FM Contractor users sign in via their own
+  // organisation's Microsoft account (see auth.ts) and never have one.
+  passwordHash               String?
+  accounts                   Account[]
+  sessions                   Session[]
   homeDepartmentId           String?
   homeDepartment             Department?              @relation(fields: [homeDepartmentId], references: [id])
   isPlatformAdmin            Boolean                  @default(false)
@@ -72,6 +79,47 @@ model User {
   lessonsLearned             LessonLearned[]
   scheduledReports           ScheduledReport[]
   createdAt                  DateTime                 @default(now())
+}
+
+// ── Authentication ──────────────────────────────────────────────────
+// The @auth/prisma-adapter's required shape (field names are fixed by
+// the adapter's own Prisma calls, not customisable here) -- see auth.ts.
+// A new-account policy question these enable but don't answer: a User
+// row must already exist (by email) before anyone can sign in at all --
+// see auth.ts's signIn callback. No self-service signup.
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 // Global role definitions. A Role can optionally be scoped to a

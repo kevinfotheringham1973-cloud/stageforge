@@ -1,35 +1,43 @@
-// DEV-ONLY STUB. There is no real authentication here — this reads a
-// cookie set by the "act as" switcher in the header and trusts it
-// completely. Replace with real auth (and a real session store)
-// before this goes anywhere near a second person.
-
+// Real session, backed by Auth.js (auth.ts) -- replaces the old dev-only
+// cookie stub that trusted a raw User.id with no identity check. Kept
+// the same 4 exported function signatures on purpose: every call site
+// across the app (10 files, all going through these) needed zero
+// changes when this swapped from "trust the cookie" to "read the real
+// session."
 import { cookies } from "next/headers";
+import { auth } from "./auth";
 import { db } from "./db";
 
-const COOKIE_NAME = "sf_user_id";
+export const VIEW_AS_COOKIE_NAME = "sf_view_as_user_id";
 
+/**
+ * The real, actually-authenticated user id -- ignores the "view as"
+ * cookie entirely. Only used by actions.ts's view-as gate itself, so
+ * that gate always checks the real admin's identity, never whichever
+ * person they're currently previewing as.
+ */
+export async function getRealCurrentUserId(): Promise<string | null> {
+  const session = await auth();
+  return session?.user?.id ?? null;
+}
+
+/**
+ * The effective current user id for everything else in the app:
+ * usually the real signed-in user, but overridden by the "view as"
+ * cookie when the real signed-in user is a platform admin (set via
+ * actions.ts's setViewAsUser). Ignored for anyone else -- a non-admin
+ * can't grant themselves another identity just by holding the cookie.
+ */
 export async function getCurrentUserId(): Promise<string | null> {
+  const realUserId = await getRealCurrentUserId();
+  if (!realUserId) return null;
+
   const store = await cookies();
-  const rawId = store.get(COOKIE_NAME)?.value ?? null;
-  if (!rawId) return null;
+  const viewAsId = store.get(VIEW_AS_COOKIE_NAME)?.value;
+  if (!viewAsId) return realUserId;
 
-  const exists = await db.user.findUnique({ where: { id: rawId }, select: { id: true } });
-  if (!exists) {
-    // Stale cookie pointing at a user id that no longer exists (e.g.
-    // left over from a `prisma migrate reset` that regenerated every
-    // user's id) — treat it the same as signed-out instead of letting
-    // it flow into a raw FK-violation crash wherever this id gets used.
-    try {
-      store.delete(COOKIE_NAME);
-    } catch {
-      // Cookies are read-only during a Server Component render; only
-      // Server Actions/Route Handlers can clear it. Safe to ignore —
-      // the stale value gets re-checked (and cleared) on the next one.
-    }
-    return null;
-  }
-
-  return rawId;
+  const realUser = await db.user.findUnique({ where: { id: realUserId }, select: { isPlatformAdmin: true } });
+  return realUser?.isPlatformAdmin ? viewAsId : realUserId;
 }
 
 export async function getCurrentUser() {
@@ -68,5 +76,3 @@ export async function getCurrentUserGlobalRoleKeys(): Promise<string[]> {
   });
   return Array.from(new Set(assignments.map((a) => a.role.key)));
 }
-
-export const SESSION_COOKIE_NAME = COOKIE_NAME;

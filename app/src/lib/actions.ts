@@ -9,7 +9,8 @@ import {
   getCurrentUserGlobalRoleKeys,
   getCurrentUserId,
   getCurrentUserRoleKeysForProject,
-  SESSION_COOKIE_NAME,
+  getRealCurrentUserId,
+  VIEW_AS_COOKIE_NAME,
 } from "./session";
 import {
   canApproveSpend,
@@ -33,17 +34,47 @@ import { resolveWorksPackageId } from "./worksPackages";
 import { sendScheduledReport } from "./scheduledReportSender";
 import { evidenceFolderPath, isSharePointConfigured, uploadEvidenceFile } from "./sharepoint";
 
-export async function setActingUser(formData: FormData) {
+/**
+ * Admin-only "view as" -- lets a real, signed-in platform admin preview
+ * the app as another person's role, for demos and support, without
+ * that being a general-purpose login bypass. Replaces the old
+ * setActingUser, which used to BE the entire auth model (24 Aug 2026 —
+ * see session.ts's header comment on why that had to go). Layers on
+ * top of a real Auth.js session rather than replacing it: session.ts's
+ * getCurrentUserId() only honours this cookie when the real signed-in
+ * user is a platform admin, so setting it from outside that context is
+ * a no-op, not a privilege escalation.
+ *
+ * Worth knowing if this is ever used against real (not demo) data: any
+ * write action taken while viewing-as is recorded under the VIEWED
+ * user's id (uploadedById, signedOffBy, etc.), not the admin's real
+ * identity -- fine for demo/support click-throughs, but not something
+ * to lean on for real audit-trail-sensitive actions on live Trust data.
+ */
+export async function setViewAsUser(formData: FormData) {
   const userId = String(formData.get("userId") ?? "");
   if (!userId) return;
 
+  // Deliberately the REAL signed-in identity, not getCurrentUser() --
+  // that's view-as-aware, so checking it here would check whichever
+  // user is currently being previewed, not the actual admin.
+  const realUserId = await getRealCurrentUserId();
+  const realUser = realUserId ? await db.user.findUnique({ where: { id: realUserId } }) : null;
+  if (!realUser?.isPlatformAdmin) return;
+
   const store = await cookies();
-  store.set(SESSION_COOKIE_NAME, userId, {
+  store.set(VIEW_AS_COOKIE_NAME, userId, {
     path: "/",
-    httpOnly: true, // nothing client-side ever needs to read this — server-only via next/headers
-    sameSite: "lax", // top-level nav (clicking a link) still sends it; cross-site form/fetch POSTs don't
-    secure: process.env.NODE_ENV === "production", // the tunnel's public URL is HTTPS-only; local dev stays plain HTTP
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
   });
+  revalidatePath("/", "layout");
+}
+
+export async function clearViewAsUser() {
+  const store = await cookies();
+  store.delete(VIEW_AS_COOKIE_NAME);
   revalidatePath("/", "layout");
 }
 
