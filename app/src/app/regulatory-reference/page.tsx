@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { forbidden } from "next/navigation";
 import { REGULATION_CONVERSION_ROWS, REGULATION_CONVERSION_NOTES } from "@/lib/regulationConversion";
 import { ENGLAND_SECTOR_VARIANT_KEY } from "@/lib/englandConversion";
+import { canViewAdminReferencePage } from "@/lib/shareLinks";
 
 const EFFORT_LABEL: Record<string, string> = { low: "Low", medium: "Medium", high: "Higher" };
 const EFFORT_CLASS: Record<string, string> = {
@@ -12,7 +13,10 @@ const EFFORT_CLASS: Record<string, string> = {
 };
 
 /**
- * Platform-admin-only. The table below is still the static reference
+ * Platform-admin-only to reach normally; also viewable read-only through
+ * a /share-links demo link (canViewAdminReferencePage) -- pure reference
+ * content, nothing sensitive, good to show off. The table below is still
+ * the static reference
  * (Regulation Conversion_England_Scotland.docx, 24 Aug 2026) — but the
  * conversion it describes is no longer just notes: src/lib/
  * englandConversion.ts actually generates a second, "health_england"
@@ -29,7 +33,7 @@ const EFFORT_CLASS: Record<string, string> = {
  */
 export default async function RegulatoryReferencePage() {
   const currentUser = await getCurrentUser();
-  if (!currentUser?.isPlatformAdmin) forbidden();
+  if (!canViewAdminReferencePage(currentUser)) forbidden();
 
   const allTemplateKeys = REGULATION_CONVERSION_ROWS.flatMap((r) => r.templateKeys);
   const templates = await db.template.findMany({

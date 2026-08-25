@@ -78,6 +78,7 @@ model User {
   spendInvoiceUploads        SpendInvoiceFile[]
   lessonsLearned             LessonLearned[]
   scheduledReports           ScheduledReport[]
+  createdShareLinks          ShareLink[]
   createdAt                  DateTime                 @default(now())
 }
 
@@ -871,4 +872,22 @@ model ScheduledReport {
   createdBy        User      @relation(fields: [createdById], references: [id])
   createdAt        DateTime  @default(now())
   lastSentAt       DateTime?
+}
+
+// A revocable, expiring, read-only credential for someone who just wants to
+// look at the demo without a real account (25 Aug 2026) -- the URL itself
+// is the credential (see src/app/share/[token]/route.ts). Resolves to the
+// seeded role-less "Demo Viewer" user (src/lib/shareLinks.ts), which is
+// what makes every write Server Action reject it: they all already check
+// getCurrentUserRoleKeysForProject/isPlatformAdmin and fail closed on an
+// empty role set -- no separate write-blocking layer needed.
+model ShareLink {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  label       String?
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime? // NULL = active
 }

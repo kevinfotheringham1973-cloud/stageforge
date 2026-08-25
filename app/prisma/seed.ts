@@ -224,6 +224,18 @@ async function main() {
       isPlatformAdmin: true,
     },
   });
+  // The share-link demo viewer (25 Aug 2026) -- resolved by
+  // src/lib/shareLinks.ts for anyone visiting via a /share/<token> link.
+  // Deliberately isPlatformAdmin: false with zero ProjectRoleAssignment
+  // rows, so every existing write Server Action rejects it exactly like
+  // any other signed-in person holding no role -- see ShareLink's schema
+  // comment.
+  await db.user.create({
+    data: {
+      name: "Demo Viewer",
+      email: "demo-viewer@stageforge.example",
+    },
+  });
   // Named holders for the four authorities that had no seeded user as
   // of 21 Aug 2026 ("seed a user for the missing authorities") —
   // none of the five fixed demo projects below happen to gate anything

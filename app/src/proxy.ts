@@ -12,14 +12,37 @@
 // Server Action's own permission checks.
 import { NextResponse } from "next/server";
 import { auth } from "./lib/auth";
+import { SHARE_LINK_COOKIE_NAME, resolveShareLinkViewerUserId } from "./lib/shareLinks";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/share"];
 
-export default auth((req) => {
-  const isPublic = PUBLIC_PATHS.some((p) => req.nextUrl.pathname.startsWith(p));
-  if (!req.auth && !isPublic) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
+// Write-only entry points, plus the two admin pages that carry real
+// people's contact details (Team) or deployment internals (About) -- a
+// share-link viewer shouldn't even see the door to these. Compliance
+// rules and Regulatory reference are deliberately NOT here: they're pure
+// reference content, and their own page-level gate
+// (canViewAdminReferencePage, shareLinks.ts) already lets a demo viewer
+// read them. This list is belt-and-braces on top of the real protection
+// either way -- every write Server Action already rejects the role-less
+// Demo Viewer on its own (see shareLinks.ts).
+const SHARE_VIEWER_DENYLIST = ["/projects/new", "/team", "/about"];
+
+export default auth(async (req) => {
+  const { pathname } = req.nextUrl;
+  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+
+  if (req.auth || isPublic) return;
+
+  const shareToken = req.cookies.get(SHARE_LINK_COOKIE_NAME)?.value;
+  const shareViewerId = await resolveShareLinkViewerUserId(shareToken);
+  if (shareViewerId) {
+    if (SHARE_VIEWER_DENYLIST.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+    }
+    return;
   }
+
+  return NextResponse.redirect(new URL("/login", req.nextUrl.origin));
 });
 
 export const config = {

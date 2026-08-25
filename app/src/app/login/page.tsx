@@ -5,6 +5,7 @@ import { signIn } from "@/lib/auth";
 const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "That account isn't set up yet — ask a platform admin to add you first.",
   CredentialsSignin: "Incorrect email or password.",
+  ShareLinkExpired: "This demo link has expired or been revoked — ask whoever shared it for a new one.",
 };
 
 async function microsoftSignIn() {
