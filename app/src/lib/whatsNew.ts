@@ -14,6 +14,17 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: "25 Aug 2026",
+    title: "Real sign-in, passwordless email links, read-only demo links",
+    highlights: [
+      "Signing in is now required everywhere, replacing the open \"acting as\" switcher that used to be this demo's entire access model — the switcher survives as an admin-only preview tool layered on top of a real login.",
+      "No password is ever created or stored for anyone. Sign in either with a company Microsoft account, or by email: enter your address and a one-time link is sent, valid only for someone a platform admin has already added.",
+      "A platform admin can generate a read-only, expiring, revocable link for showing the demo to someone without giving them a real account — everything visible, nothing editable, until it expires or is revoked.",
+      "Fixed an intermittent issue where clicking into a gate straight after loading a project with several gates could briefly look broken.",
+      "New \"StageForge Health\" wordmark branding throughout.",
+    ],
+  },
+  {
     date: "24 Aug 2026",
     title: "Nine more system checklists, auto-populated project teams, clearer role switching",
     highlights: [
