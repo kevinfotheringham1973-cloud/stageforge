@@ -170,6 +170,24 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
   history stays correctly attributed to whoever actually acted. The
   person list filters client-side by name/email (`TeamRoster.tsx`) —
   no server round trip, no pagination, since the roster is small.
+- **Real authentication** (`src/lib/auth.ts`, Auth.js v5) — enforced on
+  every route via `src/proxy.ts` (no dev bypass; local `npm run dev`
+  requires signing in same as production — see "Setup" below). Two
+  providers, both gated on a `User` row already existing (no
+  self-service signup, admins add people on `/team`): Microsoft Entra ID
+  (multi-tenant, any organisation's own account) and a Resend
+  passwordless magic-link email — no password is ever created, hashed,
+  or stored anywhere. The old "acting as" cookie switcher survives only
+  as an admin-only "View as" preview layered on top of a real session,
+  gated on the real authenticated identity, not whichever identity is
+  being previewed. A platform admin can also generate a read-only,
+  expiring, revocable share link (`/share-links`,
+  `src/lib/shareLinks.ts`) that resolves to a role-less "Demo Viewer"
+  account for showing the app to someone without a real login. Every
+  email that tries to sign in but has no matching `User` row is logged
+  at `/access-requests` (platform-admin only) as a lead/security signal,
+  with a dismiss action once seen and a page-wide banner/nav badge while
+  any are pending.
 - **SharePoint evidence storage** (`src/lib/sharepoint.ts`) — a
   Microsoft Graph API client (app-only/client-credentials auth, no
   user sign-in) that `recordEvidenceStub`/`recordComplianceEvidenceStub`
@@ -206,11 +224,6 @@ Next.js (App Router) + PostgreSQL + Prisma, TypeScript throughout.
 
 ## What's deliberately stubbed, not built
 
-- **Authentication.** `src/lib/session.ts` is a dev-only "act as" cookie,
-  set by the switcher in the header — trusts whatever it's told. Replace
-  entirely before this is near a second real user. The new `/team` page
-  adds/edits the `User` rows this switcher lists, but doesn't touch
-  this — it's still cookie-based impersonation, not real login.
 - **Evidence storage, without real SharePoint configured.** Uploads
   record a file *name* against a deliverable, not an actual file —
   see "SharePoint evidence storage" above for the real path once
@@ -269,17 +282,33 @@ evidence storage" above), add `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`,
 set up). Without these, evidence upload uses the dev stub — nothing
 else in the app is affected either way.
 
+**Signing in is required everywhere, including local dev** — there's no
+bypass in `src/proxy.ts`. Add `AUTH_SECRET` (any random string —
+`npx auth secret` generates one) and `AUTH_TRUST_HOST="true"` to `.env`,
+then at least one real sign-in path: `RESEND_API_KEY` (from resend.com —
+sends a magic-link email; needs a verified sending domain to deliver to
+anyone but the account's own address, see `RESEND_FROM_EMAIL`) or
+`AUTH_MICROSOFT_ENTRA_ID_ID` / `AUTH_MICROSOFT_ENTRA_ID_SECRET` (from an
+Entra ID app registration). Either way, the signing-in email must
+already match a `User` row from the seed data or `/team` — there's no
+self-service signup. `AUTH_URL` should also be set to whatever origin
+you're actually reached on (e.g. `http://localhost:3001` for local dev)
+— Auth.js otherwise has to guess it from the incoming request, which can
+produce a broken link in an email.
+
 Open http://localhost:3001 (`npm run dev` runs on 3001, not the Next.js
-default 3000 — see `package.json`). Use the "Acting as" switcher in the header to
-flip between Derek Gibb (PM), David Mackay (Sponsor · Client Authority),
-Gary Grant (Compliance Officer), Mark O'Hear (SRO), Alan McGeachie (Fire
-Officer), Bob Smith (AP Electrical), Claire Duncan (AP Water), and Andrea
-(Finance) — the same standing hospital team every project gets, plus
-Dennis Kelly (a second PM), Ross Blair (Principal Designer), and Callum
-Reid (platform admin, no delivery role — can delete a project and
-manage the team roster at `/team`) — and
-watch what each one can and can't do, right there in the expanded gate
-row, no navigation.
+default 3000 — see `package.json`), sign in, then use the "View as"
+switcher in the header (visible to a platform admin only, e.g. Callum
+Reid from the seed data) to preview Derek Gibb (PM), David Mackay
+(Sponsor · Client Authority), Gary Grant (Compliance Officer), Mark
+O'Hear (SRO), Alan McGeachie (Fire Officer), Bob Smith (AP Electrical),
+Claire Duncan (AP Water), and Andrea (Finance) — the same standing
+hospital team every project gets, plus Dennis Kelly (a second PM), Ross
+Blair (Principal Designer), and Callum Reid himself (platform admin, no
+delivery role — can delete a project and manage the team roster at
+`/team`) — and watch what each one can and can't do, right there in the
+expanded gate row, no navigation. Previewing doesn't change who's really
+signed in or whose name lands on an audit entry.
 
 **Roles are per-project, not global.** The dropdown label next to each
 name (e.g. "PM") is a deduped summary of every role that person holds
