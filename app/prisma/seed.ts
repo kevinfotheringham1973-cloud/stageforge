@@ -151,6 +151,10 @@ async function main() {
       // scheduled-report sends actually land in an inbox for.
       email: "kevinfotheringham1973@gmail.com",
       homeDepartmentId: stAldwynEstates.id,
+      // Also Kevin's real login since real auth (24 Aug 2026) -- needs
+      // platform admin so he isn't locked out of admin-only screens and
+      // the "view as" switcher under his own account.
+      isPlatformAdmin: true,
     },
   });
   const gary = await db.user.create({
