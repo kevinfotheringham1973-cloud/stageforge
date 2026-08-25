@@ -139,13 +139,20 @@ async function main() {
   const derek = await db.user.create({
     data: {
       name: "Derek Gibb",
-      email: "derek.gibb@buildcare.example",
+      // Real address (25 Aug 2026): also Derek's real login, same reason
+      // as Kevin/David below -- kept as Derek Gibb rather than merged
+      // into an existing persona, since he's PM on almost the whole
+      // portfolio already.
+      email: "derek.g999@outlook.com",
       homeDepartmentId: buildCareNorth.id,
     },
   });
   const david = await db.user.create({
     data: {
-      name: "David Mackay",
+      // Real name (25 Aug 2026): this persona IS Kevin's own real login
+      // (see email below), so it shows his actual name rather than the
+      // placeholder demo persona it started as.
+      name: "Kevin Fotheringham",
       // Real address (20 Aug 2026): every other seeded persona is
       // an unroutable .example address, so this is the one demo user
       // scheduled-report sends actually land in an inbox for.
@@ -167,7 +174,10 @@ async function main() {
   const mark = await db.user.create({
     data: {
       name: "Mark O'Hear",
-      email: "mark.ohear@staldwyn.example",
+      // Real address (25 Aug 2026): a real person's login deliberately
+      // aliased onto this persona rather than shown under their own
+      // name -- Kevin's call, not something to reverse without asking.
+      email: "gaz808@gmail.com",
       homeDepartmentId: stAldwynEstates.id,
     },
   });
@@ -197,6 +207,22 @@ async function main() {
       name: "Dennis Kelly",
       email: "dennis.kelly@independent.example",
       homeDepartmentId: stAldwynEstates.id,
+    },
+  });
+  // Real logins added 25 Aug 2026, consolidating PM and AP (Water) down
+  // to one named holder each -- see lightingProject and the AP (Water)
+  // reassignment near the end of this function.
+  const javier = await db.user.create({
+    data: {
+      name: "Javier Carreno",
+      email: "jjcarreno52@hotmail.com",
+    },
+  });
+  const james = await db.user.create({
+    data: {
+      name: "James Slaven",
+      email: "jamesslaven@msn.com",
+      homeDepartmentId: buildCareNorth.id,
     },
   });
   const ross = await db.user.create({
@@ -3746,6 +3772,12 @@ async function main() {
   await db.projectRoleAssignment.createMany({
     data: [
       { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.PM.id },
+      // A second PM, added live 25 Aug 2026 (originally Priya
+      // Anand-Rao, a live-only user never in this seed, then
+      // reassigned to Javier when Kevin consolidated PM duties down
+      // to Derek + Javier only) -- kept here as its own row rather
+      // than replacing Derek's, since live has both.
+      { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: javier.id, roleId: roles.PM.id },
       { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },
       { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.SPONSOR.id },
       { projectId: waterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
@@ -3762,7 +3794,8 @@ async function main() {
       // AP(Water) covers disinfection/chlorination and hygiene
       // commissioning sign-off (21 Aug 2026).
       { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
-      { projectId: waterProject.id, departmentId: buildCareNorth.id, userId: claire.id, roleId: roles.AUTHORISED_PERSON_WATER.id },
+      // AP (Water) is James Slaven, not listed here -- see the
+      // portfolio-wide reassignment near the end of this function.
     ],
   });
 
@@ -3914,7 +3947,8 @@ async function main() {
       { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: alan.id, roleId: roles.FIRE_OFFICER.id },
       { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
       { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
-      { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: claire.id, roleId: roles.AUTHORISED_PERSON_WATER.id },
+      // AP (Water) is James Slaven, not listed here -- see the
+      // portfolio-wide reassignment near the end of this function.
     ],
   });
 
@@ -3971,7 +4005,11 @@ async function main() {
       // createProvisioningDraft assigns PM to the creator, not always
       // Derek (confirmed 20 Aug 2026, after this gap caused
       // canSetGateTimeline to look "broken" when acting as anyone else).
-      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.PM.id },
+      // PM reassigned to Javier 25 Aug 2026, when Kevin consolidated PM
+      // duties down to Derek + Javier only -- createdById above stays
+      // Dennis, since that's a historical fact about who created the
+      // project, not a current role.
+      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: javier.id, roleId: roles.PM.id },
       { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },
       { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.SPONSOR.id },
       { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
@@ -4029,6 +4067,24 @@ async function main() {
       data: { userId: a.user.id, projectId: a.project.id, allocationPercent: a.pct, updatedById: derek.id },
     });
   }
+
+  // James Slaven replaces Claire Duncan as AP (Water) across the entire
+  // portfolio (25 Aug 2026) -- a live bulk reassignment mirrored here as
+  // one pass over every project that exists by this point, rather than
+  // threaded into each project's own hardcoded role list above (see
+  // waterProject/coldWaterProject, where Claire's old
+  // AUTHORISED_PERSON_WATER row was simply removed). skipDuplicates
+  // guards against ever running this twice against the same DB.
+  const allProjectsForWaterAP = await db.project.findMany({ select: { id: true } });
+  await db.projectRoleAssignment.createMany({
+    data: allProjectsForWaterAP.map((p) => ({
+      projectId: p.id,
+      departmentId: buildCareNorth.id,
+      userId: james.id,
+      roleId: roles.AUTHORISED_PERSON_WATER.id,
+    })),
+    skipDuplicates: true,
+  });
 
   // ── Portfolio view: a scheduled report demonstrating the SRO's
   // actual request (20 Aug 2026) — "every Friday to specific staff".
