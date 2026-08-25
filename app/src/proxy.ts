@@ -16,8 +16,8 @@ import { SHARE_LINK_COOKIE_NAME, resolveShareLinkViewerUserId } from "./lib/shar
 
 const PUBLIC_PATHS = ["/login", "/share"];
 
-// Write-only entry points, plus the two admin pages that carry real
-// people's contact details (Team) or deployment internals (About) -- a
+// Write-only entry points, plus the admin pages that carry real people's
+// contact details (Team, Access requests) or deployment internals (About) -- a
 // share-link viewer shouldn't even see the door to these. Compliance
 // rules and Regulatory reference are deliberately NOT here: they're pure
 // reference content, and their own page-level gate
@@ -25,7 +25,7 @@ const PUBLIC_PATHS = ["/login", "/share"];
 // read them. This list is belt-and-braces on top of the real protection
 // either way -- every write Server Action already rejects the role-less
 // Demo Viewer on its own (see shareLinks.ts).
-const SHARE_VIEWER_DENYLIST = ["/projects/new", "/team", "/about"];
+const SHARE_VIEWER_DENYLIST = ["/projects/new", "/team", "/about", "/access-requests"];
 
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
