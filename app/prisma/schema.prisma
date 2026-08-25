@@ -51,10 +51,6 @@ model User {
   name                       String
   email                      String                   @unique
   emailVerified              DateTime?
-  // Only set for the credentials-login fallback (platform admin + local
-  // dev) -- real Trust/FM Contractor users sign in via their own
-  // organisation's Microsoft account (see auth.ts) and never have one.
-  passwordHash               String?
   accounts                   Account[]
   sessions                   Session[]
   homeDepartmentId           String?
