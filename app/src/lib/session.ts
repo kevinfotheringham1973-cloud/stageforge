@@ -7,6 +7,7 @@
 import { cookies } from "next/headers";
 import { auth } from "./auth";
 import { db } from "./db";
+import { SHARE_LINK_COOKIE_NAME, resolveShareLinkViewerUserId } from "./shareLinks";
 
 export const VIEW_AS_COOKIE_NAME = "sf_view_as_user_id";
 
@@ -30,9 +31,18 @@ export async function getRealCurrentUserId(): Promise<string | null> {
  */
 export async function getCurrentUserId(): Promise<string | null> {
   const realUserId = await getRealCurrentUserId();
-  if (!realUserId) return null;
-
   const store = await cookies();
+
+  if (!realUserId) {
+    // No real Auth.js session -- the one other way to have an identity at
+    // all is a valid, unexpired, unrevoked /share/<token> link (see
+    // shareLinks.ts). Resolves to the role-less Demo Viewer, so every
+    // write Server Action's existing role/admin check rejects it same as
+    // it would anyone else holding no role.
+    const shareToken = store.get(SHARE_LINK_COOKIE_NAME)?.value;
+    return resolveShareLinkViewerUserId(shareToken);
+  }
+
   const viewAsId = store.get(VIEW_AS_COOKIE_NAME)?.value;
   if (!viewAsId) return realUserId;
 

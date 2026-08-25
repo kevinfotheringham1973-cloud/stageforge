@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from "crypto";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -12,6 +13,7 @@ import {
   getRealCurrentUserId,
   VIEW_AS_COOKIE_NAME,
 } from "./session";
+import { SHARE_LINK_COOKIE_NAME } from "./shareLinks";
 import {
   canApproveSpend,
   canBypassDeliverable,
@@ -1621,6 +1623,66 @@ export async function createRole(formData: FormData) {
   });
 
   revalidatePath("/", "layout");
+}
+
+// ── Share links ──────────────────────────────────────────────────────
+// Read-only, expiring, revocable demo access -- see shareLinks.ts and
+// ShareLink's schema comment for the full design. Platform-admin-only to
+// create/revoke, same gate as createUser/createRole above.
+
+const SHARE_LINK_MAX_HOURS = 24 * 30; // 30 days -- a demo link, not a permanent public one
+
+export async function createShareLink(formData: FormData) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can create a share link.");
+  }
+
+  const label = String(formData.get("label") ?? "").trim() || null;
+  const hours = Number(formData.get("expiresInHours"));
+  if (!Number.isFinite(hours) || hours <= 0 || hours > SHARE_LINK_MAX_HOURS) {
+    throw new Error(`expiresInHours must be between 1 and ${SHARE_LINK_MAX_HOURS}.`);
+  }
+
+  const token = crypto.randomBytes(24).toString("base64url");
+  const created = await db.shareLink.create({
+    data: {
+      token,
+      label,
+      createdById: actorId,
+      expiresAt: new Date(Date.now() + hours * 60 * 60 * 1000),
+    },
+  });
+  await db.auditLogEntry.create({
+    data: { actorId, action: "shareLink.created", entityType: "ShareLink", entityId: created.id },
+  });
+
+  revalidatePath("/share-links");
+}
+
+export async function revokeShareLink(shareLinkId: string) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can revoke a share link.");
+  }
+
+  await db.shareLink.update({ where: { id: shareLinkId }, data: { revokedAt: new Date() } });
+  await db.auditLogEntry.create({
+    data: { actorId, action: "shareLink.revoked", entityType: "ShareLink", entityId: shareLinkId },
+  });
+
+  revalidatePath("/share-links");
+}
+
+/** Leaves a demo view -- no permission check needed, same shape as clearViewAsUser: it only ever clears a cookie. */
+export async function exitShareLinkView() {
+  const store = await cookies();
+  store.delete(SHARE_LINK_COOKIE_NAME);
+  redirect("/login");
 }
 
 // ── Compliance rule approvals ───────────────────────────────────────

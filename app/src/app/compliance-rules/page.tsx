@@ -4,6 +4,7 @@ import { updateComplianceRuleApprovals } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { forbidden } from "next/navigation";
 import { groupRolesByCategory } from "@/lib/roleCategories";
+import { canViewAdminReferencePage } from "@/lib/shareLinks";
 
 /**
  * Platform-admin-only. Configures each ComplianceRuleTemplate's
@@ -17,7 +18,7 @@ import { groupRolesByCategory } from "@/lib/roleCategories";
  */
 export default async function ComplianceRulesPage() {
   const currentUser = await getCurrentUser();
-  if (!currentUser?.isPlatformAdmin) forbidden();
+  if (!canViewAdminReferencePage(currentUser)) forbidden();
 
   const [ruleSets, roles] = await Promise.all([
     db.complianceRuleSet.findMany({
@@ -34,8 +35,8 @@ export default async function ComplianceRulesPage() {
       <h1 className="mb-1 text-2xl font-bold">Compliance rule approvals</h1>
       <p className="mb-8 text-sm text-inkmuted">
         Who can override each rule, and which additional role(s) must independently sign off before it&rsquo;s
-        truly clear. Platform admin only. Everything else about a rule (which stages it applies to, evidence
-        type) still isn&rsquo;t editable here.
+        truly clear. Editable by a platform admin only; viewable read-only via a share link. Everything else
+        about a rule (which stages it applies to, evidence type) still isn&rsquo;t editable here.
       </p>
 
       <div className="flex flex-col gap-8">

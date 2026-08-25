@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { db } from "@/lib/db";
 import { getCurrentUser, getRealCurrentUserId } from "@/lib/session";
-import { setViewAsUser, clearViewAsUser } from "@/lib/actions";
+import { setViewAsUser, clearViewAsUser, exitShareLinkView } from "@/lib/actions";
 import { signOut } from "@/lib/auth";
 import { ActingAsSwitcher } from "@/components/ActingAsSwitcher";
+import { isShareLinkViewerEmail, getActiveShareLinkFromCookie } from "@/lib/shareLinks";
 
 export const metadata: Metadata = {
   title: "StageForge (dev scaffold)",
@@ -43,7 +44,13 @@ export default async function RootLayout({
   // inherit the switcher just because an admin is currently viewing
   // as them.
   const realUser = realUserId ? await db.user.findUnique({ where: { id: realUserId } }) : null;
-  const isViewingAs = realUserId !== currentUser.id;
+  // A share-link visitor has no real Auth.js session at all (realUserId is
+  // null), which would otherwise make the "viewing as" math below think an
+  // admin is previewing nobody -- this has to be checked first and handled
+  // as its own case, not folded into isViewingAs.
+  const isDemoViewer = isShareLinkViewerEmail(currentUser.email);
+  const activeShareLink = isDemoViewer ? await getActiveShareLinkFromCookie() : null;
+  const isViewingAs = !isDemoViewer && realUserId !== currentUser.id;
 
   // The "view as" switcher is project-agnostic (root layout), so this
   // is every role a user holds anywhere, deduped — not one project's
@@ -76,6 +83,19 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans" suppressHydrationWarning>
+        {isDemoViewer && (
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
+            <span>
+              Read-only demo view
+              {activeShareLink?.expiresAt && ` — expires ${activeShareLink.expiresAt.toLocaleString("en-GB")}`}.
+            </span>
+            <form action={exitShareLinkView}>
+              <button type="submit" className="font-semibold underline">
+                Exit demo view
+              </button>
+            </form>
+          </div>
+        )}
         {isViewingAs && (
           <div className="flex flex-wrap items-center justify-between gap-2 bg-warn/15 px-4 py-2 text-xs text-warn sm:px-6 md:px-10">
             <span>
@@ -124,6 +144,19 @@ export default async function RootLayout({
                 <a href="/about" className="text-sm font-semibold text-accent hover:underline">
                   About
                 </a>
+                <a href="/share-links" className="text-sm font-semibold text-accent hover:underline">
+                  Share links
+                </a>
+              </div>
+            )}
+            {isDemoViewer && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-l border-rule pl-5">
+                <a href="/compliance-rules" className="text-sm font-semibold text-accent hover:underline">
+                  Compliance rules
+                </a>
+                <a href="/regulatory-reference" className="text-sm font-semibold text-accent hover:underline">
+                  Regulatory reference
+                </a>
               </div>
             )}
           </div>
@@ -131,16 +164,24 @@ export default async function RootLayout({
             {realUser?.isPlatformAdmin && (
               <ActingAsSwitcher action={setViewAsUser} users={users} currentUserId={currentUser.id} />
             )}
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <button type="submit" className="text-sm font-semibold text-accent hover:underline">
-                Sign out ({realUser?.name ?? currentUser.name})
-              </button>
-            </form>
+            {isDemoViewer ? (
+              <form action={exitShareLinkView}>
+                <button type="submit" className="text-sm font-semibold text-accent hover:underline">
+                  Exit demo view
+                </button>
+              </form>
+            ) : (
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/login" });
+                }}
+              >
+                <button type="submit" className="text-sm font-semibold text-accent hover:underline">
+                  Sign out ({realUser?.name ?? currentUser.name})
+                </button>
+              </form>
+            )}
           </div>
         </header>
         <main>{children}</main>
