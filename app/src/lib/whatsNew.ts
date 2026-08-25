@@ -22,6 +22,8 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       "A platform admin can generate a read-only, expiring, revocable link for showing the demo to someone without giving them a real account — everything visible, nothing editable, until it expires or is revoked.",
       "Fixed an intermittent issue where clicking into a gate straight after loading a project with several gates could briefly look broken.",
       "New \"StageForge Health\" wordmark branding throughout.",
+      "Fixed sign-in emails failing to deliver for anyone other than the platform admin's own address.",
+      "A platform admin can now dismiss an access request once seen, and gets a clear on-screen alert (not just a nav-tucked page) whenever someone tries to sign in without access.",
     ],
   },
   {
