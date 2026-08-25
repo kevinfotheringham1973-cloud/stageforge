@@ -9,38 +9,50 @@
 //    Configured multi-tenant ("common" issuer) so a user from ANY
 //    organisation's Entra ID can sign in with their own org account --
 //    NOT restricted to Transition Insight Partners Ltd's own tenant.
-// 2. Credentials (email + password) -- the fallback for Kevin and the
-//    seeded demo cast, since those aren't real Microsoft accounts.
+// 2. Resend magic-link email -- passwordless sign-in for anyone not on
+//    a real Entra ID org account (Kevin, and demo-cast personas using a
+//    real personal email). Replaces the original Credentials/password
+//    provider entirely (25 Aug 2026, Kevin's explicit call): no
+//    password is ever created, hashed, or stored anywhere. Reuses the
+//    same Resend account as scheduled-report emails (email.ts), but
+//    talks to the Resend API directly here rather than through that
+//    helper -- Auth.js's provider needs to own the email's HTML/token,
+//    not just send an already-composed message.
 //
 // Either way, signing in only ever gets you in if a User row with that
 // email already exists (see the signIn callback) -- a platform admin
-// adds people first. No self-service signup, which is what a Trust
-// security team actually expects from an access-controlled compliance
-// tool, not an open one.
+// adds people first (the /team page). No self-service signup, which is
+// what a Trust security team actually expects from an access-controlled
+// compliance tool, not an open one.
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
-import Credentials from "next-auth/providers/credentials";
+import Resend from "next-auth/providers/resend";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import bcrypt from "bcryptjs";
 import { db } from "./db";
 
 const hasEntraIdConfig = Boolean(
   process.env.AUTH_MICROSOFT_ENTRA_ID_ID && process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET
 );
+const hasResendConfig = Boolean(process.env.RESEND_API_KEY);
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(db),
-  // Auth.js requires JWT sessions whenever a Credentials provider is
-  // present -- database sessions only work for adapter-native providers
-  // (confirmed against the running dev server: "Signing in with
-  // credentials only supported if JWT strategy is enabled"). The
-  // adapter still handles User/Account lookups and linking either way;
-  // this only changes how the session itself is stored (an encrypted
-  // cookie, not a Session table row) -- the real tradeoff is no
-  // server-side session revocation before a token's own expiry.
+  // JWT session kept for simplicity. The original reason this was
+  // forced (Auth.js requires JWT whenever a Credentials provider is
+  // present) is gone now that Credentials has been replaced by Resend
+  // below -- switching to database-backed sessions (real server-side
+  // revocation, instead of waiting out a token's expiry) is a
+  // reasonable follow-up, just not done as part of this change.
   session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  pages: {
+    signIn: "/login",
+    // Where a visitor lands immediately after requesting a magic link
+    // (before they've clicked it) -- reusing /login itself with a flag
+    // rather than Auth.js's generic built-in page, so the messaging
+    // stays on-brand. See login/page.tsx's checkEmail search param.
+    verifyRequest: "/login?checkEmail=1",
+  },
   providers: [
     ...(hasEntraIdConfig
       ? [
@@ -58,30 +70,23 @@ export const authConfig: NextAuthConfig = {
           }),
         ]
       : []),
-    Credentials({
-      credentials: { email: {}, password: {} },
-      authorize: async (credentials) => {
-        const email = String(credentials?.email ?? "").toLowerCase().trim();
-        const password = String(credentials?.password ?? "");
-        if (!email || !password) return null;
-
-        const user = await db.user.findUnique({ where: { email } });
-        if (!user?.passwordHash) return null; // no credentials login set up for this account -- e.g. an Entra-only user
-
-        const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
-
-        return { id: user.id, name: user.name, email: user.email };
-      },
-    }),
+    ...(hasResendConfig
+      ? [
+          Resend({
+            apiKey: process.env.RESEND_API_KEY,
+            from: process.env.RESEND_FROM_EMAIL ?? "StageForge <onboarding@resend.dev>",
+          }),
+        ]
+      : []),
   ],
   callbacks: {
-    // The actual access-control gate: an Entra ID sign-in from a real
-    // email with no matching User row is rejected outright, rather than
-    // silently provisioning a new account. (Credentials sign-ins are
-    // already gated in authorize() above via passwordHash being unset.)
-    signIn: async ({ user, account }) => {
-      if (account?.provider !== "microsoft-entra-id") return true;
+    // The actual access-control gate, for every provider: a sign-in
+    // attempt for an email with no matching User row is rejected
+    // outright, rather than silently provisioning a new account. Runs
+    // for Resend at the point someone REQUESTS a link (so an
+    // unapproved email never even gets one sent), not just after they
+    // click it.
+    signIn: async ({ user }) => {
       const existing = await db.user.findUnique({ where: { email: user.email ?? "" } });
       return Boolean(existing);
     },
