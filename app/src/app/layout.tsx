@@ -25,6 +25,13 @@ export default async function RootLayout({
     getRealCurrentUserId(),
   ]);
 
+  // Only ever queried for a platform admin -- the nav link (and this
+  // count) don't render at all otherwise. Cheap enough to run on every
+  // request, same tradeoff as the usersWithRoles fetch above.
+  const accessRequestCount = currentUser?.isPlatformAdmin
+    ? await db.rejectedSignInAttempt.count()
+    : 0;
+
   // proxy.ts already redirects every route but /login to /login when
   // nobody's signed in, so this only renders bare chrome for the login
   // page itself (currentUser null there) rather than the full header.
@@ -108,6 +115,17 @@ export default async function RootLayout({
             </form>
           </div>
         )}
+        {accessRequestCount > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-danger/15 px-4 py-2 text-xs text-danger sm:px-6 md:px-10">
+            <span>
+              ⚠ {accessRequestCount} {accessRequestCount === 1 ? "person" : "people"} tried to sign in without
+              access.
+            </span>
+            <a href="/access-requests" className="font-semibold underline">
+              Review access requests
+            </a>
+          </div>
+        )}
         <header className="flex flex-col gap-3 border-b border-rule bg-surface px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between md:px-10">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <a href="/" className="flex flex-col items-center leading-[0.95]">
@@ -135,8 +153,18 @@ export default async function RootLayout({
                 <a href="/team" className="text-sm font-semibold text-accent hover:underline">
                   Team
                 </a>
-                <a href="/access-requests" className="text-sm font-semibold text-accent hover:underline">
+                <a
+                  href="/access-requests"
+                  className={`flex items-center gap-1 text-sm font-semibold hover:underline ${
+                    accessRequestCount > 0 ? "text-danger" : "text-accent"
+                  }`}
+                >
                   Access requests
+                  {accessRequestCount > 0 && (
+                    <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                      {accessRequestCount}
+                    </span>
+                  )}
                 </a>
                 <a href="/compliance-rules" className="text-sm font-semibold text-accent hover:underline">
                   Compliance rules

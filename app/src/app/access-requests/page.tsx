@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { forbidden } from "next/navigation";
+import { dismissAccessRequest } from "@/lib/actions";
 
 const PROVIDER_LABEL: Record<string, string> = {
   "microsoft-entra-id": "Microsoft",
@@ -49,6 +50,11 @@ export default async function AccessRequestsPage() {
                 {a.attemptCount > 1 && ` · ${a.attemptCount} attempts since ${a.firstAttemptedAt.toLocaleDateString("en-GB")}`}
               </p>
             </div>
+            <form action={dismissAccessRequest.bind(null, a.id)}>
+              <button type="submit" className="shrink-0 text-xs font-semibold text-inkmuted underline hover:text-danger">
+                Dismiss
+              </button>
+            </form>
           </div>
         ))}
       </div>

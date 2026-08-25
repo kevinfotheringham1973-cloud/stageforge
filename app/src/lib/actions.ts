@@ -1685,6 +1685,30 @@ export async function exitShareLinkView() {
   redirect("/login");
 }
 
+// ── Access requests ─────────────────────────────────────────────────
+
+/**
+ * Clears a logged rejected sign-in attempt from /access-requests --
+ * purely a "seen it, don't want them added" dismissal, not a security
+ * action: it doesn't block or allow anything by itself (that's still
+ * entirely governed by whether a User row exists, per auth.ts's signIn
+ * callback). If the same email tries again after being dismissed, it
+ * just gets re-logged fresh.
+ */
+export async function dismissAccessRequest(id: string) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can dismiss an access request.");
+  }
+
+  await db.rejectedSignInAttempt.delete({ where: { id } });
+
+  revalidatePath("/access-requests");
+  revalidatePath("/", "layout");
+}
+
 // ── Compliance rule approvals ───────────────────────────────────────
 
 /**
