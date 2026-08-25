@@ -135,6 +135,9 @@ export default async function RootLayout({
                 <a href="/team" className="text-sm font-semibold text-accent hover:underline">
                   Team
                 </a>
+                <a href="/access-requests" className="text-sm font-semibold text-accent hover:underline">
+                  Access requests
+                </a>
                 <a href="/compliance-rules" className="text-sm font-semibold text-accent hover:underline">
                   Compliance rules
                 </a>

@@ -86,9 +86,23 @@ export const authConfig: NextAuthConfig = {
     // for Resend at the point someone REQUESTS a link (so an
     // unapproved email never even gets one sent), not just after they
     // click it.
-    signIn: async ({ user }) => {
+    signIn: async ({ user, account }) => {
       const existing = await db.user.findUnique({ where: { email: user.email ?? "" } });
-      return Boolean(existing);
+      if (existing) return true;
+
+      // Logged for /access-requests (25 Aug 2026) -- as much a lead
+      // signal as a security log, so failing to write it must never
+      // break the actual rejection.
+      if (user.email && account?.provider) {
+        await db.rejectedSignInAttempt
+          .upsert({
+            where: { email_provider: { email: user.email, provider: account.provider } },
+            create: { email: user.email, provider: account.provider },
+            update: { attemptCount: { increment: 1 }, lastAttemptedAt: new Date() },
+          })
+          .catch((err) => console.error("[auth] failed to log rejected sign-in attempt:", err));
+      }
+      return false;
     },
     // JWT strategy: only the FIRST callback after sign-in gets `user`;
     // every later request only has the token, so the id has to be

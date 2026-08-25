@@ -887,3 +887,22 @@ model ShareLink {
   expiresAt   DateTime
   revokedAt   DateTime? // NULL = active
 }
+
+// A sign-in attempt for an email with no matching User row (25 Aug 2026) --
+// captured at the exact point auth.ts's signIn callback rejects it, for
+// both providers. As much a lead signal (someone from an outside
+// organisation wanted in) as a security log, so it's platform-admin
+// visible at /access-requests rather than just sitting in a server log.
+// Upserted per (email, provider) instead of one row per attempt, so
+// someone retrying doesn't bloat the table -- attemptCount/
+// lastAttemptedAt show how persistent they were.
+model RejectedSignInAttempt {
+  id               String   @id @default(cuid())
+  email            String
+  provider         String // "microsoft-entra-id" or "resend"
+  attemptCount     Int      @default(1)
+  firstAttemptedAt DateTime @default(now())
+  lastAttemptedAt  DateTime @default(now())
+
+  @@unique([email, provider])
+}
