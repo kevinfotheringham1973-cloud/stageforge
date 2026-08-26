@@ -465,7 +465,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.electrical_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.electrical_discrimination_selectivity_studies", label: "Discrimination / selectivity studies and protection coordination", description: "SHTM 06, BS 7671." },
       { key: "del.electrical_ups_ips_autonomy_design", label: "UPS / IPS autonomy and configuration design", description: "SHTM 06." },
       { key: "del.electrical_generator_sizing_fuel_control", label: "Standby generator sizing, fuel storage and control philosophy", description: "SHTM 06." },
@@ -614,7 +614,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.water_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.water_treatment_dosing_temp_strategy", label: "Water treatment / chemical dosing / temperature control strategy", description: "SHTM 04-01 Part A." },
       { key: "del.water_legionella_control_measures", label: "Legionella control measures and schematic risk assessment update", description: "SHTM 04-01, HSE ACOP L8." },
       { key: "del.water_monitoring_sampling_bms_design", label: "Temperature monitoring, sampling points and BMS integration design", description: "SHTM 04-01." },
@@ -736,7 +736,7 @@ async function main() {
     [
       { key: "del.drainage_full_technical_design_package", label: "Full Technical Design Package — detailed drawings, invert levels, specifications" },
       { key: "del.drainage_design_calculations", label: "Design calculations — flow rates, pipe sizing and falls to BS EN 12056" },
-      { key: "del.drainage_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.drainage_pipework_spec_compliant", label: "Complete pipework and fittings specification compliant with SHTM 64 and the Building (Scotland) Regulations Section 3 (Environment)", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.drainage_installation_method_statements", label: "Detailed Installation Method Statements, confined-space/excavation permit procedures and RAMS" },
       { key: "del.drainage_compliance_matrix", label: "Compliance Matrix — mapping against BS EN 12056, SHTM 64, Building (Scotland) Regulations, Water Environment (Controlled Activities) (Scotland) Regulations 2011, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -963,7 +963,7 @@ async function main() {
     [
       { key: "del.lighting_full_technical_design_package", label: "Full Technical Design Package — detailed lighting drawings, schematics, specifications" },
       { key: "del.lighting_design_calculations", label: "Design calculations — lux levels, glare, emergency lighting duration/coverage to BS 5266" },
-      { key: "del.lighting_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.lighting_spec_compliant", label: "Complete luminaire and control gear specification compliant with BS 7671 and BS EN 12464-1", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.lighting_installation_method_statements", label: "Detailed Installation Method Statements and RAMS" },
       { key: "del.lighting_compliance_matrix", label: "Compliance Matrix — mapping against BS 7671, BS 5266, BS EN 12464-1, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -1123,7 +1123,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.boiler_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.boiler_water_treatment_strategy", label: "Water treatment / chemical dosing / corrosion inhibitor strategy", description: "SHTM 04-01 Part A, BSRIA water treatment guidance." },
       { key: "del.boiler_bms_control_philosophy", label: "BMS control philosophy, sequences & point schedules (new boilers + retained systems)", description: "SHTM 06-01." },
       { key: "del.boiler_electrical_design", label: "Electrical design (boiler power, controls, temporary plant)", description: "SHTM 06-01." },
@@ -1290,7 +1290,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.ventilation_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.ventilation_filter_hygiene_strategy", label: "Filter & hygiene strategy", description: "SHTM 03-01." },
       { key: "del.ventilation_bms_control_philosophy", label: "BMS / controls philosophy and point schedules", description: "SHTM 06-01." },
       { key: "del.ventilation_electrical_design", label: "Electrical design associated with AHUs, fans and controls", description: "SHTM 06-01." },
@@ -1440,7 +1440,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.medgas_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.medgas_pendant_structural_design", label: "Structural design information for pendant supports / ceiling fixings" },
       { key: "del.medgas_electrical_data_design", label: "Electrical & data design associated with pendants", description: "SHTM 06-01." },
       { key: "del.medgas_alarm_system_design", label: "Alarm system design and interface requirements", description: "SHTM 02-01 Part A." },
@@ -1574,7 +1574,7 @@ async function main() {
     [
       { key: "del.firealarm_full_technical_design_package", label: "Full technical design drawings, schematics and zone plans", description: "SHTM 82, BS 5839-1." },
       { key: "del.firealarm_detailed_specifications", label: "Detailed specifications (CIE, detectors, manual call points, sounders, visual devices, cabling, power supplies)", description: "SHTM 82, BS 5839-1." },
-      { key: "del.firealarm_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.firealarm_cause_effect_matrix", label: "Cause & effect matrix / interface schedule (doors, plant, lifts, smoke control, etc.)", description: "SHTM 82." },
       { key: "del.firealarm_battery_power_supply_design", label: "Battery autonomy and power supply design", description: "BS 5839-1." },
       { key: "del.firealarm_ufas_reduction_strategy", label: "UFAS reduction strategy (detector selection, multi-criteria, verification technology)", description: "SHTM 82." },
@@ -1707,7 +1707,7 @@ async function main() {
     [
       { key: "del.lift_full_technical_design_package", label: "Full technical design drawings & schematics (shafts, cars, landings, machine rooms, interfaces)", description: "SHTM 08-02." },
       { key: "del.lift_detailed_specifications", label: "Detailed specifications (drive system, controller, doors, safety gear, finishes, communication systems)", description: "SHTM 08-02, BS EN 81 series." },
-      { key: "del.lift_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.lift_structural_design", label: "Structural design information (loads, fixings, machine room / pit)" },
       { key: "del.lift_electrical_design", label: "Electrical design (main supply, emergency supply, lighting, alarms)", description: "SHTM 06 series, SHTM 08-02." },
       { key: "del.lift_firefighting_escape_requirements", label: "Firefighting lift / escape bed lift specific requirements (controls, communications, power)", description: "SHTM 81, SFPN 3, BS EN 81-72." },
@@ -1838,7 +1838,7 @@ async function main() {
     [
       { key: "del.nursecall_full_technical_design_package", label: "Full technical design drawings, schematics and device schedules", description: "SHTM 08-03." },
       { key: "del.nursecall_detailed_specifications", label: "Detailed specifications (call points, handsets, indicators, controllers, speech units, paging interfaces, logging software)", description: "SHTM 08-03." },
-      { key: "del.nursecall_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.nursecall_power_supply_resilience", label: "Power supply, resilience and backup arrangements", description: "SHTM 06 series." },
       { key: "del.nursecall_integration_design", label: "Integration design (cardiac arrest, fire alert, staff attack, BMS if required)", description: "SHTM 08-03." },
       { key: "del.nursecall_wireless_coverage_radio_survey", label: "Wireless coverage / radio survey (if applicable)", description: "Manufacturer requirements, radio licensing." },
@@ -1968,7 +1968,7 @@ async function main() {
     [
       { key: "del.bms_full_technical_design_package", label: "Full technical design drawings, network schematics and system architecture", description: "CIBSE / BSRIA." },
       { key: "del.bms_point_schedules_control_strategies", label: "Detailed point schedules, control strategies and cause-and-effect matrices", description: "Linked SHTMs (03-01, 04-01, etc.)." },
-      { key: "del.bms_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.bms_detailed_specifications", label: "Detailed specifications (controllers, sensors, actuators, servers, software, graphics, cybersecurity)", description: "Manufacturer and industry standards." },
       { key: "del.bms_integration_design", label: "Integration design with existing/new plant (boilers, AHUs, medical gases, fire, lifts, nurse call etc.)", description: "Relevant system SHTMs." },
       { key: "del.bms_energy_monitoring_analytics_spec", label: "Energy monitoring, reporting and analytics specification" },
@@ -2107,7 +2107,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.chilledwater_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.chilledwater_treatment_corrosion_strategy", label: "Water treatment / chemical dosing / corrosion and microbiological control strategy", description: "BSRIA, SHTM 04-01 principles." },
       { key: "del.chilledwater_control_strategy_bms_schedules", label: "Control strategy, sequences and BMS point schedules", description: "SHTM 03-01 linked, CIBSE Guide H." },
       { key: "del.chilledwater_electrical_design", label: "Electrical design associated with chillers, pumps and controls", description: "SHTM 06 series." },
@@ -2246,7 +2246,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.steam_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.steam_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.steam_water_treatment_blowdown_strategy", label: "Water treatment / chemical dosing / blowdown strategy", description: "Manufacturer / BESSafe principles." },
       { key: "del.steam_control_strategy_bms_integration", label: "Control strategy, sequences and BMS integration" },
@@ -2378,7 +2378,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.firesuppression_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.firesuppression_hydraulic_agent_calculations", label: "Hydraulic calculations (sprinkler / water mist) or agent quantity calculations (gaseous)", description: "BS EN 12845 or BS EN 15004." },
       { key: "del.firesuppression_cause_effect_matrix", label: "Cause & effect / interface matrix with fire detection & alarm system", description: "SHTM 82." },
       { key: "del.firesuppression_water_agent_storage_design", label: "Water supply / storage or agent storage design", description: "Relevant standards." },
@@ -2510,7 +2510,7 @@ async function main() {
     [
       { key: "del.security_full_technical_design_package", label: "Full technical design drawings, schematics, camera schedules and access control schedules", description: "BS EN standards." },
       { key: "del.security_detailed_specifications", label: "Detailed specifications (cameras, recorders/VMS, readers, controllers, detectors, software, networks)", description: "Manufacturer and BS EN standards." },
-      { key: "del.security_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.security_network_cybersecurity_design", label: "Network architecture, cybersecurity design and hardening measures", description: "NHS cyber standards." },
       { key: "del.security_dpia", label: "Data protection / privacy impact assessment (DPIA) for CCTV and access control", description: "GDPR / UK Data Protection Act 2018.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
       { key: "del.security_recording_retention_audit_design", label: "Recording, retention, export and audit trail design", description: "Information Governance.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
@@ -2648,7 +2648,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.pts_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.pts_tracking_prioritisation_alarm_design", label: "Carrier tracking, prioritisation, alarm and audit trail design", description: "Clinical requirements." },
       { key: "del.pts_power_control_network_design", label: "Power, control and network design", description: "SHTM 06 series." },
       { key: "del.pts_infection_control_cleanability", label: "Infection control and cleanability features", description: "IPC guidance.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
@@ -2774,7 +2774,7 @@ async function main() {
     [
       { key: "del.abovedrainage_full_technical_design_package", label: "Full technical design drawings, schematics, stack schedules and drain schedules", description: "BS EN 12056, Building Standards." },
       { key: "del.abovedrainage_detailed_specifications", label: "Detailed specifications (pipework materials, fittings, floor drains, channels, traps, access fittings, insulation if required)", description: "BS EN 12056." },
-      { key: "del.abovedrainage_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.abovedrainage_venting_antisiphonage_strategy", label: "Venting strategy and anti-siphonage measures", description: "BS EN 12056." },
       { key: "del.abovedrainage_access_rodding_cleaning_design", label: "Access, rodding and cleaning point design", description: "Maintainability focus." },
       { key: "del.abovedrainage_belowground_interface_design", label: "Interface design with below-ground drainage and sanitary fittings" },
@@ -2900,7 +2900,7 @@ async function main() {
     [
       { key: "del.compressedair_full_technical_design_package", label: "Full technical design drawings, schematics and pipework layouts", description: "CIBSE, manufacturer data." },
       { key: "del.compressedair_detailed_specifications", label: "Detailed specifications (compressors, receivers, dryers, filters, pipework, valves, regulators, controls)", description: "Relevant BS EN standards." },
-      { key: "del.compressedair_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.compressedair_air_treatment_quality_spec", label: "Air treatment and quality specification (dryness, filtration, oil content)", description: "ISO 8573, where applicable." },
       { key: "del.compressedair_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.compressedair_control_strategy_bms_integration", label: "Control strategy, sequencing and BMS integration (if required)" },
@@ -3054,7 +3054,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.wardrefresh_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.wardrefresh_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.wardrefresh_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.wardrefresh_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
@@ -3164,7 +3164,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.mhu_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.mhu_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.mhu_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.mhu_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
@@ -3273,7 +3273,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.theatrerefresh_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.theatrerefresh_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.theatrerefresh_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.theatrerefresh_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
