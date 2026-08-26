@@ -45,19 +45,19 @@ const APPROVAL_BUCKET_LABELS: Record<string, string> = {
   VARIATION: "Variation",
 };
 
-// Every deliverable key that means "the project's Pre-Construction
-// Information" — most templates share del.common_pre_construction_information
-// (canonicalized in #82), but Ward Refresh, MHU, Theatre Refresh and
-// Ventilation kept their own key because their label adds "& input to
-// Construction Phase Plan". The PCI auto-draft link (below) needs to
-// recognise all of them, not just the common one.
-const PCI_DELIVERABLE_KEYS = new Set([
-  "del.common_pre_construction_information",
-  "del.wardrefresh_pre_construction_information",
-  "del.mhu_pre_construction_information",
-  "del.theatrerefresh_pre_construction_information",
-  "del.ventilation_pre_construction_information",
-]);
+// Matched by key suffix, not an enumerated list (26 Aug 2026) — an
+// earlier enumerated Set (#89) missed BMS entirely: its live
+// DeliverableTemplate/Deliverable rows still carry the pre-#82
+// del.bms_pre_construction_information key, even though seed.ts's
+// *current* text says BMS should use the shared
+// del.common_pre_construction_information (the canonicalization never
+// got backfilled onto BMS's already-instantiated data). A suffix match
+// recognises every discipline's PCI item regardless of prefix, so it
+// self-heals against this whole class of drift instead of needing a
+// hand-maintained list kept in sync with seed.ts.
+function isPciDeliverable(key: string): boolean {
+  return key.endsWith("_pre_construction_information");
+}
 
 function toDateInputValue(d: Date | null): string {
   return d ? d.toISOString().slice(0, 10) : "";
@@ -382,7 +382,7 @@ export async function GateDetail({
         )}
         {d.description && <p className="mb-2 text-sm text-inkmuted">{d.description}</p>}
 
-        {PCI_DELIVERABLE_KEYS.has(d.key) && canReplaceEvidence && (
+        {isPciDeliverable(d.key) && canReplaceEvidence && (
           <a
             href={`/api/projects/${projectNumber}/pci-draft`}
             className="mb-3 flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
