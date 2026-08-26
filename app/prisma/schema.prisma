@@ -75,6 +75,7 @@ model User {
   lessonsLearned             LessonLearned[]
   scheduledReports           ScheduledReport[]
   createdShareLinks          ShareLink[]
+  successfulSignIn           SuccessfulSignIn?
   createdAt                  DateTime                 @default(now())
 }
 
@@ -905,4 +906,25 @@ model RejectedSignInAttempt {
   lastAttemptedAt  DateTime @default(now())
 
   @@unique([email, provider])
+}
+
+// The successful-login counterpart to RejectedSignInAttempt above,
+// same "lead/activity signal, not just a log" framing -- how often,
+// and how recently, each real team member is actually using StageForge.
+// One row per User (not per provider) -- `provider` just reflects
+// whichever method they most recently signed in with, since a person
+// could plausibly switch between Entra ID and email-link over time.
+// Written from auth.ts's `events.signIn` (fires only once a sign-in has
+// genuinely completed -- for the Resend/email-link path that's after
+// the link is clicked and verified, not at the "link requested" stage
+// that RejectedSignInAttempt's callback also runs at), never from the
+// `callbacks.signIn` gate itself.
+model SuccessfulSignIn {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider     String // "microsoft-entra-id" or "resend" -- most recent method used
+  loginCount   Int      @default(1)
+  firstLoginAt DateTime @default(now())
+  lastLoginAt  DateTime @default(now())
 }

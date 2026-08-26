@@ -19,8 +19,21 @@ export default async function AccessRequestsPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser?.isPlatformAdmin) forbidden();
 
-  const attempts = await db.rejectedSignInAttempt.findMany({
-    orderBy: { lastAttemptedAt: "desc" },
+  const [attempts, members] = await Promise.all([
+    db.rejectedSignInAttempt.findMany({
+      orderBy: { lastAttemptedAt: "desc" },
+    }),
+    db.user.findMany({ include: { successfulSignIn: true } }),
+  ]);
+
+  // Nullable one-to-one relation, so sorted in JS rather than via
+  // orderBy: { successfulSignIn: { lastLoginAt } } -- nulls-last
+  // handling across DBs isn't consistent enough to rely on for this.
+  const membersByRecency = [...members].sort((a, b) => {
+    const aTime = a.successfulSignIn?.lastLoginAt.getTime() ?? 0;
+    const bTime = b.successfulSignIn?.lastLoginAt.getTime() ?? 0;
+    if (aTime !== bTime) return bTime - aTime;
+    return a.name.localeCompare(b.name);
   });
 
   return (
@@ -55,6 +68,40 @@ export default async function AccessRequestsPage() {
                 Dismiss
               </button>
             </form>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="mb-1 mt-10 text-2xl font-bold">Team sign-in activity</h2>
+      <p className="mb-8 text-sm text-inkmuted">
+        Every team member and how much they&rsquo;ve actually used StageForge — how many times they&rsquo;ve
+        signed in, and when they last did.
+      </p>
+
+      <div className="overflow-hidden rounded-lg border border-rule bg-surface">
+        {membersByRecency.map((m, i) => (
+          <div
+            key={m.id}
+            className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm ${
+              i > 0 ? "border-t border-rule" : ""
+            }`}
+          >
+            <div className="min-w-0">
+              <span className="font-semibold">{m.name}</span>
+              <span className="ml-2 text-xs text-inkmuted">{m.email}</span>
+            </div>
+            <div className="shrink-0 text-right text-xs text-inkmuted">
+              {m.successfulSignIn ? (
+                <>
+                  {m.successfulSignIn.loginCount} sign-in{m.successfulSignIn.loginCount === 1 ? "" : "s"} · last{" "}
+                  {m.successfulSignIn.lastLoginAt.toLocaleString("en-GB")}
+                  {" · "}
+                  {PROVIDER_LABEL[m.successfulSignIn.provider] ?? m.successfulSignIn.provider}
+                </>
+              ) : (
+                "Never signed in"
+              )}
+            </div>
           </div>
         ))}
       </div>
