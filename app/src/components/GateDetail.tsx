@@ -395,6 +395,19 @@ export async function GateDetail({
           </a>
         )}
 
+        {d.key.endsWith("_expanded_risk_register") && canReplaceEvidence && (
+          <a
+            href={`/api/projects/${projectNumber}/risk-register-draft`}
+            className="mb-3 flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
+          >
+            <span aria-hidden="true">⬇</span>
+            <span>
+              Generate Risk Register draft (.xlsx)
+              <span className="block text-xs font-normal">Standard risks pre-filled — score, assign and complete before uploading</span>
+            </span>
+          </a>
+        )}
+
         {d.status === "EVIDENCED" && (
           <div className="flex flex-col gap-1">
             {d.evidenceFiles.map((f, i) => (

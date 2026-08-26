@@ -122,7 +122,7 @@ function groundConditionsParagraph(worksType: CdmWorksType): string {
 // src/lib/disciplineTeam.ts) that make a given hazard more prominent
 // for THIS project, rather than inventing separate per-template hazard
 // text.
-const STANDARD_HAZARDS: { heading: string; text: string; emphasise?: string[] }[] = [
+export const STANDARD_HAZARDS: { heading: string; text: string; emphasise?: string[] }[] = [
   {
     heading: "Boundaries and general access, including temporary access",
     text: "The work area shall be clearly defined and segregated from operational areas at all times. The Principal Contractor will be responsible for establishing suitable site boundaries using temporary barriers, hoarding and clear signage to restrict access to authorised personnel only. Safe access and egress routes must be identified, maintained and coordinated with the Client to avoid conflict with existing circulation routes used by patients, staff and visitors.",
