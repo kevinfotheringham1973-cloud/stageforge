@@ -144,6 +144,9 @@ export default async function RootLayout({
             <a href="/lessons-learned" className="text-sm font-semibold text-accent hover:underline">
               Lessons learned
             </a>
+            <a href="/document-templates" className="text-sm font-semibold text-accent hover:underline">
+              Document templates
+            </a>
             <a href="/whats-new" className="text-sm font-semibold text-accent hover:underline">
               What&rsquo;s new
             </a>
