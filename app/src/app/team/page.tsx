@@ -154,19 +154,27 @@ export default async function TeamPage() {
                 {group.roles.map((role) => (
                   <span
                     key={role.id}
-                    className={`inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+                    className={`inline-flex items-center gap-1.5 rounded px-2 py-1 font-mono text-[10px] uppercase tracking-wide ${
                       role.isExactMatchAuthority ? "bg-risk/15 text-risk" : "bg-accentsoft text-accent"
                     }`}
                     title={role.isExactMatchAuthority ? "Nobody else, including SRO, can act in its place" : "SRO can act through this role too"}
                   >
                     {role.name}
                     {role._count.assignments > 0 ? (
-                      <span title={`Assigned on ${role._count.assignments} project role assignment${role._count.assignments === 1 ? "" : "s"} — remove those first to delete`}>
+                      <span
+                        className="text-sm leading-none"
+                        title={`Assigned on ${role._count.assignments} project role assignment${role._count.assignments === 1 ? "" : "s"} — remove those first to delete`}
+                      >
                         🔒
                       </span>
                     ) : (
                       <form action={deleteRole.bind(null, role.id)} className="inline">
-                        <button type="submit" title={`Delete "${role.name}"`} className="hover:text-risk">
+                        <button
+                          type="submit"
+                          title={`Delete "${role.name}"`}
+                          aria-label={`Delete "${role.name}"`}
+                          className="flex h-5 w-5 items-center justify-center rounded-full bg-white/70 text-sm font-bold leading-none text-risk hover:bg-risk hover:text-white"
+                        >
                           ×
                         </button>
                       </form>
