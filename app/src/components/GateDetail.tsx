@@ -385,9 +385,13 @@ export async function GateDetail({
         {PCI_DELIVERABLE_KEYS.has(d.key) && canReplaceEvidence && (
           <a
             href={`/api/projects/${projectNumber}/pci-draft`}
-            className="mb-2 inline-block text-xs font-semibold text-accent hover:underline"
+            className="mb-3 flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
           >
-            Generate PCI draft (.docx) — pre-filled from this project&rsquo;s own data, review and edit before uploading
+            <span aria-hidden="true">⬇</span>
+            <span>
+              Generate PCI draft (.docx)
+              <span className="block text-xs font-normal">Pre-filled from this project&rsquo;s own data — review and edit before uploading</span>
+            </span>
           </a>
         )}
 
