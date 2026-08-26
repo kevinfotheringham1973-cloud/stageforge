@@ -205,6 +205,51 @@ export async function GateDetail({
     "_pre_contract_hold_point",
     "_post_appointment_full_design",
   ];
+  // Raw position alone drifts as soon as one template's gate has an
+  // extra/inserted item the other doesn't (26 Aug 2026, caught on
+  // #30033's Gate 1: Nurse Call's "Clinical needs assessment" — which
+  // Ward Refresh has no equivalent of — sits between the two
+  // templates' otherwise-matching items, shifting every position after
+  // it by one and cross-wiring Ward's "Initial risk register" with
+  // Nurse Call's needs-assessment item instead of Nurse Call's own risk
+  // register). These anchors are recognisable generic phrasing shared
+  // across most/all templates at a given gate (confirmed by auditing
+  // every template's labels gate-by-gate) and take priority over
+  // position when a label matches one — position is still the fallback
+  // for gate 4-6's more discipline-specific content, where no safe
+  // generic anchor exists. Each was validated against every template's
+  // actual labels to confirm it never matches two items within the same
+  // template's own gate (which would wrongly merge that template's own
+  // distinct items together).
+  const KEYWORD_ANCHORS: RegExp[] = [
+    /^business case/i,
+    /^strategic brief/i,
+    /^project brief/i,
+    /condition survey/i,
+    /risk register/i,
+    /^concept (design options|options\b|design report)/i,
+    /^outline .*strategy/i,
+    /^preliminary/i,
+    /^coordinated design/i,
+    /^spatial coordination/i,
+    /fire compartmentation/i,
+    /^updated cost plan, risk register/i,
+    /^soft landings/i,
+    /post-occupancy/i,
+    /^updated (maintenance|operational|water safety|ventilation management|written scheme)/i,
+    /^ongoing (maintenance|monitoring|thorough examination|planned)/i,
+    /material.{0,20}certificates/i,
+    /^full (technical design|commissioning|inspection)/i,
+    /^design risk assessment/i,
+    /^contractor'?s?( method| detailed)? method statements/i,
+    /^as-fitted|^as-built/i,
+    /o&m manuals/i,
+    /^formal (client|clinical|acceptance)|acceptance$/i,
+  ];
+  const keywordAnchorIndex = (label: string): number | null => {
+    const index = KEYWORD_ANCHORS.findIndex((pattern) => pattern.test(label));
+    return index === -1 ? null : index;
+  };
   const slotGroups = isMerged
     ? Array.from(
         gate.deliverables
@@ -217,8 +262,21 @@ export async function GateDetail({
             // same position in another template's own numbering.
             const neverMatch =
               d.key.startsWith("del.common_") || NEVER_SLOT_MATCH_SUFFIXES.some((suffix) => d.key.endsWith(suffix));
-            const slotKey = d.template && !neverMatch ? `order:${d.template.order}` : `solo:${fallbackGroupKey++}`;
-            if (!groups.has(slotKey)) groups.set(slotKey, { order: d.template?.order ?? Infinity, deliverables: [] });
+            let slotKey: string;
+            if (neverMatch) {
+              slotKey = `solo:${fallbackGroupKey++}`;
+            } else {
+              const anchorIndex = keywordAnchorIndex(d.label);
+              slotKey =
+                anchorIndex !== null
+                  ? `anchor:${anchorIndex}`
+                  : d.template
+                    ? `order:${d.template.order}`
+                    : `solo:${fallbackGroupKey++}`;
+            }
+            const order = d.template?.order ?? Infinity;
+            if (!groups.has(slotKey)) groups.set(slotKey, { order, deliverables: [] });
+            else groups.get(slotKey)!.order = Math.min(groups.get(slotKey)!.order, order);
             groups.get(slotKey)!.deliverables.push(d);
             return groups;
           }, new Map<string, { order: number; deliverables: typeof gate.deliverables }>())
