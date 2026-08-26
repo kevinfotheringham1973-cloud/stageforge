@@ -20,6 +20,11 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       "Four more statutory safety checks now apply automatically wherever they're relevant — Work at Height, hot works permits, lone working, and asbestos refurbishment/demolition surveys — the same way StageForge already proposes fire risk and infection-control checks from a project's description.",
       "A platform admin can now see how much the team is actually using StageForge: every member's sign-in count and when they last logged in, alongside the existing list of people who tried and couldn't get in — both on the Access requests page.",
       "The 12 lifecycle-replacement checklists (Electrical, Domestic Hot & Cold Water, Boiler, Ventilation, Medical Gas, Chilled Water, Steam, Fire Suppression, Pneumatic Tube, and the three refresh templates) now also ask for valid PPM (Planned Preventative Maintenance) documentation for the plant being replaced, alongside the existing two-quote/lifecycle-approval requirement.",
+      "The remaining 9 checklists (Lift, Nurse Call, BMS, Lighting, Fire Alarm, Security, Drainage, Above-ground Drainage, Compressed Air) now have that same competitive-quotes/lifecycle-cost-approval/PPM-documentation checkpoint too — previously only the other 12 asked for it.",
+      "Checking an additional system when creating a new project now folds it into that same project's checklist — one combined set of gates — instead of creating a second, separate project.",
+      "When a project does cover more than one system, its gates now group matching items from each system into a single shared checklist entry (rather than listing each system's version separately), and no longer show the same underlying item twice under two different names.",
+      "New \"Mandatory approvals\" tab on every project: every Safety Group/Authorised Engineer/Authorised Person/statutory sign-off a project's own checklist calls for, whether someone's named against it yet, and whether it's actually been given.",
+      "New \"Document templates\" page: a roadmap of which deliverables StageForge can (or will be able to) generate a pre-filled first-draft document for, using data already captured on the project — the Project Manager still reviews, edits, and owns the final version before uploading it as evidence.",
     ],
   },
   {
