@@ -448,7 +448,7 @@ async function main() {
     // Gate 3 — Spatial Coordination (the running mid-flight example)
     [
       { key: "del.electrical_coordinated_layout_drawings", label: "Coordinated design (switch rooms, distribution routes, generator location, UPS rooms, containment)", description: "SHTM 06." },
-      { key: "del.electrical_mep_structural_coordination", label: "Spatial coordination with structure, mechanical services, fire compartments and other systems" },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services" },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.electrical_emergency_power_confirmation", label: "Confirmation of emergency power provisions for critical areas — high-level temporary arrangements strategy only", description: "SHTM 06.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -599,7 +599,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.water_coordinated_layout_drawings", label: "Coordinated design (plant locations, pipe routes, storage vessels, pump rooms, access for maintenance)", description: "SHTM 04-01 Part A." },
-      { key: "del.water_mep_structural_coordination", label: "Spatial coordination with structure, electrical, ventilation and other services" },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services" },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.water_monitoring_sampling_confirmation", label: "Confirmation of temperature monitoring and sampling point strategy", description: "SHTM 04-01.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -1109,7 +1109,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.boiler_coordinated_layout_drawings", label: "Coordinated layout (new boiler positions, temporary boilers, pipework, flues, access)" },
-      { key: "del.boiler_mep_structural_coordination", label: "Spatial coordination of mechanical, electrical, BMS, structural supports / plinths", description: "SHTM 06-01." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 06-01." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.boiler_temp_boiler_siting_confirmation", label: "Confirmation of temporary boiler siting and permanent boiler plantroom arrangement", description: "High-level strategy only at this stage — no detailed method statements; those follow contractor appointment after the Gate 4 Pre-Contract Hold Point.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -1275,7 +1275,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.ventilation_coordinated_layout_drawings", label: "Coordinated design (AHU locations, duct routes, plant access, temporary arrangements)", description: "SHTM 03-01 Part A." },
-      { key: "del.ventilation_mep_structural_coordination", label: "Spatial coordination with structure, electrical, BMS, fire compartments and other services", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.ventilation_critical_area_resilience_confirmation", label: "Confirmation of critical area resilience requirements", description: "SHTM 03-01." },
@@ -1425,7 +1425,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.medgas_coordinated_layout_drawings", label: "Coordinated design (pipe routes, plant locations, pendant positions, structural supports)", description: "SHTM 02-01 Part A." },
-      { key: "del.medgas_mep_structural_coordination", label: "Spatial coordination with structure, electrical, data, lighting and other services", description: "SHTM 06-01." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 06-01." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.medgas_temp_supply_confirmation", label: "Confirmation of temporary supply arrangements", description: "SHTM 02-01.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -1566,7 +1566,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.firealarm_coordinated_layout_drawings", label: "Coordinated design (device locations, cable routes, panel positions, zone plans)", description: "SHTM 82." },
-      { key: "del.firealarm_mep_structural_coordination", label: "Spatial coordination with structure, ceilings, other services and fire compartments", description: "SHTM 81." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 81." },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.firealarm_zone_compartment_alignment_confirmation", label: "Confirmation of zone boundaries aligned to fire compartments", description: "Fire alarm zones must align with compartment/sub-compartment boundaries — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
     ],
@@ -1698,7 +1698,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.lift_coordinated_layout_drawings", label: "Coordinated design (shafts, machine rooms / MRL, landings, structural supports, overrun)", description: "SHTM 08-02." },
-      { key: "del.lift_mep_structural_coordination", label: "Spatial coordination with structure, electrical, fire compartments and other services" },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services" },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.lift_firefighting_escape_provisions_confirmation", label: "Confirmation of firefighting / escape bed lift provisions", description: "SHTM 81, SFPN 3.", bypassAuthority: "FIRE_OFFICER" },
@@ -1830,7 +1830,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.nursecall_coordinated_layout_drawings", label: "Coordinated design (device locations, cable routes / wireless coverage, staff bases, indicators)", description: "SHTM 08-03." },
-      { key: "del.nursecall_mep_structural_coordination", label: "Spatial coordination with bedhead services, electrical, data and fire systems" },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services" },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
     ],
@@ -1960,7 +1960,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.bms_coordinated_layout_drawings", label: "Coordinated design (controller locations, network routes, server/head-end rooms, HMI locations)", description: "SHTM 00." },
-      { key: "del.bms_mep_structural_coordination", label: "Spatial coordination with electrical, data, plantrooms and other services", description: "SHTM 06 series." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 06 series." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
     ],
@@ -2094,7 +2094,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.chilledwater_coordinated_layout_drawings", label: "Coordinated design (chiller locations, pipe routes, pump rooms, access, external plant)", description: "SHTM 00." },
-      { key: "del.chilledwater_mep_structural_coordination", label: "Spatial coordination with structure, electrical, ventilation, fire compartments and other services", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.chilledwater_resilience_freecooling_confirmation", label: "Confirmation of resilience and free-cooling provisions — high-level temporary arrangements strategy only", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -2233,7 +2233,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.steam_coordinated_layout_drawings", label: "Coordinated design (boiler plant, pipe routes, PRV stations, condensate receiver locations, access)", description: "SHTM 00." },
-      { key: "del.steam_mep_structural_coordination", label: "Spatial coordination with structure, electrical, ventilation and other services", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.steam_critical_user_resilience_confirmation", label: "Confirmation of critical user resilience requirements — high-level temporary arrangements strategy only", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -2366,7 +2366,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.firesuppression_coordinated_layout_drawings", label: "Coordinated design (pipe routes, valve sets, pump rooms, cylinder locations, nozzle positions)", description: "SHTM 81." },
-      { key: "del.firesuppression_mep_structural_coordination", label: "Spatial coordination with structure, ceilings, other services and fire compartments", description: "SHTM 81." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 81." },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.firesuppression_alarm_interface_confirmation", label: "Confirmation of interface requirements with fire alarm system — high-level temporary arrangements strategy only", description: "SHTM 82.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.firesuppression_competitive_quoting_preparation", label: "Preparation for competitive quoting" },
@@ -2501,7 +2501,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.security_coordinated_layout_drawings", label: "Coordinated design (camera positions, reader locations, cabling routes, control room, equipment rooms)" },
-      { key: "del.security_mep_structural_coordination", label: "Spatial coordination with structure, ceilings, lighting, other services and fire compartments", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.security_network_power_resilience_confirmation", label: "Confirmation of network and power resilience requirements", description: "SHTM 06 linked.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -2635,7 +2635,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.pts_coordinated_layout_drawings", label: "Coordinated design (tube routes, station locations, blower plant, access for maintenance)" },
-      { key: "del.pts_mep_structural_coordination", label: "Spatial coordination with structure, ceilings, other services, fire compartments and clinical layouts", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.pts_critical_dept_resilience_confirmation", label: "Confirmation of critical department resilience requirements — high-level temporary arrangements strategy only", description: "Clinical stakeholders.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
@@ -2765,7 +2765,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.abovedrainage_coordinated_layout_drawings", label: "Coordinated design (stack locations, branch routes, floor drains, access points, plant interfaces)", description: "BS EN 12056." },
-      { key: "del.abovedrainage_mep_structural_coordination", label: "Spatial coordination with structure, other services, ceilings and clinical layouts", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.abovedrainage_access_maintenance_confirmation", label: "Confirmation of access and maintenance strategy", description: "Critical for long-term performance.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -2891,7 +2891,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.compressedair_coordinated_layout_drawings", label: "Coordinated design (compressor plant location, receiver siting, pipe routes, access, ventilation/cooling)", description: "SHTM 00." },
-      { key: "del.compressedair_mep_structural_coordination", label: "Spatial coordination with structure, electrical, ventilation and other services", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.compressedair_critical_user_confirmation", label: "Confirmation of critical user requirements", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3041,7 +3041,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.wardrefresh_coordinated_layout_drawings", label: "Coordinated design (doors, windows, layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
-      { key: "del.wardrefresh_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.wardrefresh_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements — high-level strategy only", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3151,7 +3151,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.mhu_coordinated_layout_drawings", label: "Coordinated design (doors, windows, ensuite layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
-      { key: "del.mhu_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.mhu_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements — high-level strategy only", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3260,7 +3260,7 @@ async function main() {
     // Gate 3 — Spatial Coordination
     [
       { key: "del.theatrerefresh_coordinated_layout_drawings", label: "Coordinated design (doors, layouts, finishes interfaces with services)", description: "HAI-SCRIBE Stage 2." },
-      { key: "del.theatrerefresh_mep_structural_coordination", label: "Spatial coordination with existing M&E services and clinical flows", description: "SHTM 00." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services", description: "SHTM 00." },
       { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (penetrations and means of escape)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing / temporary works strategy (principles only)" },
       { key: "del.theatrerefresh_critical_user_confirmation", label: "Confirmation of temporary clinical arrangements — high-level strategy only", description: "Clinical stakeholders.", bypassAuthority: "COMPLIANCE_OFFICER" },
