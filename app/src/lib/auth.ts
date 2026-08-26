@@ -116,6 +116,29 @@ export const authConfig: NextAuthConfig = {
       return session;
     },
   },
+  events: {
+    // Fires only once a sign-in has genuinely completed -- for Resend
+    // that's after the emailed link is actually clicked and verified,
+    // not at the "link requested" stage callbacks.signIn above also
+    // runs at, so this can't double-count an unclicked magic link as a
+    // login. Logged for /access-requests (26 Aug 2026), the successful
+    // counterpart to RejectedSignInAttempt -- must never break a real
+    // sign-in, so failures are swallowed after logging.
+    signIn: async ({ user, account }) => {
+      if (!user.id) return;
+      await db.successfulSignIn
+        .upsert({
+          where: { userId: user.id },
+          create: { userId: user.id, provider: account?.provider ?? "unknown" },
+          update: {
+            loginCount: { increment: 1 },
+            lastLoginAt: new Date(),
+            ...(account?.provider ? { provider: account.provider } : {}),
+          },
+        })
+        .catch((err) => console.error("[auth] failed to log successful sign-in:", err));
+    },
+  },
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
