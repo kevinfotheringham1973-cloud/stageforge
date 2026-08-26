@@ -1702,6 +1702,11 @@ export async function updateUser(userId: string, formData: FormData) {
 
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
+  // Optional -- someone can be created/left without a department yet
+  // (see createUser's own homeDepartmentId requirement, which this
+  // predates) and this is the only place to fix that after the fact,
+  // so an empty selection here has to mean "clear it", not "no change".
+  const homeDepartmentId = String(formData.get("homeDepartmentId") ?? "").trim() || null;
   if (!name || !email) {
     throw new Error("Name and email are both required.");
   }
@@ -1711,9 +1716,58 @@ export async function updateUser(userId: string, formData: FormData) {
     throw new Error(`A person with the email ${email} already exists.`);
   }
 
-  await db.user.update({ where: { id: userId }, data: { name, email } });
+  await db.user.update({ where: { id: userId }, data: { name, email, homeDepartmentId } });
   await db.auditLogEntry.create({
     data: { actorId, action: "user.updated", entityType: "User", entityId: userId },
+  });
+
+  revalidatePath("/team");
+  revalidatePath("/");
+}
+
+/**
+ * Marks a person as having left the company (26 Aug 2026, "totally
+ * remove a name/contact from the view"). Deliberately not a delete —
+ * see User.archivedAt's schema comment for why: their name has to keep
+ * meaning something on every past evidence upload, sign-off and audit
+ * entry. This just blocks future sign-in (auth.ts) and drops them out
+ * of active rosters/pickers everywhere else. Existing
+ * ProjectRoleAssignment rows are left alone (a PM can still remove one
+ * explicitly via removeRoleAssignment if they want it off an active
+ * project's team list too) — archiving is a company-wide fact about
+ * the person, not a statement about which projects they were on.
+ */
+export async function archiveUser(userId: string) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can archive a person.");
+  }
+
+  const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+  await db.user.update({ where: { id: userId }, data: { archivedAt: new Date() } });
+  await db.auditLogEntry.create({
+    data: { actorId, action: "user.archived", entityType: "User", entityId: userId, reason: `${user.name} marked as left the company` },
+  });
+
+  revalidatePath("/team");
+  revalidatePath("/");
+}
+
+/** Reverses archiveUser — a rejoin, or an archived-by-mistake fix. */
+export async function reactivateUser(userId: string) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can reactivate a person.");
+  }
+
+  const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+  await db.user.update({ where: { id: userId }, data: { archivedAt: null } });
+  await db.auditLogEntry.create({
+    data: { actorId, action: "user.reactivated", entityType: "User", entityId: userId, reason: `${user.name} reactivated` },
   });
 
   revalidatePath("/team");

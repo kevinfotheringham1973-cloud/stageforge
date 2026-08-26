@@ -78,6 +78,7 @@ export default async function RootLayout({
   // yet, so rather than list them with a "no role assigned" caveat,
   // they just don't appear until a project actually assigns them one.
   const users = usersWithRoles
+    .filter((u) => !u.archivedAt)
     .filter((u) => u.isPlatformAdmin || u.roleAssignments.length > 0)
     .map((u) => ({
       id: u.id,

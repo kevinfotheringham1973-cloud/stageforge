@@ -33,8 +33,10 @@ export default async function TeamPage() {
     id: u.id,
     name: u.name,
     email: u.email,
+    homeDepartmentId: u.homeDepartmentId,
     departmentLabel: u.homeDepartment ? `${u.homeDepartment.name} (${u.homeDepartment.company.name})` : "No department",
     roleLabel: Array.from(new Set(u.roleAssignments.map((a) => a.role.name))).join(" · "),
+    archivedAt: u.archivedAt ? u.archivedAt.toISOString() : null,
   }));
 
   return (
@@ -227,7 +229,7 @@ export default async function TeamPage() {
         </div>
       </div>
 
-      <TeamRoster users={users} projects={projects} roles={roles} />
+      <TeamRoster users={users} departments={departments} projects={projects} roles={roles} />
     </div>
   );
 }

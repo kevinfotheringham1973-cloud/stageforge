@@ -29,7 +29,7 @@ export default async function HomePage() {
     db.project.findMany({ where: { status: "DRAFT" }, orderBy: { createdAt: "desc" } }),
     getCurrentUserGlobalRoleKeys(),
     db.scheduledReport.findMany({ orderBy: { dayOfWeek: "asc" }, include: { createdBy: true } }),
-    db.user.findMany({ orderBy: { name: "asc" } }),
+    db.user.findMany({ where: { archivedAt: null }, orderBy: { name: "asc" } }),
   ]);
 
   const canManage = canManageScheduledReports(globalRoleKeys);

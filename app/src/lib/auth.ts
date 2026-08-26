@@ -88,7 +88,11 @@ export const authConfig: NextAuthConfig = {
     // click it.
     signIn: async ({ user, account }) => {
       const existing = await db.user.findUnique({ where: { email: user.email ?? "" } });
-      if (existing) return true;
+      // Archived (left the company) is rejected the same way an
+      // unknown email is -- their User row still exists (so past
+      // evidence/sign-offs/audit history keeps their name), it just no
+      // longer grants sign-in.
+      if (existing && !existing.archivedAt) return true;
 
       // Logged for /access-requests (25 Aug 2026) -- as much a lead
       // signal as a security log, so failing to write it must never

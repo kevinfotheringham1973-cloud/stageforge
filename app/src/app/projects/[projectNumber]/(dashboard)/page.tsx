@@ -48,6 +48,10 @@ export default async function ProjectOverviewPage({
   const seenTeamUserIds = new Set<string>();
   const teamRows = project.roleAssignments
     .filter((a) => DELIVERY_FACING_ROLE_KEYS.includes(a.role.key))
+    // Someone who's left the company (archiveUser) drops out of the
+    // active team list here too — their ProjectRoleAssignment row is
+    // left untouched (still a real historical fact), just not shown.
+    .filter((a) => !a.user.archivedAt)
     .filter((a) => {
       if (seenTeamUserIds.has(a.userId)) return false;
       seenTeamUserIds.add(a.userId);
@@ -82,7 +86,7 @@ export default async function ProjectOverviewPage({
   // or a suggested candidate couldn't be assigned (missing home
   // department). Surfaced even without a name to put against it
   // (confirmed 24 Aug 2026), so the gap doesn't just silently disappear.
-  const assignedRoleKeys = new Set(project.roleAssignments.map((a) => a.role.key));
+  const assignedRoleKeys = new Set(project.roleAssignments.filter((a) => !a.user.archivedAt).map((a) => a.role.key));
   const neededRoleKeys = await neededDisciplineRoleKeys(constituentTemplateIds(project), project.worksType);
   const unfilledRoleKeys = Array.from(neededRoleKeys).filter((k) => !assignedRoleKeys.has(k));
   const unfilledRoles =

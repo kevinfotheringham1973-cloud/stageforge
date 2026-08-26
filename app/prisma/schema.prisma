@@ -77,6 +77,18 @@ model User {
   createdShareLinks          ShareLink[]
   successfulSignIn           SuccessfulSignIn?
   createdAt                  DateTime                 @default(now())
+  // Someone who's left the company (26 Aug 2026, "totally remove a
+  // name/contact from the view"). NULL = active. Deliberately not a
+  // hard delete -- this person may be the recorded uploader/signer/
+  // actor on real evidence, sign-offs, and audit history (see the
+  // relations above), and this app's whole point is a trustworthy
+  // compliance trail, so their name has to keep meaning something on
+  // every past record. Archiving just: blocks sign-in (auth.ts), and
+  // drops them out of every active picker/roster (team.tsx,
+  // GateDetail-adjacent project team lists, the admin view-as
+  // switcher, scheduled-report recipients) -- reversible any time via
+  // reactivateUser.
+  archivedAt                 DateTime?
 }
 
 // ── Authentication ──────────────────────────────────────────────────
