@@ -118,12 +118,19 @@ export async function GateDetail({
   const gate = await db.gate.findUnique({
     where: { id: gateId },
     include: {
-      stage: { include: { project: true } },
+      stage: {
+        include: {
+          project: {
+            include: { template: true, additionalTemplates: { include: { template: true } } },
+          },
+        },
+      },
       deliverables: {
         orderBy: { createdAt: "asc" },
         include: {
           evidenceFiles: { orderBy: { uploadedAt: "desc" } },
           bypass: { include: { bypassedBy: true } },
+          template: { select: { gateTemplate: { select: { stageTemplate: { select: { templateId: true } } } } } },
         },
       },
       complianceRequirements: {
@@ -160,6 +167,34 @@ export async function GateDetail({
   // come from the current Role rows, not a fixed enum/list.
   const roleLabelByKey = Object.fromEntries(allRoles.map((r) => [r.key, r.name]));
   const exactMatchAuthorityKeys = new Set(allRoles.filter((r) => r.isExactMatchAuthority).map((r) => r.key));
+
+  // Grouped deliverable display for a merged project (26 Aug 2026, per
+  // reviewer feedback on #30033) — a project built from more than one
+  // Template (see ProjectAdditionalTemplate) gets its deliverables
+  // sectioned into "Common" (items canonicalized to a shared
+  // `del.common_*` key across templates, see prisma/seed.ts) plus one
+  // section per constituent Template, instead of one long interleaved
+  // list. A solo-template project (still the common case) renders
+  // exactly as before — no grouping, no visual change.
+  const constituentTemplates = [
+    gate.stage.project.template,
+    ...gate.stage.project.additionalTemplates.map((a) => a.template),
+  ];
+  const isMerged = constituentTemplates.length > 1;
+  const deliverableGroups = isMerged
+    ? [
+        {
+          label: "Common",
+          deliverables: gate.deliverables.filter((d) => d.key.startsWith("del.common_")),
+        },
+        ...constituentTemplates.map((t) => ({
+          label: t.name,
+          deliverables: gate.deliverables.filter(
+            (d) => !d.key.startsWith("del.common_") && d.template?.gateTemplate?.stageTemplate.templateId === t.id
+          ),
+        })),
+      ].filter((group) => group.deliverables.length > 0)
+    : [];
   const ready = isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements, gate.spendRecords);
   const outstanding = gate.deliverables.filter((d) => d.blocksGate && d.status === "PENDING").length;
   // "Outstanding" means not yet truly gate-clear — PENDING, or already
@@ -188,6 +223,135 @@ export async function GateDetail({
   const canSetTimeline = canSetGateTimeline(roleKeys);
   const canRecordLesson = canRecordLessonLearned(roleKeys);
   const timelineStatus = gateTimelineStatus(gate);
+
+  // Extracted so the grouped (merged-project) and flat (solo-project)
+  // render paths below share one identical card, no logic duplicated.
+  const renderDeliverable = (d: (typeof gate.deliverables)[number]) => {
+    const canBypass =
+      d.status === "PENDING" &&
+      canBypassDeliverable(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
+    const canReplaceEvidence =
+      gate.status !== "SIGNED_OFF" &&
+      canUploadEvidence(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
+    const canUpload = d.status === "PENDING" && canReplaceEvidence;
+
+    // Statutory ceiling gets a visibly heavier treatment than a routine
+    // Compliance-Officer-level item — an SRO-, Fire-Officer-, or
+    // Authorised-Person-only requirement should never read the same
+    // as a document a PM can wave through themselves.
+    const isHeavyAuthority = d.bypassAuthority === "SRO" || exactMatchAuthorityKeys.has(d.bypassAuthority);
+    const cardClass = isHeavyAuthority
+      ? "border-2 border-risk bg-risk/5"
+      : d.bypassAuthority === "COMPLIANCE_OFFICER"
+        ? "border-dashed border-flag bg-surface"
+        : "border-rule bg-surface";
+
+    return (
+      <div key={d.id} className={`rounded-lg border p-5 ${cardClass}`}>
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <span className="font-semibold">{d.label}</span>
+          {d.bypassAuthority !== "PM" && (
+            <span
+              className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+                isHeavyAuthority ? "bg-risk text-white" : "bg-accentsoft text-flag"
+              }`}
+            >
+              Requires {roleLabelByKey[d.bypassAuthority] ?? d.bypassAuthority}
+            </span>
+          )}
+        </div>
+        {d.description && <p className="mb-2 text-sm text-inkmuted">{d.description}</p>}
+
+        {d.status === "EVIDENCED" && (
+          <div className="flex flex-col gap-1">
+            {d.evidenceFiles.map((f, i) => (
+              <div key={f.id} className="font-mono text-xs text-inkmuted">
+                {i === 0 ? (
+                  <span className="font-bold text-ok">current</span>
+                ) : (
+                  <span className="text-inkmuted">v{f.version}, superseded</span>
+                )}{" "}
+                {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
+              </div>
+            ))}
+            <SharePointEvidenceLocation
+              project={gate.stage.project}
+              stageName={gate.stage.name}
+              currentFileRef={d.evidenceFiles[0]?.fileRef ?? ""}
+            />
+            {canReplaceEvidence && (
+              <form
+                action={recordEvidenceStub.bind(null, d.id, projectNumber, gateId)}
+                className="mt-2 flex items-center gap-2"
+              >
+                <input
+                  type="file"
+                  name="file"
+                  aria-label={`Replacement evidence file for ${d.label}`}
+                  required
+                  className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
+                />
+                <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+                  Replace evidence
+                </SubmitButton>
+              </form>
+            )}
+          </div>
+        )}
+
+        {d.status === "BYPASSED" && d.bypass && (
+          <div className="mt-2 rounded-md border border-dashed border-flag bg-accentsoft/40 p-3 text-sm">
+            <div className="font-mono text-[10px] uppercase tracking-wide text-flag">
+              Bypassed by {d.bypass.bypassedBy.name}
+            </div>
+            <div className="text-inkmuted">{d.bypass.reason}</div>
+          </div>
+        )}
+
+        {d.status === "PENDING" && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {canUpload ? (
+              <form
+                action={recordEvidenceStub.bind(null, d.id, projectNumber, gateId)}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="file"
+                  name="file"
+                  aria-label={`Evidence file for ${d.label}`}
+                  required
+                  className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
+                />
+                <SubmitButton pendingText="Uploading…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
+                  Upload evidence
+                </SubmitButton>
+              </form>
+            ) : (
+              <span className="text-xs text-inkmuted">Outstanding &mdash; no evidence uploaded.</span>
+            )}
+
+            {canBypass && (
+              <form
+                action={bypassDeliverable.bind(null, d.id, projectNumber, gateId)}
+                className="flex flex-wrap items-center gap-2"
+              >
+                <input
+                  name="reason"
+                  aria-label={`Reason for bypassing ${d.label}`}
+                  placeholder="Reason for bypass (required)"
+                  required
+                  className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-64"
+                />
+                <SubmitButton pendingText="Bypassing…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
+                  Bypass
+                </SubmitButton>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -327,134 +491,18 @@ export async function GateDetail({
             Delivery checklist &middot; {gate.deliverables.length - outstanding} of {gate.deliverables.length} clear
           </h3>
 
-          <div className="flex flex-col gap-3">
-            {gate.deliverables.map((d) => {
-              const canBypass =
-                d.status === "PENDING" &&
-                canBypassDeliverable(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
-              const canReplaceEvidence =
-                gate.status !== "SIGNED_OFF" &&
-                canUploadEvidence(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
-              const canUpload = d.status === "PENDING" && canReplaceEvidence;
-
-              // Statutory ceiling gets a visibly heavier treatment than a routine
-              // Compliance-Officer-level item — an SRO-, Fire-Officer-, or
-              // Authorised-Person-only requirement should never read the same
-              // as a document a PM can wave through themselves.
-              const isHeavyAuthority = d.bypassAuthority === "SRO" || exactMatchAuthorityKeys.has(d.bypassAuthority);
-              const cardClass = isHeavyAuthority
-                ? "border-2 border-risk bg-risk/5"
-                : d.bypassAuthority === "COMPLIANCE_OFFICER"
-                  ? "border-dashed border-flag bg-surface"
-                  : "border-rule bg-surface";
-
-              return (
-                <div key={d.id} className={`rounded-lg border p-5 ${cardClass}`}>
-                  <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <span className="font-semibold">{d.label}</span>
-                    {d.bypassAuthority !== "PM" && (
-                      <span
-                        className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
-                          isHeavyAuthority ? "bg-risk text-white" : "bg-accentsoft text-flag"
-                        }`}
-                      >
-                        Requires {roleLabelByKey[d.bypassAuthority] ?? d.bypassAuthority}
-                      </span>
-                    )}
-                  </div>
-                  {d.description && <p className="mb-2 text-sm text-inkmuted">{d.description}</p>}
-
-                  {d.status === "EVIDENCED" && (
-                    <div className="flex flex-col gap-1">
-                      {d.evidenceFiles.map((f, i) => (
-                        <div key={f.id} className="font-mono text-xs text-inkmuted">
-                          {i === 0 ? (
-                            <span className="font-bold text-ok">current</span>
-                          ) : (
-                            <span className="text-inkmuted">v{f.version}, superseded</span>
-                          )}{" "}
-                          {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
-                        </div>
-                      ))}
-                      <SharePointEvidenceLocation
-                        project={gate.stage.project}
-                        stageName={gate.stage.name}
-                        currentFileRef={d.evidenceFiles[0]?.fileRef ?? ""}
-                      />
-                      {canReplaceEvidence && (
-                        <form
-                          action={recordEvidenceStub.bind(null, d.id, projectNumber, gateId)}
-                          className="mt-2 flex items-center gap-2"
-                        >
-                          <input
-                            type="file"
-                            name="file"
-                            aria-label={`Replacement evidence file for ${d.label}`}
-                            required
-                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
-                          />
-                          <SubmitButton pendingText="Uploading…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
-                            Replace evidence
-                          </SubmitButton>
-                        </form>
-                      )}
-                    </div>
-                  )}
-
-                  {d.status === "BYPASSED" && d.bypass && (
-                    <div className="mt-2 rounded-md border border-dashed border-flag bg-accentsoft/40 p-3 text-sm">
-                      <div className="font-mono text-[10px] uppercase tracking-wide text-flag">
-                        Bypassed by {d.bypass.bypassedBy.name}
-                      </div>
-                      <div className="text-inkmuted">{d.bypass.reason}</div>
-                    </div>
-                  )}
-
-                  {d.status === "PENDING" && (
-                    <div className="mt-3 flex flex-wrap items-center gap-3">
-                      {canUpload ? (
-                        <form
-                          action={recordEvidenceStub.bind(null, d.id, projectNumber, gateId)}
-                          className="flex items-center gap-2"
-                        >
-                          <input
-                            type="file"
-                            name="file"
-                            aria-label={`Evidence file for ${d.label}`}
-                            required
-                            className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
-                          />
-                          <SubmitButton pendingText="Uploading…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
-                            Upload evidence
-                          </SubmitButton>
-                        </form>
-                      ) : (
-                        <span className="text-xs text-inkmuted">Outstanding &mdash; no evidence uploaded.</span>
-                      )}
-
-                      {canBypass && (
-                        <form
-                          action={bypassDeliverable.bind(null, d.id, projectNumber, gateId)}
-                          className="flex flex-wrap items-center gap-2"
-                        >
-                          <input
-                            name="reason"
-                            aria-label={`Reason for bypassing ${d.label}`}
-                            placeholder="Reason for bypass (required)"
-                            required
-                            className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-64"
-                          />
-                          <SubmitButton pendingText="Bypassing…" className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag">
-                            Bypass
-                          </SubmitButton>
-                        </form>
-                      )}
-                    </div>
-                  )}
+          {isMerged ? (
+            <div className="flex flex-col gap-5">
+              {deliverableGroups.map((group) => (
+                <div key={group.label}>
+                  <h4 className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">{group.label}</h4>
+                  <div className="flex flex-col gap-3">{group.deliverables.map(renderDeliverable)}</div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">{gate.deliverables.map(renderDeliverable)}</div>
+          )}
         </>
       )}
 
