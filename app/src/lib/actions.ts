@@ -1633,6 +1633,7 @@ export async function deleteProject(
     db.projectRoleAssignment.deleteMany({ where: { projectId } }),
     db.resourceAllocation.deleteMany({ where: { projectId } }),
     db.provisioningReview.deleteMany({ where: { projectId } }),
+    db.projectAdditionalTemplate.deleteMany({ where: { projectId } }),
     db.project.delete({ where: { id: projectId } }),
     db.auditLogEntry.create({
       data: {
