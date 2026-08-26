@@ -263,9 +263,10 @@ export async function GateDetail({
     // (CDM)") — caught on #30033's Gate 4 still showing these as
     // separate cards after the earlier fixes.
     /^updated cost plan including appropriate contingency/i,
-    /^obtain minimum of two competitive quotations/i,
-    /^submit quotations, cost comparison/i,
-    /^provide valid ppm/i,
+    // The three separate quotations/submission/PPM items were merged
+    // into one across every template (26 Aug 2026, "these are all the
+    // same action") — one anchor now, not three.
+    /^obtain and submit competitive quotations/i,
     /^pre-contract hold point/i,
     /^after appointment: complete full technical drawings/i,
     /building (regulations|standards).{0,5}statutory compliance/i,
