@@ -14,6 +14,15 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: "26 Aug 2026",
+    title: "Four more safety checks, sign-in activity tracking, PPM documentation requirement",
+    highlights: [
+      "Four more statutory safety checks now apply automatically wherever they're relevant — Work at Height, hot works permits, lone working, and asbestos refurbishment/demolition surveys — the same way StageForge already proposes fire risk and infection-control checks from a project's description.",
+      "A platform admin can now see how much the team is actually using StageForge: every member's sign-in count and when they last logged in, alongside the existing list of people who tried and couldn't get in — both on the Access requests page.",
+      "The 12 lifecycle-replacement checklists (Electrical, Domestic Hot & Cold Water, Boiler, Ventilation, Medical Gas, Chilled Water, Steam, Fire Suppression, Pneumatic Tube, and the three refresh templates) now also ask for valid PPM (Planned Preventative Maintenance) documentation for the plant being replaced, alongside the existing two-quote/lifecycle-approval requirement.",
+    ],
+  },
+  {
     date: "25 Aug 2026",
     title: "Real sign-in, passwordless email links, read-only demo links",
     highlights: [
