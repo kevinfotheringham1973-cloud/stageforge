@@ -1642,7 +1642,11 @@ export async function updateUser(userId: string, formData: FormData) {
  * assignStandardTeam (standardTeam.ts), just driven by a form instead
  * of the hardcoded standing-team list.
  */
-export async function assignUserToProject(userId: string, formData: FormData) {
+export async function assignUserToProject(
+  userId: string,
+  _prevState: { error?: string } | undefined,
+  formData: FormData,
+): Promise<{ error?: string }> {
   const actorId = await getCurrentUserId();
   if (!actorId) throw new Error("Not signed in.");
   const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
@@ -1653,13 +1657,26 @@ export async function assignUserToProject(userId: string, formData: FormData) {
   const projectId = String(formData.get("projectId") ?? "").trim();
   const roleId = String(formData.get("roleId") ?? "").trim();
   if (!projectId || !roleId) {
-    throw new Error("A project and a role are both required.");
+    return { error: "A project and a role are both required." };
   }
 
   const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
   if (!user.homeDepartmentId) {
-    throw new Error(`${user.name} has no home department set, so can't be assigned to a project.`);
+    return { error: `${user.name} has no home department set, so can't be assigned to a project.` };
   }
+
+  // Both looked up explicitly (rather than letting a stale id fall
+  // through to the transaction's own foreign-key check) so a role or
+  // project deleted since this page loaded — e.g. the dropdown still
+  // holding an option for a role just deleted in another tab — comes
+  // back as a plain, readable error instead of an uncaught Prisma
+  // exception (which Next only ever shows as a generic minified error).
+  const [project, role] = await Promise.all([
+    db.project.findUnique({ where: { id: projectId } }),
+    db.role.findUnique({ where: { id: roleId } }),
+  ]);
+  if (!project) return { error: "That project no longer exists — refresh the page and try again." };
+  if (!role) return { error: "That role no longer exists — refresh the page and pick another." };
 
   await db.$transaction([
     db.projectRoleAssignment.upsert({
@@ -1673,7 +1690,8 @@ export async function assignUserToProject(userId: string, formData: FormData) {
   ]);
 
   revalidatePath("/team");
-  revalidatePath(`/projects/${(await db.project.findUniqueOrThrow({ where: { id: projectId } })).projectNumber}`);
+  revalidatePath(`/projects/${project.projectNumber}`);
+  return {};
 }
 
 /**
