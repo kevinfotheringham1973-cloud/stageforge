@@ -490,7 +490,7 @@ async function main() {
       { key: "del.electrical_earthing_bonding_install_records", label: "Earthing and bonding installation records", description: "BS 7671." },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.electrical_temp_supply_hybrid_arrangements", label: "Temporary supply / hybrid working arrangements (if phased)", description: "Essential — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.electrical_decommissioning_records", label: "Decommissioning & strip-out records of redundant electrical equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -1596,7 +1596,7 @@ async function main() {
       { key: "del.firealarm_interface_install_testing", label: "Interface installation and testing records", description: "SHTM 82." },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.firealarm_temp_cover_hybrid_arrangements", label: "Temporary system cover / hybrid working arrangements (if phased)", description: "Adequate fire detection and alarm cover must be maintained throughout the works — cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.firealarm_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -1730,7 +1730,7 @@ async function main() {
       { key: "del.lift_safety_gear_governor_overspeed_testing", label: "Safety gear, governor, buffer and overspeed testing records", description: "Critical life-safety verification — the mechanism that prevents uncontrolled car movement or free-fall, per BS EN 81 series. Cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.lift_temp_cover_hybrid_arrangements", label: "Temporary cover / hybrid working arrangements (if phased)" },
-      { key: "del.lift_decommissioning_records", label: "Decommissioning & strip-out records of redundant lift equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -1859,7 +1859,7 @@ async function main() {
       { key: "del.nursecall_integration_testing", label: "Integration testing with other systems" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.nursecall_temp_cover_arrangements", label: "Temporary system cover arrangements", description: "Critical for patient safety — nurse call and staff alert cover must be maintained throughout the works. Cannot be bypassed at PM level.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
-      { key: "del.nursecall_decommissioning_records", label: "Decommissioning records of redundant equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -1992,7 +1992,7 @@ async function main() {
       { key: "del.bms_integration_testing", label: "Integration testing with other building systems", description: "Linked SHTMs." },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.bms_temp_monitoring_cover_arrangements", label: "Temporary BMS / monitoring cover arrangements", description: "Essential — continuity of monitoring and control of critical plant must be maintained throughout the works. Cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.bms_decommissioning_records", label: "Decommissioning records of redundant BMS equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -2131,7 +2131,7 @@ async function main() {
       { key: "del.chilledwater_water_sampling_quality_records", label: "Water sampling and quality records" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.chilledwater_temp_cooling_hybrid_arrangements", label: "Temporary cooling / hybrid working arrangements (if phased)", description: "Essential — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.chilledwater_decommissioning_records", label: "Decommissioning & strip-out records of redundant cooling equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -2270,7 +2270,7 @@ async function main() {
       { key: "del.steam_water_treatment_install_dosing", label: "Water treatment system installation and initial dosing records" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.steam_temp_steam_hybrid_arrangements", label: "Temporary steam / hybrid working arrangements (if phased)", description: "Essential where required — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.steam_decommissioning_records", label: "Decommissioning & strip-out records of redundant steam equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -2401,7 +2401,7 @@ async function main() {
       { key: "del.firesuppression_alarm_interface_preliminary_testing", label: "Interface installation and preliminary testing with fire alarm system", description: "SHTM 82." },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.firesuppression_temp_protection_hybrid_arrangements", label: "Temporary protection / hybrid working arrangements (if phased)", description: "Essential — cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.firesuppression_decommissioning_records", label: "Decommissioning & strip-out records of redundant suppression equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -2671,7 +2671,7 @@ async function main() {
       { key: "del.pts_pressure_leakage_integrity_testing", label: "Pressure / leakage testing and integrity records", description: "Critical physical integrity verification, per manufacturer standards — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.pts_temp_transport_hybrid_arrangements", label: "Temporary transport / hybrid working arrangements (if phased)", description: "Essential — cannot be bypassed at PM level.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
-      { key: "del.pts_decommissioning_records", label: "Decommissioning & strip-out records of redundant pneumatic tube equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -2796,7 +2796,7 @@ async function main() {
       { key: "del.abovedrainage_air_water_testing_records", label: "Air / water testing records", description: "Critical verification step before drainage is relied upon, per BS EN 12056 — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.abovedrainage_temp_drainage_hybrid_arrangements", label: "Temporary drainage / hybrid working arrangements (if phased)", description: "Where required." },
-      { key: "del.abovedrainage_decommissioning_records", label: "Decommissioning & strip-out records of redundant drainage systems" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -2923,7 +2923,7 @@ async function main() {
       { key: "del.compressedair_pressure_flushing_purity_testing", label: "Pressure testing, flushing and purity testing records", description: "Critical life-safety verification for a pressure system, per relevant standards — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.compressedair_temp_supply_hybrid_arrangements", label: "Temporary supply / hybrid working arrangements (if phased)", description: "Where required." },
-      { key: "del.compressedair_decommissioning_records", label: "Decommissioning & strip-out records of redundant compressed air equipment" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -3077,7 +3077,7 @@ async function main() {
       { key: "del.wardrefresh_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.wardrefresh_temp_clinical_continuity_records", label: "Temporary arrangements and clinical continuity records", description: "Essential." },
-      { key: "del.wardrefresh_decommissioning_records", label: "Decommissioning / strip-out records of redundant finishes and fittings" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -3188,7 +3188,7 @@ async function main() {
       { key: "del.mhu_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.mhu_temp_clinical_continuity_records", label: "Temporary arrangements and clinical continuity records", description: "Essential." },
-      { key: "del.mhu_decommissioning_records", label: "Decommissioning / strip-out records of redundant finishes and fittings" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
@@ -3296,7 +3296,7 @@ async function main() {
       { key: "del.theatrerefresh_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.theatrerefresh_temp_clinical_continuity_records", label: "Temporary arrangements and clinical continuity records", description: "Essential." },
-      { key: "del.theatrerefresh_decommissioning_records", label: "Decommissioning / strip-out records of redundant finishes and fittings" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant equipment, finishes and fittings" },
     ],
     // Gate 6 — Handover
     [
