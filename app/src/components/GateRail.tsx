@@ -37,6 +37,7 @@ export function GateRail({
 }) {
   const pathname = usePathname();
   const overviewHref = `/projects/${projectNumber}`;
+  const approvalsHref = `/projects/${projectNumber}/approvals`;
 
   return (
     <nav className="flex gap-1 overflow-x-auto pb-1 md:sticky md:top-6 md:flex-col md:self-start md:overflow-visible md:pb-0">
@@ -51,6 +52,18 @@ export function GateRail({
       >
         <span className="h-2 w-2 shrink-0 rounded-full bg-rule" />
         Team &amp; scope
+      </Link>
+      <Link
+        href={approvalsHref}
+        prefetch={false}
+        className={`flex shrink-0 items-center gap-2.5 rounded-md border px-3 py-2.5 text-sm font-semibold md:shrink ${
+          pathname === approvalsHref
+            ? "border-accent bg-surface"
+            : "border-transparent text-ink hover:bg-accentsoft"
+        }`}
+      >
+        <span className="h-2 w-2 shrink-0 rounded-full bg-rule" />
+        Approvals
       </Link>
       <div className="mx-1 my-0 w-px shrink-0 self-stretch bg-rule md:mx-0 md:my-1.5 md:h-px md:w-auto md:self-auto" />
       {gates.map((g) => {
