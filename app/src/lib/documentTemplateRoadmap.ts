@@ -40,7 +40,7 @@ export const CORE_PROJECT_WIDE_TEMPLATES: DocumentTemplateRow[] = [
     gates: "Gate 1",
     autoFilledContent: "Standard risks (CDM, HAI, service continuity, asbestos, fire) + system-specific risks",
     pmOwns: "Scoring, owners, mitigation actions",
-    status: "planned",
+    status: "live",
   },
   {
     name: "Pre-Construction Information (PCI)",
