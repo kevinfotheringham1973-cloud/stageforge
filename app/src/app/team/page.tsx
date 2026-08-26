@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { createRole, createUser, deleteRole } from "@/lib/actions";
+import { createDepartment, createRole, createUser, deleteRole } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { TeamRoster } from "@/components/TeamRoster";
 import { forbidden } from "next/navigation";
@@ -18,12 +18,13 @@ export default async function TeamPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser?.isPlatformAdmin) forbidden();
 
-  const [usersRaw, departments, projects, roles] = await Promise.all([
+  const [usersRaw, departments, companies, projects, roles] = await Promise.all([
     db.user.findMany({
       orderBy: { name: "asc" },
       include: { homeDepartment: { include: { company: true } }, roleAssignments: { include: { role: true } } },
     }),
     db.department.findMany({ orderBy: { name: "asc" }, include: { company: true } }),
+    db.company.findMany({ orderBy: { name: "asc" } }),
     db.project.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, projectNumber: true } }),
     db.role.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { assignments: true } } } }),
   ]);
@@ -42,6 +43,45 @@ export default async function TeamPage() {
       <p className="mb-8 text-sm text-inkmuted">
         Add a person, fix their name or email, or put them on a project. Platform admin only.
       </p>
+
+      <div className="mb-8 rounded-lg border border-rule bg-surface p-5">
+        <h2 className="mb-3 font-mono text-[10px] font-bold uppercase tracking-wide text-accent">+ Add department</h2>
+        <p className="mb-3 text-sm text-inkmuted">
+          A department sits under one of the existing companies (an FM Contractor or a Client Authority) — add one
+          here first if the person you&rsquo;re adding below doesn&rsquo;t have a department to select yet.
+        </p>
+        <form action={createDepartment} className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Company</label>
+            <select
+              name="companyId"
+              required
+              className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+            >
+              <option value="">Select…</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+              Department name
+            </label>
+            <input
+              name="name"
+              placeholder="e.g. Estates & Facilities"
+              required
+              className="w-56 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+            />
+          </div>
+          <SubmitButton pendingText="Adding…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
+            Add department
+          </SubmitButton>
+        </form>
+      </div>
 
       <div className="mb-8 rounded-lg border border-rule bg-surface p-5">
         <h2 className="mb-3 font-mono text-[10px] font-bold uppercase tracking-wide text-accent">+ Add person</h2>
