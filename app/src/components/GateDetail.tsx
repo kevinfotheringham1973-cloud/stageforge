@@ -189,22 +189,17 @@ export async function GateDetail({
   const isMerged = constituentTemplates.length > 1;
   const primaryTemplateId = gate.stage.project.template.id;
   let fallbackGroupKey = 0;
-  // The Pre-Contract Hold Point block (src/lib/instantiation.ts's
-  // seed.ts content, added 26 Aug 2026) is deliberately per-discipline,
-  // not canonicalized — a merged project genuinely needs one commercial
-  // hold point per discipline. Its wording is identical (or
-  // near-identical) across most templates, so slot-matching it here
-  // would show the exact same text twice inside one box, reading as
-  // the very duplication problem this feature exists to fix. Excluded
-  // the same way del.common_* is, below.
-  const NEVER_SLOT_MATCH_SUFFIXES = [
-    "_updated_cost_plan_contingency",
-    "_competitive_quotations",
-    "_pfi_nhs_lifecycle_submission",
-    "_ppm_documentation",
-    "_pre_contract_hold_point",
-    "_post_appointment_full_design",
-  ];
+  // The Pre-Contract Hold Point block was originally excluded from
+  // slot-matching (26 Aug 2026) on the reasoning that each discipline
+  // might be procured separately, so a merged project genuinely needed
+  // one commercial hold point per discipline. Reversed the same day,
+  // per Kevin's review of #30033 in practice: seeing "Obtain minimum of
+  // two competitive quotations" (and the rest of the block) appear
+  // twice reads as exactly the duplication this feature exists to fix
+  // — one contractor/procurement exercise typically covers a merged
+  // project's whole scope. Now matched via the keyword anchors below
+  // like everything else; only del.common_* (already deduped to one
+  // row by instantiateStage) still needs the "never match" treatment.
   // Raw position alone drifts as soon as one template's gate has an
   // extra/inserted item the other doesn't (26 Aug 2026, caught on
   // #30033's Gate 1: Nurse Call's "Clinical needs assessment" — which
@@ -245,6 +240,23 @@ export async function GateDetail({
     /^as-fitted|^as-built/i,
     /o&m manuals/i,
     /^formal (client|clinical|acceptance)|acceptance$/i,
+    // Pre-Contract Hold Point block (26 Aug 2026 — see note above) and
+    // a handful of near-duplicate items that were never byte-identical
+    // enough to canonicalize in #82 (e.g. Ward Refresh's "Building
+    // Standards..." vs the canonical "Building Regulations...", or its
+    // own worded "Pre-construction information & input to Construction
+    // Phase Plan" vs the canonical "Pre-Construction Information
+    // (CDM)") — caught on #30033's Gate 4 still showing these as
+    // separate cards after the earlier fixes.
+    /^updated cost plan including appropriate contingency/i,
+    /^obtain minimum of two competitive quotations/i,
+    /^submit quotations, cost comparison/i,
+    /^provide valid ppm/i,
+    /^pre-contract hold point/i,
+    /^after appointment: complete full technical drawings/i,
+    /building (regulations|standards).{0,5}statutory compliance/i,
+    /^pre-construction information/i,
+    /^tender documentation/i,
   ];
   const keywordAnchorIndex = (label: string): number | null => {
     const index = KEYWORD_ANCHORS.findIndex((pattern) => pattern.test(label));
@@ -254,25 +266,28 @@ export async function GateDetail({
     ? Array.from(
         gate.deliverables
           .reduce((groups, d) => {
-            // A del.common_* item (already deduped to one row across
-            // every constituent template in instantiateStage) always
-            // stands alone here — it inherits whichever template "won"
-            // the dedup's own order value, which can otherwise
-            // coincidentally collide with an unrelated item at that
-            // same position in another template's own numbering.
-            const neverMatch =
-              d.key.startsWith("del.common_") || NEVER_SLOT_MATCH_SUFFIXES.some((suffix) => d.key.endsWith(suffix));
+            // A keyword anchor match always wins, even for a
+            // del.common_* item — e.g. the canonical "Pre-Construction
+            // Information (CDM)" still needs to box together with Ward
+            // Refresh's own non-canonical "Pre-construction information
+            // & input to Construction Phase Plan" (never byte-identical
+            // enough for #82's canonicalization, but the same real
+            // deliverable). Only a del.common_* item with NO anchor
+            // match falls back to forced-solo, never `order` — it
+            // inherits whichever template "won" instantiateStage's
+            // dedup, an order value that can coincidentally collide
+            // with an unrelated item at that same position in another
+            // template's own numbering.
+            const anchorIndex = keywordAnchorIndex(d.label);
             let slotKey: string;
-            if (neverMatch) {
+            if (anchorIndex !== null) {
+              slotKey = `anchor:${anchorIndex}`;
+            } else if (d.key.startsWith("del.common_")) {
               slotKey = `solo:${fallbackGroupKey++}`;
+            } else if (d.template) {
+              slotKey = `order:${d.template.order}`;
             } else {
-              const anchorIndex = keywordAnchorIndex(d.label);
-              slotKey =
-                anchorIndex !== null
-                  ? `anchor:${anchorIndex}`
-                  : d.template
-                    ? `order:${d.template.order}`
-                    : `solo:${fallbackGroupKey++}`;
+              slotKey = `solo:${fallbackGroupKey++}`;
             }
             const order = d.template?.order ?? Infinity;
             if (!groups.has(slotKey)) groups.set(slotKey, { order, deliverables: [] });
