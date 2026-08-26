@@ -1504,7 +1504,11 @@ export async function sendScheduledReportNow(id: string) {
  * there's no real password-gated auth in this scaffold to re-prompt
  * for instead.
  */
-export async function deleteProject(projectId: string, formData: FormData) {
+export async function deleteProject(
+  projectId: string,
+  _prevState: { error?: string } | undefined,
+  formData: FormData,
+): Promise<{ error?: string }> {
   const confirmProjectNumber = String(formData.get("confirmProjectNumber") ?? "").trim();
 
   const actorId = await getCurrentUserId();
@@ -1517,7 +1521,11 @@ export async function deleteProject(projectId: string, formData: FormData) {
 
   const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
   if (confirmProjectNumber !== project.projectNumber) {
-    throw new Error("Type the project number exactly to confirm deletion.");
+    // A typo here is an everyday mistake, not an exceptional failure —
+    // return it as form state (caught by useActionState in
+    // DeleteProjectForm) rather than throwing, so the user sees an
+    // inline warning instead of Next's generic error boundary.
+    return { error: "You have entered the wrong number." };
   }
 
   await db.$transaction([
