@@ -362,8 +362,9 @@ export async function GateDetail({
   // right *within* one category — two plant templates' own "Outline X
   // strategy" items, or two space-refresh templates' own "Preliminary"
   // items, really are the same kind of action — so this doesn't drop
-  // them, it just folds category into their key the same way the order
-  // fallback above does, instead of matching blind across the boundary.
+  // them, it just folds category into their key, the same way every
+  // genuinely-shared concept below has its own canonical
+  // del.common_* key instead of relying on position.
   const CATEGORY_SENSITIVE_ANCHORS: RegExp[] = [/^outline .*strategy/i, /^preliminary/i];
   const categorySensitiveAnchorIndex = (label: string): number | null => {
     const index = CATEGORY_SENSITIVE_ANCHORS.findIndex((pattern) => pattern.test(label));
@@ -373,18 +374,23 @@ export async function GateDetail({
     ? Array.from(
         gate.deliverables
           .reduce((groups, d) => {
-            // A keyword anchor match always wins, even for a
-            // del.common_* item — e.g. the canonical "Pre-Construction
-            // Information (CDM)" still needs to box together with Ward
-            // Refresh's own non-canonical "Pre-construction information
-            // & input to Construction Phase Plan" (never byte-identical
-            // enough for #82's canonicalization, but the same real
-            // deliverable). Only a del.common_* item with NO anchor
-            // match falls back to forced-solo, never `order` — it
-            // inherits whichever template "won" instantiateStage's
-            // dedup, an order value that can coincidentally collide
-            // with an unrelated item at that same position in another
-            // template's own numbering.
+            // Raw position-fallback matching (`order:N`) was removed
+            // entirely (26 Aug 2026) -- it was never safe across ANY
+            // two arbitrary templates, not just the plant/space-refresh
+            // boundary caught earlier. Found live on #30037 (Boiler +
+            // Nurse Call, completely unrelated domains): "Water
+            // treatment strategy" boxed with "Power supply resilience",
+            // "New boiler installation" with "Integration testing" —
+            // zero words in common, purely two templates' arrays
+            // happening to put unrelated items at the same index. A
+            // keyword anchor match always wins, even for a del.common_*
+            // item — e.g. the canonical "Pre-Construction Information
+            // (CDM)" still needs to box together with Ward Refresh's
+            // own non-canonical wording, never byte-identical enough to
+            // canonicalize outright. Anything that matches neither an
+            // anchor nor a del.common_* key now renders solo — showing
+            // more separate cards is a far smaller cost than another
+            // wrong merge.
             const anchorIndex = keywordAnchorIndex(d.label);
             const categoryOf = (deliverable: typeof d) => {
               const owningTemplateId = deliverable.template?.gateTemplate.stageTemplate.templateId;
@@ -397,8 +403,6 @@ export async function GateDetail({
               slotKey = `solo:${fallbackGroupKey++}`;
             } else if (categorySensitiveAnchorIndex(d.label) !== null) {
               slotKey = `catanchor:${categoryOf(d)}:${categorySensitiveAnchorIndex(d.label)}`;
-            } else if (d.template) {
-              slotKey = `order:${categoryOf(d)}:${d.template.order}`;
             } else {
               slotKey = `solo:${fallbackGroupKey++}`;
             }
