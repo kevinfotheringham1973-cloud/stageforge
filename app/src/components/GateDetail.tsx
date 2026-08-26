@@ -203,6 +203,32 @@ export async function GateDetail({
   const isMerged = constituentTemplates.length > 1;
   const primaryTemplateId = gate.stage.project.template.id;
   let fallbackGroupKey = 0;
+  // Position-fallback matching only holds up within one "shape" of
+  // template (26 Aug 2026, found live on #30036 — Ventilation +
+  // Ward Refresh's Gate 4-7 arrays don't line up at all past a handful
+  // of anchored items: "BMS installation testing" fell into the same
+  // slot as "Temporary arrangements and clinical continuity records"
+  // purely because both happened to be array position 6 in their own
+  // template). The 3 room/space-refresh templates (Ward Refresh, MHU,
+  // Theatre Refresh — see SPACE_REFRESH_TEMPLATE_KEYS in
+  // riskRegisterDraft.ts for the same category split) follow a
+  // fundamentally different Gate-by-Gate shape than the 18 plant/
+  // system-replacement templates, so position alone is never a safe
+  // signal across that boundary — only an explicit keyword anchor is.
+  // Folding category into the position fallback's own key (rather than
+  // only gating anchors) means two plant templates, or two
+  // space-refresh templates, still position-match each other exactly
+  // as confirmed working before; only a plant<->space-refresh position
+  // "collision" now falls apart into two solo cards instead of a wrong
+  // shared box.
+  const SPACE_REFRESH_TEMPLATE_KEYS = new Set([
+    "template.health.room_ward_refresh",
+    "template.health.mhu_ligature_room_refresh",
+    "template.health.theatre_refresh",
+  ]);
+  const templateCategoryById = new Map(
+    constituentTemplates.map((t) => [t.id, SPACE_REFRESH_TEMPLATE_KEYS.has(t.key) ? "space_refresh" : "plant"])
+  );
   // The Pre-Contract Hold Point block was originally excluded from
   // slot-matching (26 Aug 2026) on the reasoning that each discipline
   // might be procured separately, so a merged project genuinely needed
@@ -237,8 +263,6 @@ export async function GateDetail({
     /condition survey/i,
     /risk register/i,
     /^concept (design options|options\b|design report)/i,
-    /^outline .*strategy/i,
-    /^preliminary/i,
     /^coordinated design/i,
     /^spatial coordination/i,
     /fire compartmentation/i,
@@ -297,6 +321,25 @@ export async function GateDetail({
     const index = KEYWORD_ANCHORS.findIndex((pattern) => pattern.test(label));
     return index === -1 ? null : index;
   };
+  // Too generic to trust across the plant/space-refresh category
+  // boundary above — "Outline ventilation strategy" (a plant
+  // template's own airflow/filtration design strategy) and "Outline
+  // clinical environment strategy" (Ward Refresh's finishes/infection-
+  // control strategy) both matched a single loose /^outline .*strategy/
+  // anchor and got boxed together despite sharing nothing but the
+  // opening word (found live on #30036, alongside "Preliminary
+  // schematics and load assessment" boxing with "Preliminary room data
+  // sheets / layouts" the same way). Both patterns are still exactly
+  // right *within* one category — two plant templates' own "Outline X
+  // strategy" items, or two space-refresh templates' own "Preliminary"
+  // items, really are the same kind of action — so this doesn't drop
+  // them, it just folds category into their key the same way the order
+  // fallback above does, instead of matching blind across the boundary.
+  const CATEGORY_SENSITIVE_ANCHORS: RegExp[] = [/^outline .*strategy/i, /^preliminary/i];
+  const categorySensitiveAnchorIndex = (label: string): number | null => {
+    const index = CATEGORY_SENSITIVE_ANCHORS.findIndex((pattern) => pattern.test(label));
+    return index === -1 ? null : index;
+  };
   const slotGroups = isMerged
     ? Array.from(
         gate.deliverables
@@ -314,13 +357,19 @@ export async function GateDetail({
             // with an unrelated item at that same position in another
             // template's own numbering.
             const anchorIndex = keywordAnchorIndex(d.label);
+            const categoryOf = (deliverable: typeof d) => {
+              const owningTemplateId = deliverable.template?.gateTemplate.stageTemplate.templateId;
+              return owningTemplateId ? templateCategoryById.get(owningTemplateId) ?? "plant" : "plant";
+            };
             let slotKey: string;
             if (anchorIndex !== null) {
               slotKey = `anchor:${anchorIndex}`;
             } else if (d.key.startsWith("del.common_")) {
               slotKey = `solo:${fallbackGroupKey++}`;
+            } else if (categorySensitiveAnchorIndex(d.label) !== null) {
+              slotKey = `catanchor:${categoryOf(d)}:${categorySensitiveAnchorIndex(d.label)}`;
             } else if (d.template) {
-              slotKey = `order:${d.template.order}`;
+              slotKey = `order:${categoryOf(d)}:${d.template.order}`;
             } else {
               slotKey = `solo:${fallbackGroupKey++}`;
             }
