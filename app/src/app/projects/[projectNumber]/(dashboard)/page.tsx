@@ -6,6 +6,7 @@ import { reinstateStage, setResourceAllocation } from "@/lib/actions";
 import { neededDisciplineRoleKeys } from "@/lib/disciplineTeam";
 import { constituentTemplateIds } from "@/lib/projectTemplates";
 import { SubmitButton } from "@/components/SubmitButton";
+import { RemoveRoleAssignmentButton } from "@/components/RemoveRoleAssignmentButton";
 
 /**
  * The dashboard's default landing panel — everything that isn't about
@@ -53,6 +54,7 @@ export default async function ProjectOverviewPage({
       return true;
     })
     .map((a) => ({
+      assignmentId: a.id,
       userId: a.userId,
       name: a.user.name,
       roleName: a.role.name,
@@ -121,28 +123,37 @@ export default async function ProjectOverviewPage({
                   <span className="text-inkmuted">&middot; {row.roleName}</span>
                 </div>
                 {isPM ? (
-                  <form
-                    action={setResourceAllocation.bind(null, project.id, row.userId, project.projectNumber)}
-                    className="flex items-center gap-1.5"
-                  >
-                    <input
-                      name="allocationPercent"
-                      aria-label={`${row.name}'s allocation, percent`}
-                      type="number"
-                      min={0}
-                      max={100}
-                      defaultValue={row.allocationPercent ?? ""}
-                      placeholder="%"
-                      className="w-16 rounded border border-inkmuted bg-bg px-2 py-1 text-right text-sm"
-                    />
-                    <span className="text-xs text-inkmuted">%</span>
-                    <SubmitButton
-                      pendingText="…"
-                      className="rounded border border-rule px-2 py-1 text-xs font-semibold text-accent hover:bg-surface2"
+                  <div className="flex items-center gap-2">
+                    <form
+                      action={setResourceAllocation.bind(null, project.id, row.userId, project.projectNumber)}
+                      className="flex items-center gap-1.5"
                     >
-                      Set
-                    </SubmitButton>
-                  </form>
+                      <input
+                        name="allocationPercent"
+                        aria-label={`${row.name}'s allocation, percent`}
+                        type="number"
+                        min={0}
+                        max={100}
+                        defaultValue={row.allocationPercent ?? ""}
+                        placeholder="%"
+                        className="w-16 rounded border border-inkmuted bg-bg px-2 py-1 text-right text-sm"
+                      />
+                      <span className="text-xs text-inkmuted">%</span>
+                      <SubmitButton
+                        pendingText="…"
+                        className="rounded border border-rule px-2 py-1 text-xs font-semibold text-accent hover:bg-surface2"
+                      >
+                        Set
+                      </SubmitButton>
+                    </form>
+                    <RemoveRoleAssignmentButton
+                      assignmentId={row.assignmentId}
+                      projectId={project.id}
+                      projectNumber={project.projectNumber}
+                      personName={row.name}
+                      roleName={row.roleName}
+                    />
+                  </div>
                 ) : (
                   <span className="font-mono text-sm text-inkmuted">
                     {row.allocationPercent !== null ? `${row.allocationPercent}%` : "Not set"}

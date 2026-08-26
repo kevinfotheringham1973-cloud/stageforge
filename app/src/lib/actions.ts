@@ -1343,6 +1343,55 @@ export async function setResourceAllocation(
   revalidatePath("/resources");
 }
 
+/**
+ * Undoes a mistaken assignUserToProject — same "Project Manager on
+ * THIS project" authority setResourceAllocation above uses, since
+ * managing who's on the team (and their %) is already this page's
+ * boundary. Returns { error } via useActionState (rather than
+ * throwing) so an unexpected condition — someone else already removed
+ * this exact assignment, e.g. from another tab — shows a plain
+ * message instead of Next's generic minified error.
+ */
+export async function removeRoleAssignment(
+  assignmentId: string,
+  projectId: string,
+  projectNumber: string,
+  _prevState: { error?: string } | undefined,
+): Promise<{ error?: string }> {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const roleKeys = await getCurrentUserRoleKeysForProject(projectId);
+  if (!roleKeys.includes("PM")) {
+    return { error: "Only the Project Manager can remove someone from the project team." };
+  }
+
+  const assignment = await db.projectRoleAssignment.findUnique({
+    where: { id: assignmentId },
+    include: { role: true, user: true },
+  });
+  if (!assignment || assignment.projectId !== projectId) {
+    return { error: "That assignment no longer exists — refresh the page and try again." };
+  }
+
+  await db.$transaction([
+    db.projectRoleAssignment.delete({ where: { id: assignmentId } }),
+    db.auditLogEntry.create({
+      data: {
+        actorId,
+        action: "user.removed_from_project",
+        entityType: "ProjectRoleAssignment",
+        entityId: assignmentId,
+        reason: `${assignment.user.name} removed from ${assignment.role.name}`,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath("/team");
+  return {};
+}
+
 // ── Timeline (planned vs. actual) ───────────────────────────────────────
 
 /**
@@ -1564,6 +1613,41 @@ export async function deleteProject(
 }
 
 // ── Team ─────────────────────────────────────────────────────────────
+
+/**
+ * Platform-admin-only. A Department always belongs to an existing
+ * Company (FM Contractor or Client Authority) — there was previously
+ * no way to add one short of hand-editing prisma/seed.ts, which meant
+ * a genuinely new person (e.g. a new starter on an existing company's
+ * team) had nowhere to go if their department wasn't already seeded.
+ */
+export async function createDepartment(formData: FormData) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can add a department.");
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const companyId = String(formData.get("companyId") ?? "").trim();
+  if (!name || !companyId) {
+    throw new Error("A name and a company are both required.");
+  }
+
+  const company = await db.company.findUniqueOrThrow({ where: { id: companyId } });
+  const existing = await db.department.findFirst({ where: { name, companyId } });
+  if (existing) {
+    throw new Error(`${company.name} already has a department called "${name}".`);
+  }
+
+  const created = await db.department.create({ data: { name, companyId } });
+  await db.auditLogEntry.create({
+    data: { actorId, action: "department.created", entityType: "Department", entityId: created.id },
+  });
+
+  revalidatePath("/team");
+}
 
 /**
  * Platform-admin-only, same as deleteProject. Creates a new person —
