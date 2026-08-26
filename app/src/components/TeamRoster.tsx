@@ -48,9 +48,9 @@ export function TeamRoster({
       {filtered.length === 0 ? (
         <p className="text-sm text-inkmuted">No one matches &ldquo;{query}&rdquo;.</p>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {filtered.map((u) => (
-            <div key={u.id} className="rounded-lg border border-rule bg-surface p-5">
+            <div key={u.id} className="rounded-lg border border-rule bg-surface p-4">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <span className="font-semibold">{u.name}</span>
                 {u.roleLabel && (
