@@ -1387,8 +1387,12 @@ export async function removeRoleAssignment(
     }),
   ]);
 
+  // "layout" too -- if this was their last assignment, they're no
+  // longer eligible for the admin "view as" switcher (src/app/layout.tsx),
+  // which lives outside this route.
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath("/team");
+  revalidatePath("/", "layout");
   return {};
 }
 
@@ -1751,8 +1755,11 @@ export async function archiveUser(userId: string) {
     data: { actorId, action: "user.archived", entityType: "User", entityId: userId, reason: `${user.name} marked as left the company` },
   });
 
+  // "layout", not just the page -- the admin "view as" switcher lives
+  // in the root layout (src/app/layout.tsx) and reads archivedAt too,
+  // so a plain revalidatePath("/") alone leaves it stale.
   revalidatePath("/team");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /** Reverses archiveUser — a rejoin, or an archived-by-mistake fix. */
@@ -1771,7 +1778,7 @@ export async function reactivateUser(userId: string) {
   });
 
   revalidatePath("/team");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 /**
@@ -1827,7 +1834,11 @@ export async function assignUserToProject(
     }),
   ]);
 
+  // "layout" too -- gaining their first role assignment is exactly
+  // what makes someone newly eligible for the admin "view as" switcher
+  // (src/app/layout.tsx's own filter), which lives outside this route.
   revalidatePath("/team");
+  revalidatePath("/", "layout");
   revalidatePath(`/projects/${project.projectNumber}`);
   return {};
 }
