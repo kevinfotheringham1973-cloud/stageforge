@@ -9,9 +9,8 @@ import {
   type GateTimelineStatus,
 } from "@/lib/permissions";
 import { getCurrentUser, getCurrentUserRoleKeysForProject } from "@/lib/session";
-import { deleteProject } from "@/lib/actions";
 import { GateRail } from "@/components/GateRail";
-import { SubmitButton } from "@/components/SubmitButton";
+import { DeleteProjectForm } from "@/components/DeleteProjectForm";
 
 const APPROVAL_BUCKET_LABELS: Record<string, string> = {
   LIFECYCLE_REPLACEMENT: "Lifecycle replacement",
@@ -301,20 +300,7 @@ export default async function ProjectDashboardLayout({
               Permanently deletes this project and everything on it — deliverables, evidence,
               compliance, spend, sign-offs, lessons learned. This cannot be undone.
             </p>
-            <form
-              action={deleteProject.bind(null, project.id)}
-              className="flex flex-wrap items-center gap-2"
-            >
-              <input
-                name="confirmProjectNumber"
-                required
-                placeholder={`Type ${project.projectNumber} to confirm`}
-                className="w-full rounded border border-risk bg-bg px-2.5 py-1.5 text-sm sm:w-64"
-              />
-              <SubmitButton pendingText="Deleting…" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
-                Delete project permanently
-              </SubmitButton>
-            </form>
+            <DeleteProjectForm projectId={project.id} projectNumber={project.projectNumber} />
           </div>
         )}
 
