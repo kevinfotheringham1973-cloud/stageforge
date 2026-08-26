@@ -22,16 +22,30 @@ import type { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "./compliance";
 
 // Regulatory citations, comma-separated (e.g. "CDM 2015, SHTM 00.") --
-// every del.common_* deliverable's description already follows this
-// shape. Unioning them (26 Aug 2026, "merge CDM 2015, SHTM 00 and
-// SHTM 08-03... I would standardise this") rather than silently
-// keeping only the first-seen template's copy means a merged project
-// (e.g. Nurse Call + BMS both carrying "Design risk assessment") shows
-// every citation that actually applies, not just whichever template
-// happened to instantiate first.
+// most del.common_* deliverables' descriptions follow this shape.
+// Unioning them (26 Aug 2026, "merge CDM 2015, SHTM 00 and SHTM
+// 08-03... I would standardise this") rather than silently keeping
+// only the first-seen template's copy means a merged project (e.g.
+// Nurse Call + BMS both carrying "Design risk assessment") shows every
+// citation that actually applies, not just whichever template happened
+// to instantiate first.
+//
+// Some del.common_* descriptions are prose instead (e.g. Method
+// Statements' "Critical for continuity — cannot be bypassed at PM
+// level. Only produced after contractor appointment..."), and naively
+// splitting a sentence on every comma mangles it into nonsense
+// fragments (caught live on #30036's Ventilation + Ward Refresh
+// pairing). PROSE_HINT below is a cheap guard: a real citation list
+// never has a comma directly followed by a lowercase word (regulatory
+// codes are all-caps/numeric — "CDM 2015", "SHTM 00" — so the token
+// right after each comma is never lowercase), while genuine prose
+// almost always does. When either side looks like prose, keep the
+// first-seen template's copy unchanged rather than risk corrupting it.
+const PROSE_HINT = /,\s+[a-z]/;
 function unionCitations(a: string | null, b: string | null): string | null {
   if (!a) return b;
   if (!b) return a;
+  if (PROSE_HINT.test(a) || PROSE_HINT.test(b)) return a;
   const parts = (s: string) => s.replace(/\.\s*$/, "").split(",").map((p) => p.trim()).filter(Boolean);
   const merged = parts(a);
   for (const p of parts(b)) {

@@ -202,6 +202,35 @@ export async function GateDetail({
   ];
   const isMerged = constituentTemplates.length > 1;
   const primaryTemplateId = gate.stage.project.template.id;
+
+  // Which system(s) a deliverable actually belongs to (26 Aug 2026,
+  // "make decisions on using the BYPASS clearer") — only meaningful on
+  // a merged project, since a solo-template project's own deliverables
+  // are trivially "that one system" already. Canonicalizing near-
+  // duplicate items across templates onto one shared key (Fire
+  // Compartmentation, Method Statements, etc.) means a single
+  // Deliverable row can now legitimately represent 2+ disciplines at
+  // once, and its own templateId only ever points at whichever
+  // template instantiateStage saw first — so this is derived fresh
+  // from each constituent template's OWN DeliverableTemplate list for
+  // this exact stage, not read off the live row.
+  const keyToTemplateNames = new Map<string, string[]>();
+  if (isMerged) {
+    const templateNameById = new Map(constituentTemplates.map((t) => [t.id, t.name]));
+    const stageTemplatesForThisGate = await db.stageTemplate.findMany({
+      where: { templateId: { in: constituentTemplates.map((t) => t.id) }, key: gate.stage.key },
+      include: { gateTemplate: { include: { deliverableTemplates: { select: { key: true } } } } },
+    });
+    for (const st of stageTemplatesForThisGate) {
+      const templateName = templateNameById.get(st.templateId);
+      if (!templateName || !st.gateTemplate) continue;
+      for (const dt of st.gateTemplate.deliverableTemplates) {
+        if (!keyToTemplateNames.has(dt.key)) keyToTemplateNames.set(dt.key, []);
+        keyToTemplateNames.get(dt.key)!.push(templateName);
+      }
+    }
+  }
+
   let fallbackGroupKey = 0;
   // Position-fallback matching only holds up within one "shape" of
   // template (26 Aug 2026, found live on #30036 — Ventilation +
@@ -419,6 +448,19 @@ export async function GateDetail({
   // border inside its own — and, for the box's primary item, without
   // repeating the label a second time (the box's own header already is
   // that item's label).
+  // Shared between the label row below and the shared-box header
+  // (which renders its own <h4> outside renderDeliverableBody entirely,
+  // so this can't just live inline in one place).
+  const systemBadge = (d: (typeof gate.deliverables)[number]) =>
+    isMerged && keyToTemplateNames.has(d.key) ? (
+      <span
+        className="rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide bg-inkmuted/15 text-inkmuted"
+        title="Which system(s) this deliverable covers"
+      >
+        {keyToTemplateNames.get(d.key)!.join(" + ")}
+      </span>
+    ) : null;
+
   const renderDeliverableBody = (d: (typeof gate.deliverables)[number], showLabel = true) => {
     const canBypass =
       d.status === "PENDING" &&
@@ -439,6 +481,7 @@ export async function GateDetail({
         {showLabel && (
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <span className="font-semibold">{d.label}</span>
+            {systemBadge(d)}
             {d.bypassAuthority !== "PM" && (
               <span
                 className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
@@ -480,16 +523,25 @@ export async function GateDetail({
 
         {d.status === "EVIDENCED" && (
           <div className="flex flex-col gap-1">
-            {d.evidenceFiles.map((f, i) => (
-              <div key={f.id} className="font-mono text-xs text-inkmuted">
-                {i === 0 ? (
-                  <span className="font-bold text-ok">current</span>
-                ) : (
-                  <span className="text-inkmuted">v{f.version}, superseded</span>
-                )}{" "}
-                {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
-              </div>
-            ))}
+            {(() => {
+              // Grouped by version, not index (26 Aug 2026, "multiple
+              // file inputs") — a merged deliverable's evidence batch
+              // is however many files were uploaded in ONE submission,
+              // all sharing that submission's version number, so every
+              // file in the latest version is "current" together, not
+              // just the first one.
+              const maxVersion = Math.max(...d.evidenceFiles.map((f) => f.version));
+              return d.evidenceFiles.map((f) => (
+                <div key={f.id} className="font-mono text-xs text-inkmuted">
+                  {f.version === maxVersion ? (
+                    <span className="font-bold text-ok">current</span>
+                  ) : (
+                    <span className="text-inkmuted">v{f.version}, superseded</span>
+                  )}{" "}
+                  {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
+                </div>
+              ));
+            })()}
             <SharePointEvidenceLocation
               project={gate.stage.project}
               stageName={gate.stage.name}
@@ -503,7 +555,8 @@ export async function GateDetail({
                 <input
                   type="file"
                   name="file"
-                  aria-label={`Replacement evidence file for ${d.label}`}
+                  multiple
+                  aria-label={`Replacement evidence file(s) for ${d.label}`}
                   required
                   className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
                 />
@@ -534,7 +587,8 @@ export async function GateDetail({
                 <input
                   type="file"
                   name="file"
-                  aria-label={`Evidence file for ${d.label}`}
+                  multiple
+                  aria-label={`Evidence file(s) for ${d.label}`}
                   required
                   className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
                 />
@@ -740,7 +794,10 @@ export async function GateDetail({
                 const others = group.deliverables.filter((d) => d.id !== primary.id);
                 return (
                   <div key={primary.id} className="rounded-lg border border-rule bg-surface p-5">
-                    <h4 className="mb-1 flex flex-wrap items-center gap-2 font-semibold">{primary.label}</h4>
+                    <h4 className="mb-1 flex flex-wrap items-center gap-2 font-semibold">
+                      <span>{primary.label}</span>
+                      {systemBadge(primary)}
+                    </h4>
                     {renderDeliverableBody(primary, false)}
                     <div className="mt-3 flex flex-col divide-y divide-rule">
                       {others.map((d) => (

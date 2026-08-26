@@ -127,24 +127,49 @@ async function fetchRoleAuthorityContext(): Promise<{
  * moment credentials + a real site are in place — no other code change
  * needed.
  */
+// Multiple files in one submission (26 Aug 2026, "it covers two
+// systems... likely multiple file inputs") — a merged deliverable
+// like "Contractor's detailed Method Statements" genuinely needs one
+// file per constituent discipline, not one file standing in for both.
+// All returned here share one upload batch (recordEvidenceStub gives
+// them the same version number), unlike a later separate submission,
+// which still supersedes this whole batch the same way a single
+// replacement always has.
+async function resolveEvidenceUploads(
+  formData: FormData,
+  project: { name: string; projectNumber: string },
+  stageName: string
+): Promise<{ fileName: string; fileRef: string }[]> {
+  const files = formData.getAll("file").filter((f): f is File => f instanceof File && f.size > 0);
+  if (files.length === 0) {
+    throw new Error("At least one file is required.");
+  }
+
+  const results: { fileName: string; fileRef: string }[] = [];
+  for (const file of files) {
+    if (isSharePointConfigured()) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const folderPath = evidenceFolderPath(project, stageName);
+      const uploaded = await uploadEvidenceFile(folderPath, file.name, buffer);
+      results.push({ fileName: file.name, fileRef: uploaded.webUrl });
+    } else {
+      results.push({ fileName: file.name, fileRef: `local://dev-upload/${file.name}` });
+    }
+  }
+  return results;
+}
+
+// Single-file callers (compliance evidence, spend invoices) — their
+// forms never set `multiple` on the file input, so exactly one file
+// is ever submitted; this just adapts resolveEvidenceUploads' shape
+// rather than duplicating the SharePoint-vs-local-stub branching.
 async function resolveEvidenceUpload(
   formData: FormData,
   project: { name: string; projectNumber: string },
   stageName: string
 ): Promise<{ fileName: string; fileRef: string }> {
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("A file is required.");
-  }
-
-  if (isSharePointConfigured()) {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const folderPath = evidenceFolderPath(project, stageName);
-    const uploaded = await uploadEvidenceFile(folderPath, file.name, buffer);
-    return { fileName: file.name, fileRef: uploaded.webUrl };
-  }
-
-  return { fileName: file.name, fileRef: `local://dev-upload/${file.name}` };
+  const [first] = await resolveEvidenceUploads(formData, project, stageName);
+  return first!;
 }
 
 /**
@@ -171,7 +196,14 @@ export async function recordEvidenceStub(
     throw new Error("This gate is already signed off — evidence can't be replaced after the fact.");
   }
 
-  const { fileName, fileRef } = await resolveEvidenceUpload(formData, gate.stage.project, gate.stage.name);
+  // Every file in this ONE submission shares a single version number
+  // (26 Aug 2026, "one description... but likely multiple file
+  // inputs") — a merged deliverable like "Contractor's detailed Method
+  // Statements" genuinely needs one file per constituent discipline
+  // side by side as the current evidence, not one superseding the
+  // other the way a real replacement would. A later, separate
+  // submission still supersedes this whole batch, same as before.
+  const uploads = await resolveEvidenceUploads(formData, gate.stage.project, gate.stage.name);
 
   const existingFiles = await db.evidenceFile.findMany({
     where: { deliverableId },
@@ -182,14 +214,14 @@ export async function recordEvidenceStub(
   const isReplacement = existingFiles.length > 0;
 
   await db.$transaction([
-    db.evidenceFile.create({
-      data: {
+    db.evidenceFile.createMany({
+      data: uploads.map((u) => ({
         deliverableId,
-        fileName,
-        fileRef,
+        fileName: u.fileName,
+        fileRef: u.fileRef,
         version: nextVersion,
         uploadedById: userId,
-      },
+      })),
     }),
     db.deliverable.update({
       where: { id: deliverableId },

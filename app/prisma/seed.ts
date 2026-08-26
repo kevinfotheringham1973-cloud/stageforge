@@ -465,7 +465,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.electrical_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.electrical_discrimination_selectivity_studies", label: "Discrimination / selectivity studies and protection coordination", description: "SHTM 06, BS 7671." },
       { key: "del.electrical_ups_ips_autonomy_design", label: "UPS / IPS autonomy and configuration design", description: "SHTM 06." },
       { key: "del.electrical_generator_sizing_fuel_control", label: "Standby generator sizing, fuel storage and control philosophy", description: "SHTM 06." },
@@ -483,8 +483,8 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.electrical_method_statements_temp_power", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary power arrangements", description: "Critical for continuity — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.electrical_material_equipment_certificates", label: "Material & equipment certificates (switchgear, UPS, generators, cable, luminaires)", description: "BS 7671, manufacturer certification." },
+      { key: "del.common_method_statements_compliance_gated", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical for continuity — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "BS 7671, manufacturer certification." },
       { key: "del.electrical_permit_to_work_isolation", label: "Permit-to-Work and Isolation Certificates for every switch-out", bypassAuthority: "AUTHORISED_PERSON_ELECTRICAL" },
       { key: "del.electrical_distribution_equipment_install", label: "Installation of distribution equipment, containment, cabling, UPS, generators and lighting", description: "SHTM 06, BS 7671." },
       { key: "del.electrical_earthing_bonding_install_records", label: "Earthing and bonding installation records", description: "BS 7671." },
@@ -500,7 +500,7 @@ async function main() {
       { key: "del.electrical_generator_load_changeover_tests", label: "Generator load and changeover tests", description: "Critical life-safety verification, per SHTM 06 — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.electrical_emergency_lighting_duration_tests", label: "Emergency lighting duration and functional tests", description: "Critical means-of-escape verification, per BS 5266 — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.electrical_eic_certificates", label: "As-fitted drawings, single-line diagrams, schedules and certification (Electrical Installation Certificate, etc.)", description: "BS 7671, SHTM 06.", bypassAuthority: "SRO" },
-      { key: "del.electrical_om_manuals_logbooks", label: "Comprehensive O&M manuals and log books", description: "SHTM 06." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 06." },
       { key: "del.electrical_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with BS 7671, SHTM 06 series and manufacturer requirements" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.electrical_training_records", label: "Training & demonstration records for estates staff", description: "SHTM 06." },
@@ -614,7 +614,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.water_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.water_treatment_dosing_temp_strategy", label: "Water treatment / chemical dosing / temperature control strategy", description: "SHTM 04-01 Part A." },
       { key: "del.water_legionella_control_measures", label: "Legionella control measures and schematic risk assessment update", description: "SHTM 04-01, HSE ACOP L8." },
       { key: "del.water_monitoring_sampling_bms_design", label: "Temperature monitoring, sampling points and BMS integration design", description: "SHTM 04-01." },
@@ -632,8 +632,8 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.water_method_statements_temp_supply", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary water supply arrangements", description: "Critical for continuity — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.water_material_equipment_certificates", label: "Material & equipment certificates (pipework, fittings, vessels, TMVs — WRAS approved where required)", description: "SHTM 04-01, Water Byelaws." },
+      { key: "del.common_method_statements_compliance_gated", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical for continuity — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "SHTM 04-01, Water Byelaws." },
       { key: "del.water_permit_to_work_isolation", label: "Permit-to-Work and Isolation Certificates for every zone/tank shutdown", bypassAuthority: "AUTHORISED_PERSON_ELECTRICAL" },
       { key: "del.water_pipework_storage_pump_install", label: "Installation of pipework, storage, pumps, TMVs, insulation and controls", description: "SHTM 04-01 Part A." },
       { key: "del.water_jointing_flushing_disinfection_records", label: "Jointing, flushing, cleaning and disinfection records", description: "Critical Legionella control step, per SHTM 04-01 Part D — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_WATER" },
@@ -647,8 +647,8 @@ async function main() {
       { key: "del.water_full_commissioning_validation_records", label: "Full commissioning & validation records (temperatures, flow rates, pressures, TMV performance, pump duties)", description: "SHTM 04-01 Part A." },
       { key: "del.water_final_disinfection_clearance_certs", label: "Final disinfection and microbiological clearance certificates", description: "Critical Legionella control step, per SHTM 04-01 Part D — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_WATER" },
       { key: "del.water_temperature_profiling_balancing", label: "Temperature profiling and balancing records", description: "SHTM 04-01." },
-      { key: "del.water_as_fitted_drawings", label: "As-fitted drawings, schematics, valve schedules and sampling point registers", description: "SHTM 04-01 Part A." },
-      { key: "del.water_om_manuals_written_scheme", label: "Comprehensive O&M manuals, including Written Scheme of Control", description: "SHTM 04-01 Part B & G." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 04-01 Part A." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 04-01 Part B & G." },
       { key: "del.water_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with SHTM 04-01, HSE ACOP L8 / HSG 274 and Water Byelaws" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.water_training_records", label: "Training & demonstration records for estates and clinical staff", description: "SHTM 04-01 Part B." },
@@ -736,7 +736,7 @@ async function main() {
     [
       { key: "del.drainage_full_technical_design_package", label: "Full Technical Design Package — detailed drawings, invert levels, specifications" },
       { key: "del.drainage_design_calculations", label: "Design calculations — flow rates, pipe sizing and falls to BS EN 12056" },
-      { key: "del.drainage_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.drainage_pipework_spec_compliant", label: "Complete pipework and fittings specification compliant with SHTM 64 and the Building (Scotland) Regulations Section 3 (Environment)", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.drainage_installation_method_statements", label: "Detailed Installation Method Statements, confined-space/excavation permit procedures and RAMS" },
       { key: "del.drainage_compliance_matrix", label: "Compliance Matrix — mapping against BS EN 12056, SHTM 64, Building (Scotland) Regulations, Water Environment (Controlled Activities) (Scotland) Regulations 2011, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -963,7 +963,7 @@ async function main() {
     [
       { key: "del.lighting_full_technical_design_package", label: "Full Technical Design Package — detailed lighting drawings, schematics, specifications" },
       { key: "del.lighting_design_calculations", label: "Design calculations — lux levels, glare, emergency lighting duration/coverage to BS 5266" },
-      { key: "del.lighting_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.lighting_spec_compliant", label: "Complete luminaire and control gear specification compliant with BS 7671 and BS EN 12464-1", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.lighting_installation_method_statements", label: "Detailed Installation Method Statements and RAMS" },
       { key: "del.lighting_compliance_matrix", label: "Compliance Matrix — mapping against BS 7671, BS 5266, BS EN 12464-1, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -1123,7 +1123,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.boiler_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.boiler_water_treatment_strategy", label: "Water treatment / chemical dosing / corrosion inhibitor strategy", description: "SHTM 04-01 Part A, BSRIA water treatment guidance." },
       { key: "del.boiler_bms_control_philosophy", label: "BMS control philosophy, sequences & point schedules (new boilers + retained systems)", description: "SHTM 06-01." },
       { key: "del.boiler_electrical_design", label: "Electrical design (boiler power, controls, temporary plant)", description: "SHTM 06-01." },
@@ -1143,11 +1143,11 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.boiler_method_statements", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary works designs", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
       { key: "del.boiler_temp_boiler_installation_commissioning", label: "Temporary boiler installation, connection, load testing & commissioning certificates", description: "SHTM 00." },
       { key: "del.boiler_hot_tapping_isolation_records", label: "Hot tapping / isolation verification records for the LTHW heating circuit", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
       { key: "del.boiler_new_boiler_installation", label: "New permanent boiler delivery, installation, flue connections, gas/oil connections" },
-      { key: "del.boiler_material_equipment_certificates", label: "Material & equipment certificates (boilers, valves, pumps, filtration, pipework)", description: "SHTM 04-01." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "SHTM 04-01." },
       { key: "del.boiler_water_sampling_results", label: "Water sampling results (pre-, interim- and post-works)", description: "SHTM 04-01 Parts A/B/C." },
       { key: "del.boiler_flushing_cleaning_dosing_records", label: "System flushing, cleaning, chemical treatment & inhibitor dosing records", description: "Critical water-treatment step for a closed LTHW system, per SHTM 04-01 Part D — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
       { key: "del.boiler_headers_valves_pumps_filtration_install", label: "Installation of new headers, valves, pumps, side-stream filtration & corrosion monitoring", description: "SHTM 04-01." },
@@ -1163,8 +1163,8 @@ async function main() {
       { key: "del.boiler_full_system_commissioning_records", label: "Full system testing & commissioning records (new boilers, LTHW circuit, pumps, controls)", description: "SHTM 04-01 Part A." },
       { key: "del.boiler_performance_efficiency_test_certs", label: "Boiler performance / efficiency / emissions test certificates" },
       { key: "del.boiler_balancing_flow_verification", label: "Balancing / flow verification data", description: "SHTM 04-01." },
-      { key: "del.boiler_as_fitted_drawings", label: "As-fitted drawings & schematics (boilers, valves, isolation points, filtration, corrosion monitoring)", description: "SHTM 04-01." },
-      { key: "del.boiler_om_manuals", label: "Comprehensive O&M manuals (including new boilers, temporary plant removal records)", description: "SHTM 00, SHTM 04-01 Part B." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 04-01." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00, SHTM 04-01 Part B." },
       { key: "del.boiler_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer instructions for new boilers, temporary boilers, valves and filtration equipment" },
       { key: "del.boiler_pssr_written_scheme", label: "PSSR written scheme of examination updates for the new boilers (pressure systems)", description: "Pressure Systems Safety Regulations 2000 — a boiler is a pressure system requiring a competent person's written scheme before use.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
@@ -1290,7 +1290,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.ventilation_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.ventilation_filter_hygiene_strategy", label: "Filter & hygiene strategy", description: "SHTM 03-01." },
       { key: "del.ventilation_bms_control_philosophy", label: "BMS / controls philosophy and point schedules", description: "SHTM 06-01." },
       { key: "del.ventilation_electrical_design", label: "Electrical design associated with AHUs, fans and controls", description: "SHTM 06-01." },
@@ -1308,9 +1308,9 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.ventilation_method_statements", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary ventilation arrangements", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
       { key: "del.ventilation_temp_plant_installation_commissioning", label: "Temporary plant installation, connection, testing & commissioning certificates (if used)", description: "SHTM 00." },
-      { key: "del.ventilation_material_equipment_certificates", label: "Material & equipment certificates", description: "SHTM 03-01." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "SHTM 03-01." },
       { key: "del.ventilation_shutdown_isolation_records", label: "Shutdown / isolation records for ventilation plant and ductwork", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
       { key: "del.ventilation_plant_distribution_install", label: "Installation of new AHUs, ductwork, fans, filters, controls and associated works", description: "SHTM 03-01 Part A." },
       { key: "del.ventilation_cleanliness_hygiene_records", label: "Cleanliness & hygiene records during installation", description: "Critical infection-control step for ventilation hygiene, per SHTM 03-01 Part B — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
@@ -1323,8 +1323,8 @@ async function main() {
     [
       { key: "del.ventilation_full_system_commissioning_records", label: "Full system testing, commissioning and validation records", description: "SHTM 03-01 Part A." },
       { key: "del.ventilation_performance_verification_data", label: "Performance verification data (air volumes, pressures, filtration efficiency, etc.)", description: "SHTM 03-01." },
-      { key: "del.ventilation_as_fitted_drawings", label: "As-fitted drawings & schematics", description: "SHTM 03-01." },
-      { key: "del.ventilation_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00, SHTM 03-01 Part B." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 03-01." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00, SHTM 03-01 Part B." },
       { key: "del.ventilation_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer instructions" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.ventilation_training_records", label: "Training & demonstration records for estates / operational staff", description: "SHTM 00." },
@@ -1440,7 +1440,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.medgas_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.medgas_pendant_structural_design", label: "Structural design information for pendant supports / ceiling fixings" },
       { key: "del.medgas_electrical_data_design", label: "Electrical & data design associated with pendants", description: "SHTM 06-01." },
       { key: "del.medgas_alarm_system_design", label: "Alarm system design and interface requirements", description: "SHTM 02-01 Part A." },
@@ -1459,7 +1459,7 @@ async function main() {
     [
       { key: "del.medgas_permit_to_work_isolation", label: "Contractor's detailed Method Statements, full RAMS, detailed phasing, isolation & Permit-to-Work procedures", description: "SHTM 02-01 Part B — all MGPS work is controlled via the Permit-to-Work system, overseen by the site Authorised Person (MGPS). Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "AUTHORISED_PERSON_MEDICAL_GASES" },
       { key: "del.medgas_temp_supply_design_install_validation", label: "Temporary medical gas supply arrangements (if required) — design, installation & validation", description: "SHTM 02-01 Part A." },
-      { key: "del.medgas_material_equipment_certificates", label: "Material & equipment certificates (pipework, fittings, terminal units, pendants, plant)", description: "SHTM 02-01 Part A." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "SHTM 02-01 Part A." },
       { key: "del.medgas_pipeline_valve_terminal_install", label: "Installation of new pipeline systems, valves, AVSUs and terminal units", description: "SHTM 02-01 Part A." },
       { key: "del.medgas_pendant_install", label: "Installation of ceiling pendants / medical supply units (including structural fixings, gas hoses, electrical & data)", description: "SHTM 02-01, BS EN ISO 11197." },
       { key: "del.medgas_brazing_jointing_records", label: "Brazing / jointing records (oxygen-free nitrogen purged, fluxless)", description: "Critical contamination-control step for medical gas pipework, per SHTM 02-01 Part A — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_MEDICAL_GASES" },
@@ -1474,8 +1474,8 @@ async function main() {
       { key: "del.medgas_full_validation_verification_records", label: "Full validation and verification records (carcass, system, performance)", description: "SHTM 02-01 Part A." },
       { key: "del.medgas_identity_quality_flow_pressure_certs", label: "Identity, quality, flow and pressure test certificates for all gases and vacuum", description: "Critical patient-safety verification — a wrong or contaminated gas identity is life-threatening. Cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_MEDICAL_GASES" },
       { key: "del.medgas_pendant_performance_tests", label: "Pendant performance tests (movement, braking, hose integrity, terminal unit function)", description: "SHTM 02-01, manufacturer requirements." },
-      { key: "del.medgas_as_fitted_drawings", label: "As-fitted drawings & schematics (including terminal unit schedules and pendant locations)", description: "SHTM 02-01 Part A." },
-      { key: "del.medgas_om_manuals", label: "Comprehensive O&M manuals (including pendant maintenance and hose life policy)", description: "SHTM 02-01 Part B." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 02-01 Part A." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 02-01 Part B." },
       { key: "del.medgas_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer instructions for pendants, terminal units and plant" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.medgas_training_records", label: "Training & demonstration records for Authorised Persons, Competent Persons and clinical users", description: "SHTM 02-01 Part B." },
@@ -1574,7 +1574,7 @@ async function main() {
     [
       { key: "del.firealarm_full_technical_design_package", label: "Full technical design drawings, schematics and zone plans", description: "SHTM 82, BS 5839-1." },
       { key: "del.firealarm_detailed_specifications", label: "Detailed specifications (CIE, detectors, manual call points, sounders, visual devices, cabling, power supplies)", description: "SHTM 82, BS 5839-1." },
-      { key: "del.firealarm_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.firealarm_cause_effect_matrix", label: "Cause & effect matrix / interface schedule (doors, plant, lifts, smoke control, etc.)", description: "SHTM 82." },
       { key: "del.firealarm_battery_power_supply_design", label: "Battery autonomy and power supply design", description: "BS 5839-1." },
       { key: "del.firealarm_ufas_reduction_strategy", label: "UFAS reduction strategy (detector selection, multi-criteria, verification technology)", description: "SHTM 82." },
@@ -1589,8 +1589,8 @@ async function main() {
     ],
     // Gate 5 — Manufacturing & Construction
     [
-      { key: "del.firealarm_method_statements", label: "Contractor method statements, detailed phasing & temporary protection arrangements", description: "SHTM 82." },
-      { key: "del.firealarm_material_equipment_certificates", label: "Material & equipment certificates (panels, detectors, devices, cable)", description: "BS 5839-1." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "SHTM 82." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "BS 5839-1." },
       { key: "del.firealarm_cie_devices_install", label: "Installation of new control and indicating equipment (CIE), detectors, call points, sounders and visual alarms", description: "SHTM 82, BS 5839-1." },
       { key: "del.firealarm_cable_install_containment_labelling", label: "Cable installation, containment and labelling records", description: "BS 5839-1." },
       { key: "del.firealarm_interface_install_testing", label: "Interface installation and testing records", description: "SHTM 82." },
@@ -1602,8 +1602,8 @@ async function main() {
     [
       { key: "del.firealarm_full_commissioning_verification_records", label: "Full commissioning and verification records in accordance with BS 5839-1 and SHTM 82" },
       { key: "del.firealarm_cause_effect_testing_signoff", label: "Cause & effect testing and sign-off", description: "Critical life-safety verification — confirms fire alarm signals correctly trigger door release, smoke control, lift recall and plant shutdown. Cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.firealarm_as_fitted_drawings", label: "As-fitted drawings, zone plans and device schedules", description: "SHTM 82." },
-      { key: "del.firealarm_om_manuals_logbook", label: "Comprehensive O&M manuals and log book", description: "SHTM 82, BS 5839-1." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 82." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 82, BS 5839-1." },
       { key: "del.firealarm_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer instructions and BS 5839-1 certification" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.firealarm_training_records", label: "Training & demonstration records for estates staff and fire response teams", description: "SHTM 82, SHTM 83." },
@@ -1707,7 +1707,7 @@ async function main() {
     [
       { key: "del.lift_full_technical_design_package", label: "Full technical design drawings & schematics (shafts, cars, landings, machine rooms, interfaces)", description: "SHTM 08-02." },
       { key: "del.lift_detailed_specifications", label: "Detailed specifications (drive system, controller, doors, safety gear, finishes, communication systems)", description: "SHTM 08-02, BS EN 81 series." },
-      { key: "del.lift_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.lift_structural_design", label: "Structural design information (loads, fixings, machine room / pit)" },
       { key: "del.lift_electrical_design", label: "Electrical design (main supply, emergency supply, lighting, alarms)", description: "SHTM 06 series, SHTM 08-02." },
       { key: "del.lift_firefighting_escape_requirements", label: "Firefighting lift / escape bed lift specific requirements (controls, communications, power)", description: "SHTM 81, SFPN 3, BS EN 81-72." },
@@ -1722,8 +1722,8 @@ async function main() {
     ],
     // Gate 5 — Manufacturing & Construction
     [
-      { key: "del.lift_method_statements", label: "Contractor method statements, detailed phasing & temporary vertical transportation arrangements", description: "SHTM 08-02." },
-      { key: "del.lift_material_equipment_certificates", label: "Material & equipment certificates (drive, controller, safety components, doors, car)", description: "BS EN 81 series." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "SHTM 08-02." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "BS EN 81 series." },
       { key: "del.lift_shaft_structural_mrl_works", label: "Shaft preparation, structural works, machine room / MRL installation" },
       { key: "del.lift_equipment_install", label: "Installation of lift equipment (car, counterweight, ropes/jack, doors, controller)", description: "SHTM 08-02." },
       { key: "del.lift_electrical_install_emergency_supply_testing", label: "Electrical installation, emergency supply connections and testing", description: "SHTM 06 series.", bypassAuthority: "SRO" },
@@ -1737,8 +1737,8 @@ async function main() {
       { key: "del.lift_full_commissioning_validation_records", label: "Full commissioning, testing and validation records in accordance with SHTM 08-02 and BS EN 81" },
       { key: "del.lift_load_speed_levelling_door_safety_tests", label: "Load testing, speed, levelling accuracy, door operation and safety device tests", description: "Critical life-safety verification, per BS EN 81 series. Cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.lift_firefighting_escape_function_tests", label: "Firefighting / escape lift specific function tests (if applicable)", description: "SHTM 81, SFPN 3.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.lift_as_fitted_drawings", label: "As-fitted drawings, wiring diagrams and device schedules", description: "SHTM 08-02." },
-      { key: "del.lift_om_manuals_logbook_rescue_procedures", label: "Comprehensive O&M manuals, log book and rescue procedures", description: "SHTM 08-02." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 08-02." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 08-02." },
       { key: "del.lift_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer instructions and BS EN 81 certification" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.lift_training_records", label: "Training & demonstration records for estates staff and rescue teams", description: "SHTM 08-02." },
@@ -1838,7 +1838,7 @@ async function main() {
     [
       { key: "del.nursecall_full_technical_design_package", label: "Full technical design drawings, schematics and device schedules", description: "SHTM 08-03." },
       { key: "del.nursecall_detailed_specifications", label: "Detailed specifications (call points, handsets, indicators, controllers, speech units, paging interfaces, logging software)", description: "SHTM 08-03." },
-      { key: "del.nursecall_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.nursecall_power_supply_resilience", label: "Power supply, resilience and backup arrangements", description: "SHTM 06 series." },
       { key: "del.nursecall_integration_design", label: "Integration design (cardiac arrest, fire alert, staff attack, BMS if required)", description: "SHTM 08-03." },
       { key: "del.nursecall_wireless_coverage_radio_survey", label: "Wireless coverage / radio survey (if applicable)", description: "Manufacturer requirements, radio licensing." },
@@ -1853,8 +1853,8 @@ async function main() {
     ],
     // Gate 5 — Manufacturing & Construction
     [
-      { key: "del.nursecall_method_statements", label: "Contractor method statements, phasing & temporary nurse call / paging cover" },
-      { key: "del.nursecall_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer certification." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS" },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer certification." },
       { key: "del.nursecall_devices_cabling_install", label: "Installation of devices, cabling / wireless infrastructure, controllers and indicators", description: "SHTM 08-03." },
       { key: "del.nursecall_integration_testing", label: "Integration testing with other systems" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
@@ -1865,8 +1865,8 @@ async function main() {
     [
       { key: "del.nursecall_full_commissioning_functional_records", label: "Full commissioning, functional testing and validation records", description: "SHTM 08-03." },
       { key: "del.nursecall_call_logging_audit_verification", label: "Call logging, reporting and audit trail verification", description: "SHTM 08-03." },
-      { key: "del.nursecall_as_fitted_drawings_config_records", label: "As-fitted drawings, device schedules and configuration records", description: "SHTM 08-03." },
-      { key: "del.nursecall_om_manuals_user_guides", label: "Comprehensive O&M manuals and user guides", description: "SHTM 08-03." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 08-03." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 08-03." },
       { key: "del.nursecall_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer requirements and clinical risk assessments" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.nursecall_training_records", label: "Training & demonstration records for nursing and estates staff", description: "SHTM 08-03." },
@@ -1968,7 +1968,7 @@ async function main() {
     [
       { key: "del.bms_full_technical_design_package", label: "Full technical design drawings, network schematics and system architecture", description: "CIBSE / BSRIA." },
       { key: "del.bms_point_schedules_control_strategies", label: "Detailed point schedules, control strategies and cause-and-effect matrices", description: "Linked SHTMs (03-01, 04-01, etc.)." },
-      { key: "del.bms_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.bms_detailed_specifications", label: "Detailed specifications (controllers, sensors, actuators, servers, software, graphics, cybersecurity)", description: "Manufacturer and industry standards." },
       { key: "del.bms_integration_design", label: "Integration design with existing/new plant (boilers, AHUs, medical gases, fire, lifts, nurse call etc.)", description: "Relevant system SHTMs." },
       { key: "del.bms_energy_monitoring_analytics_spec", label: "Energy monitoring, reporting and analytics specification" },
@@ -1985,8 +1985,8 @@ async function main() {
     ],
     // Gate 5 — Manufacturing & Construction
     [
-      { key: "del.bms_method_statements_temp_control", label: "Contractor method statements, detailed phasing & temporary monitoring/control arrangements", description: "Critical for plant safety — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.bms_material_equipment_certificates", label: "Material & equipment certificates (controllers, sensors, software licences)" },
+      { key: "del.common_method_statements_compliance_gated", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical for plant safety — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates" },
       { key: "del.bms_field_devices_network_install", label: "Installation of field devices, controllers, network infrastructure and head-end equipment" },
       { key: "del.bms_software_config_graphics_dev", label: "Software configuration, graphics development and control strategy implementation" },
       { key: "del.bms_integration_testing", label: "Integration testing with other building systems", description: "Linked SHTMs." },
@@ -2000,8 +2000,8 @@ async function main() {
       { key: "del.bms_point_to_point_alarm_testing", label: "Point-to-point testing, control strategy proving and alarm testing", description: "Critical life-safety verification — confirms the system correctly monitors and alarms on critical plant failure. Cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.bms_graphics_ui_reporting_verification", label: "Graphics, user interface and reporting verification" },
       { key: "del.bms_cybersecurity_testing_hardening", label: "Cybersecurity testing and hardening confirmation", description: "Distinct from general functional commissioning — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.bms_as_fitted_drawings_config_backups", label: "As-fitted drawings, final point schedules, network diagrams and configuration backups" },
-      { key: "del.bms_om_manuals_training_materials", label: "Comprehensive O&M manuals, user guides and training materials", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.bms_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer requirements, cybersecurity standards and relevant SHTMs" },
       { key: "del.bms_disaster_recovery_arrangements", label: "Configuration backups and disaster recovery arrangements" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
@@ -2107,7 +2107,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.chilledwater_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.chilledwater_treatment_corrosion_strategy", label: "Water treatment / chemical dosing / corrosion and microbiological control strategy", description: "BSRIA, SHTM 04-01 principles." },
       { key: "del.chilledwater_control_strategy_bms_schedules", label: "Control strategy, sequences and BMS point schedules", description: "SHTM 03-01 linked, CIBSE Guide H." },
       { key: "del.chilledwater_electrical_design", label: "Electrical design associated with chillers, pumps and controls", description: "SHTM 06 series." },
@@ -2124,8 +2124,8 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.chilledwater_method_statements_temp_cooling", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary cooling arrangements", description: "Critical for clinical areas — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.chilledwater_material_equipment_certificates", label: "Material & equipment certificates (chillers, pumps, pipework, valves, insulation)", description: "Manufacturer certification." },
+      { key: "del.common_method_statements_compliance_gated", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical for clinical areas — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer certification." },
       { key: "del.chilledwater_chillers_pipework_install", label: "Installation of chillers, pipework, pumps, pressurisation units, insulation and controls" },
       { key: "del.chilledwater_pressure_testing_flushing_dosing", label: "Pressure testing, flushing, cleaning and chemical treatment records", description: "Critical water-treatment step for a closed chilled water system, per BSRIA guidance — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
       { key: "del.chilledwater_water_sampling_quality_records", label: "Water sampling and quality records" },
@@ -2138,8 +2138,8 @@ async function main() {
       { key: "del.chilledwater_full_commissioning_validation_records", label: "Full commissioning & validation records (flow rates, temperatures, pressures, chiller performance, control sequences)", description: "CIBSE, BSRIA." },
       { key: "del.chilledwater_performance_testing_partload", label: "Performance testing at part-load and design conditions" },
       { key: "del.chilledwater_water_treatment_verification_baseline", label: "Water treatment verification and baseline quality report", description: "Critical water-treatment step for a closed chilled water system — cannot be bypassed at PM level.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
-      { key: "del.chilledwater_as_fitted_drawings_control_logic", label: "As-fitted drawings, schematics, valve schedules and control logic" },
-      { key: "del.chilledwater_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.chilledwater_fgas_register_leak_check", label: "F-Gas register and leak-check compliance confirmed (where applicable)", description: "F-Gas Regulations — distinct statutory step from general commissioning.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.chilledwater_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with CIBSE, BSRIA, F-Gas (where applicable) and manufacturer requirements" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
@@ -2246,7 +2246,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.steam_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.steam_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.steam_water_treatment_blowdown_strategy", label: "Water treatment / chemical dosing / blowdown strategy", description: "Manufacturer / BESSafe principles." },
       { key: "del.steam_control_strategy_bms_integration", label: "Control strategy, sequences and BMS integration" },
@@ -2263,8 +2263,8 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.steam_method_statements_temp_steam", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary steam arrangements", description: "Critical for process users — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.steam_material_equipment_certificates", label: "Material & equipment certificates (boilers, pipework, valves, safety devices)", description: "PED / BS EN standards." },
+      { key: "del.common_method_statements_compliance_gated", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical for process users — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "PED / BS EN standards." },
       { key: "del.steam_boilers_pipework_prv_install", label: "Installation of boilers, pipework, PRVs, traps, insulation and controls" },
       { key: "del.steam_ndt_pressure_welding_records", label: "NDT, pressure testing and welding records", description: "Critical life-safety verification for a pressure system, per PSSR / BS standards — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.steam_water_treatment_install_dosing", label: "Water treatment system installation and initial dosing records" },
@@ -2278,8 +2278,8 @@ async function main() {
       { key: "del.steam_safety_valve_setting_certification", label: "Safety valve setting and certification", description: "Critical life-safety verification for a pressure system, per PSSR — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.steam_performance_testing_boilers_distribution", label: "Performance testing of boilers and distribution" },
       { key: "del.steam_updated_written_scheme", label: "Updated Written Scheme of Examination", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.steam_as_fitted_drawings_pressure_docs", label: "As-fitted drawings, schematics, valve schedules and pressure system documentation", description: "PSSR." },
-      { key: "del.steam_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "PSSR." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.steam_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with PSSR, PED, relevant BS EN standards and manufacturer requirements" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.steam_training_records", label: "Training & demonstration records for estates staff", description: "SHTM 00." },
@@ -2378,7 +2378,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.firesuppression_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.firesuppression_hydraulic_agent_calculations", label: "Hydraulic calculations (sprinkler / water mist) or agent quantity calculations (gaseous)", description: "BS EN 12845 or BS EN 15004." },
       { key: "del.firesuppression_cause_effect_matrix", label: "Cause & effect / interface matrix with fire detection & alarm system", description: "SHTM 82." },
       { key: "del.firesuppression_water_agent_storage_design", label: "Water supply / storage or agent storage design", description: "Relevant standards." },
@@ -2395,7 +2395,7 @@ async function main() {
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
       { key: "del.firesuppression_method_statements_temp_protection", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary protection arrangements", description: "Critical for life safety — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.firesuppression_material_equipment_certificates", label: "Material & equipment certificates (pipework, valves, pumps, cylinders, nozzles)", description: "Relevant standards." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Relevant standards." },
       { key: "del.firesuppression_pipework_valves_nozzles_install", label: "Installation of pipework, valve sets, pumps, cylinders, nozzles and controls", description: "Relevant BS EN standards." },
       { key: "del.firesuppression_pressure_flushing_integrity_testing", label: "Pressure testing, flushing and integrity testing records", description: "Critical life-safety verification of the suppression system's physical integrity, per BS EN 12845 / relevant standards. Cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.firesuppression_alarm_interface_preliminary_testing", label: "Interface installation and preliminary testing with fire alarm system", description: "SHTM 82." },
@@ -2408,8 +2408,8 @@ async function main() {
       { key: "del.firesuppression_full_commissioning_certification_records", label: "Full commissioning, testing and certification records", description: "Relevant BS EN / ISO standards." },
       { key: "del.firesuppression_discharge_performance_verification", label: "Hydraulic / agent discharge performance verification (where safe and appropriate)", description: "Critical life-safety verification — confirms the suppression system will actually discharge and perform as designed. Cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.firesuppression_cause_effect_alarm_testing", label: "Interface and cause-and-effect testing with fire detection & alarm system", description: "Critical life-safety verification, per SHTM 82. Cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
-      { key: "del.firesuppression_as_fitted_drawings_calc_packages", label: "As-fitted drawings, schematics, valve schedules and calculation packages", description: "SHTM 81." },
-      { key: "del.firesuppression_om_manuals_logbooks", label: "Comprehensive O&M manuals and log books", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 81." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.firesuppression_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with SHTM 81, relevant BS EN / ISO standards and the building fire strategy" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.firesuppression_training_records", label: "Training & demonstration records for estates and fire response teams", description: "SHTM 81, SHTM 83." },
@@ -2510,7 +2510,7 @@ async function main() {
     [
       { key: "del.security_full_technical_design_package", label: "Full technical design drawings, schematics, camera schedules and access control schedules", description: "BS EN standards." },
       { key: "del.security_detailed_specifications", label: "Detailed specifications (cameras, recorders/VMS, readers, controllers, detectors, software, networks)", description: "Manufacturer and BS EN standards." },
-      { key: "del.security_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.security_network_cybersecurity_design", label: "Network architecture, cybersecurity design and hardening measures", description: "NHS cyber standards." },
       { key: "del.security_dpia", label: "Data protection / privacy impact assessment (DPIA) for CCTV and access control", description: "GDPR / UK Data Protection Act 2018.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
       { key: "del.security_recording_retention_audit_design", label: "Recording, retention, export and audit trail design", description: "Information Governance.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
@@ -2527,8 +2527,8 @@ async function main() {
     ],
     // Gate 5 — Manufacturing & Construction
     [
-      { key: "del.security_method_statements_temp_coverage", label: "Contractor method statements, detailed phasing & temporary security coverage arrangements", description: "Critical — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.security_material_equipment_certificates", label: "Material & equipment certificates (cameras, recorders, readers, controllers, software licences)", description: "Manufacturer certification." },
+      { key: "del.common_method_statements_compliance_gated", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer certification." },
       { key: "del.security_cameras_readers_networks_install", label: "Installation of cameras, readers, detectors, cabling, control equipment and networks" },
       { key: "del.security_network_config_cyber_hardening_testing", label: "Network configuration, cybersecurity hardening and testing records", description: "Cyber standards.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
@@ -2541,8 +2541,8 @@ async function main() {
       { key: "del.security_coverage_image_quality_recording_verification", label: "Camera coverage, image quality and recording verification" },
       { key: "del.security_access_control_antipassback_audit_testing", label: "Access control, anti-passback, audit trail and integration testing" },
       { key: "del.security_cybersecurity_vulnerability_confirmation", label: "Cybersecurity testing and vulnerability confirmation", description: "NHS cyber standards — cannot be bypassed at PM level.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
-      { key: "del.security_as_fitted_drawings_config_backups", label: "As-fitted drawings, camera schedules, access schedules, network diagrams and configuration backups" },
-      { key: "del.security_om_manuals_admin_docs", label: "Comprehensive O&M manuals, user guides and administrator documentation", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.security_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with NHS Scotland Security Standards, BS EN standards, cybersecurity requirements and GDPR" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.security_training_records", label: "Training & demonstration records for Security, Estates and Control Room staff" },
@@ -2648,7 +2648,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.pts_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.pts_tracking_prioritisation_alarm_design", label: "Carrier tracking, prioritisation, alarm and audit trail design", description: "Clinical requirements." },
       { key: "del.pts_power_control_network_design", label: "Power, control and network design", description: "SHTM 06 series." },
       { key: "del.pts_infection_control_cleanability", label: "Infection control and cleanability features", description: "IPC guidance.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
@@ -2666,7 +2666,7 @@ async function main() {
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
       { key: "del.pts_method_statements_temp_transport", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary specimen/medicine transport arrangements", description: "Critical for clinical service — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
-      { key: "del.pts_material_equipment_certificates", label: "Material & equipment certificates (tubing, stations, blowers, carriers, software)", description: "Manufacturer certification." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer certification." },
       { key: "del.pts_network_stations_install", label: "Installation of tube network, stations, diverters, blower plant and controls", description: "Manufacturer standards." },
       { key: "del.pts_pressure_leakage_integrity_testing", label: "Pressure / leakage testing and integrity records", description: "Critical physical integrity verification, per manufacturer standards — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
@@ -2678,8 +2678,8 @@ async function main() {
       { key: "del.pts_full_commissioning_functional_records", label: "Full commissioning, functional testing and performance verification records", description: "Manufacturer data." },
       { key: "del.pts_transit_prioritisation_tracking_tests", label: "Carrier transit time, prioritisation, tracking and empty carrier management tests", description: "Critical clinical workflow verification — confirms urgent specimens/blood products are correctly prioritised and tracked. Cannot be bypassed at PM level.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
       { key: "del.pts_leakage_pressure_integrity_verification", label: "Leakage, pressure and system integrity verification", description: "Critical physical integrity verification — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
-      { key: "del.pts_as_fitted_drawings_config_records", label: "As-fitted drawings, network schematics, station schedules and configuration records" },
-      { key: "del.pts_om_manuals_admin_docs", label: "Comprehensive O&M manuals, user guides and administrator documentation", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.pts_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer requirements, clinical risk assessments and infection control standards" },
       { key: "del.pts_config_backups_documentation", label: "Full system configuration backups and documentation" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
@@ -2774,7 +2774,7 @@ async function main() {
     [
       { key: "del.abovedrainage_full_technical_design_package", label: "Full technical design drawings, schematics, stack schedules and drain schedules", description: "BS EN 12056, Building Standards." },
       { key: "del.abovedrainage_detailed_specifications", label: "Detailed specifications (pipework materials, fittings, floor drains, channels, traps, access fittings, insulation if required)", description: "BS EN 12056." },
-      { key: "del.abovedrainage_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.abovedrainage_venting_antisiphonage_strategy", label: "Venting strategy and anti-siphonage measures", description: "BS EN 12056." },
       { key: "del.abovedrainage_access_rodding_cleaning_design", label: "Access, rodding and cleaning point design", description: "Maintainability focus." },
       { key: "del.abovedrainage_belowground_interface_design", label: "Interface design with below-ground drainage and sanitary fittings" },
@@ -2789,8 +2789,8 @@ async function main() {
     ],
     // Gate 5 — Manufacturing & Construction
     [
-      { key: "del.abovedrainage_method_statements_temp_arrangements", label: "Contractor method statements, detailed phasing & temporary drainage arrangements", description: "Important for operational areas." },
-      { key: "del.abovedrainage_material_equipment_certificates", label: "Material & equipment certificates (pipework, fittings, drains, traps)", description: "Manufacturer / BS EN standards." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Important for operational areas." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer / BS EN standards." },
       { key: "del.abovedrainage_pipework_stacks_install", label: "Installation of above-ground drainage pipework, stacks, branches, floor drains and access fittings", description: "BS EN 12056." },
       { key: "del.abovedrainage_gradient_support_jointing_records", label: "Gradient, support and jointing quality records" },
       { key: "del.abovedrainage_air_water_testing_records", label: "Air / water testing records", description: "Critical verification step before drainage is relied upon, per BS EN 12056 — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
@@ -2801,8 +2801,8 @@ async function main() {
     // Gate 6 — Handover
     [
       { key: "del.abovedrainage_full_testing_commissioning_records", label: "Full testing and commissioning records (air tests, water tests, performance verification)", description: "Critical verification step, per BS EN 12056 — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
-      { key: "del.abovedrainage_as_fitted_drawings_registers", label: "As-fitted drawings, schematics, stack schedules and access point registers", description: "Essential for future maintenance." },
-      { key: "del.abovedrainage_om_manuals_cleaning_procedures", label: "Comprehensive O&M manuals, including cleaning and maintenance procedures", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "Essential for future maintenance." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.abovedrainage_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with Building Standards (Scotland), BS EN 12056 and manufacturer requirements" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.abovedrainage_training_records", label: "Training & demonstration records for estates and facilities staff" },
@@ -2900,7 +2900,7 @@ async function main() {
     [
       { key: "del.compressedair_full_technical_design_package", label: "Full technical design drawings, schematics and pipework layouts", description: "CIBSE, manufacturer data." },
       { key: "del.compressedair_detailed_specifications", label: "Detailed specifications (compressors, receivers, dryers, filters, pipework, valves, regulators, controls)", description: "Relevant BS EN standards." },
-      { key: "del.compressedair_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.compressedair_air_treatment_quality_spec", label: "Air treatment and quality specification (dryness, filtration, oil content)", description: "ISO 8573, where applicable." },
       { key: "del.compressedair_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.compressedair_control_strategy_bms_integration", label: "Control strategy, sequencing and BMS integration (if required)" },
@@ -2917,8 +2917,8 @@ async function main() {
     ],
     // Gate 5 — Manufacturing & Construction
     [
-      { key: "del.compressedair_method_statements_temp_arrangements", label: "Contractor method statements, detailed phasing & temporary compressed air arrangements", description: "Where operationally required." },
-      { key: "del.compressedair_material_equipment_certificates", label: "Material & equipment certificates (compressors, receivers, dryers, filters, pipework, safety devices)", description: "PED / BS EN standards." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Where operationally required." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "PED / BS EN standards." },
       { key: "del.compressedair_compressors_treatment_install", label: "Installation of compressors, treatment plant, receivers, pipework and controls" },
       { key: "del.compressedair_pressure_flushing_purity_testing", label: "Pressure testing, flushing and purity testing records", description: "Critical life-safety verification for a pressure system, per relevant standards — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
@@ -2931,8 +2931,8 @@ async function main() {
       { key: "del.compressedair_safety_valve_setting_certification", label: "Safety valve setting and certification", description: "Critical life-safety verification for a pressure system, per PSSR — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.compressedair_air_quality_verification_testing", label: "Air quality verification testing (particles, humidity, oil content as applicable)", description: "ISO 8573, where relevant." },
       { key: "del.compressedair_updated_written_scheme", label: "Updated Written Scheme of Examination (if applicable)", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.compressedair_as_fitted_drawings_pressure_docs", label: "As-fitted drawings, schematics, valve schedules and pressure system documentation", description: "PSSR." },
-      { key: "del.compressedair_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "PSSR." },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.compressedair_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with PSSR, PED, relevant BS EN standards, ISO 8573 (where applicable) and manufacturer requirements" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.compressedair_training_records", label: "Training & demonstration records for estates and user staff" },
@@ -3054,7 +3054,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.wardrefresh_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.wardrefresh_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.wardrefresh_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.wardrefresh_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
@@ -3070,8 +3070,8 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.wardrefresh_method_statements_decant_arrangements", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary clinical arrangements", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
-      { key: "del.wardrefresh_material_product_certificates", label: "Material & product certificates (flooring, cladding, doors, windows)", description: "Manufacturer." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer." },
       { key: "del.wardrefresh_finishes_furniture_install", label: "Installation of doors, windows, ironmongery, flooring, wall cladding and associated works" },
       { key: "del.wardrefresh_protection_existing_services", label: "Protection of existing services and clinical areas", description: "HAI-SCRIBE Stage 3." },
       { key: "del.wardrefresh_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3083,8 +3083,8 @@ async function main() {
     [
       { key: "del.wardrefresh_full_commissioning_validation_records", label: "Full inspection, snagging and quality verification records" },
       { key: "del.wardrefresh_infection_control_validation", label: "Cleaning, terminal clean and IPC clearance", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.wardrefresh_as_fitted_drawings_om_manuals", label: "As-fitted drawings, schedules and product information" },
-      { key: "del.wardrefresh_om_manuals", label: "Comprehensive O&M manuals and maintenance information for new finishes and fittings", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.wardrefresh_training_records", label: "Training & demonstration records for clinical, Soft FM and Estates staff" },
       { key: "del.common_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
@@ -3164,7 +3164,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.mhu_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.mhu_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.mhu_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.mhu_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
@@ -3180,9 +3180,9 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.mhu_method_statements_decant_arrangements", label: "Contractor's detailed Method Statements, full RAMS, decant and temporary clinical arrangements", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
       { key: "del.mhu_tool_control_room_security", label: "Contractor tool control and room security procedure", description: "Rooms under works must never be left open or unattended, and every tool and sharp item must be signed in, signed out, and accounted for at all times — a patient and contractor safety control distinct from general site security.", bypassAuthority: "SRO" },
-      { key: "del.mhu_material_product_certificates", label: "Material & product certificates (anti-ligature items, flooring, cladding, doors, windows)", description: "Manufacturer." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer." },
       { key: "del.mhu_finishes_furniture_install", label: "Installation of doors, windows, ironmongery, flooring, wall cladding and associated works" },
       { key: "del.mhu_protection_existing_services", label: "Protection of existing services and clinical areas", description: "HAI-SCRIBE Stage 3." },
       { key: "del.mhu_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3195,8 +3195,8 @@ async function main() {
       { key: "del.mhu_full_commissioning_validation_records", label: "Full inspection, snagging and quality verification records" },
       { key: "del.mhu_ligature_safety_verification", label: "Ligature safety verification and clinical sign-off", description: "Life-safety verification for at-risk patients — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
       { key: "del.mhu_infection_control_validation", label: "Cleaning, terminal clean and IPC clearance", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.mhu_as_fitted_drawings_om_manuals", label: "As-fitted drawings, schedules and product information" },
-      { key: "del.mhu_om_manuals", label: "Comprehensive O&M manuals and maintenance information for new finishes and fittings", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.mhu_training_records", label: "Training & demonstration records for clinical, Soft FM and Estates staff" },
       { key: "del.common_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
@@ -3273,7 +3273,7 @@ async function main() {
     [
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
-      { key: "del.theatrerefresh_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.theatrerefresh_mep_interface_design", label: "Interface design with ventilation, medical gases, electrical, nurse call, drainage and fire systems", description: "SHTM 03-01 (ventilation), SHTM 02-01 (medical gas), SHTM 06 series (electrical), SHTM 08-03 (nurse call), SHTM 04-01 (drainage/water)." },
       { key: "del.theatrerefresh_infection_control_design_review", label: "HAI-SCRIBE Stage 2 design review and infection control measures", description: "HAI-SCRIBE Stage 2.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.theatrerefresh_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
@@ -3289,8 +3289,8 @@ async function main() {
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
     [
-      { key: "del.theatrerefresh_method_statements_decant_arrangements", label: "Contractor's detailed Method Statements, full RAMS and detailed temporary clinical arrangements", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
-      { key: "del.theatrerefresh_material_product_certificates", label: "Material & product certificates (theatre-grade finishes, cladding, doors)", description: "Manufacturer." },
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "Manufacturer." },
       { key: "del.theatrerefresh_finishes_furniture_install", label: "Installation of doors, ironmongery, wall/ceiling cladding and associated works" },
       { key: "del.theatrerefresh_protection_existing_services", label: "Protection of existing services and clinical areas", description: "HAI-SCRIBE Stage 3." },
       { key: "del.theatrerefresh_infection_control_construction_measures", label: "Dust, water and infection control measures during construction", description: "HAI-SCRIBE Stage 3.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3303,8 +3303,8 @@ async function main() {
       { key: "del.theatrerefresh_full_commissioning_validation_records", label: "Full inspection, snagging and quality verification records" },
       { key: "del.theatrerefresh_ventilation_validation", label: "Ultra-clean ventilation validation (air changes, filtration integrity, laminar flow performance where fitted)", description: "SHTM 03-01, Part B (specialised ventilation) — required wherever finishes/ceiling works disturb the theatre's ventilation canopy or envelope.", bypassAuthority: "AUTHORISED_PERSON_VENTILATION" },
       { key: "del.theatrerefresh_infection_control_validation", label: "Cleaning, terminal clean and IPC clearance", description: "HAI-SCRIBE Stage 4.", bypassAuthority: "COMPLIANCE_OFFICER" },
-      { key: "del.theatrerefresh_as_fitted_drawings_om_manuals", label: "As-fitted drawings, schedules and product information" },
-      { key: "del.theatrerefresh_om_manuals", label: "Comprehensive O&M manuals and maintenance information for new finishes and fittings", description: "SHTM 00." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.theatrerefresh_training_records", label: "Training & demonstration records for clinical, Soft FM and Estates staff" },
       { key: "del.common_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
