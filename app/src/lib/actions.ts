@@ -987,11 +987,12 @@ export async function createProvisioningDraft(formData: FormData) {
       },
     });
 
-    // The standing hospital team (lib/standardTeam.ts), not just the
-    // creator as PM — a project no longer starts with every other role
-    // (Sponsor, SRO, Compliance Officer, Finance, ...) simply missing
-    // until someone notices and fills it in by hand.
-    await assignStandardTeam(project.id);
+    // PM from whoever actually created it, plus the standing hospital
+    // team (lib/standardTeam.ts) for everything else — a project no
+    // longer starts with every other role (Sponsor, SRO, Compliance
+    // Officer, Finance, ...) simply missing until someone notices and
+    // fills it in by hand.
+    await assignStandardTeam(project.id, userId);
     // Discipline-specific roster (lib/disciplineTeam.ts) — AP/AE, Clinical
     // Safety/Information Governance, Principal Designer — suggested from
     // what this template's own deliverables actually gate on. Re-run at
@@ -1027,7 +1028,7 @@ export async function createProvisioningDraft(formData: FormData) {
         },
       });
 
-      await assignStandardTeam(extraProject.id);
+      await assignStandardTeam(extraProject.id, userId);
       await suggestDisciplineTeam(extraProject.id, [extraTemplate.id], worksType);
 
       await db.auditLogEntry.create({
@@ -1076,7 +1077,7 @@ export async function createProvisioningDraft(formData: FormData) {
     },
   });
 
-  await assignStandardTeam(project.id);
+  await assignStandardTeam(project.id, userId);
   await suggestDisciplineTeam(project.id, allTemplateIds, worksType);
 
   await db.auditLogEntry.create({

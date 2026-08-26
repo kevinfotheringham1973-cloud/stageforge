@@ -37,6 +37,11 @@ const CANDIDATES: Record<string, string[]> = {
   AUTHORISED_PERSON_VENTILATION: ["fiona.wallace@buildcare.example"],
   AUTHORISED_PERSON_MEDICAL_GASES: ["graeme.paterson@buildcare.example"],
   AUTHORISING_ENGINEER_ELECTRICAL: ["dennis.kelly@independent.example"],
+  // Fiona Wallace holds both the AP and AE appointments for Heating &
+  // Ventilation (confirmed 26 Aug 2026) — previously only her AP entry
+  // was here, so a project needing both showed AE as "still needs
+  // assignment" even though the same person already covers it.
+  AUTHORISING_ENGINEER_VENTILATION: ["fiona.wallace@buildcare.example"],
   CLINICAL_SAFETY_OFFICER: ["sarah.chen@staldwyn.example"],
   INFORMATION_GOVERNANCE_OFFICER: ["neil.forsyth@staldwyn.example"],
   PRINCIPAL_DESIGNER: ["ross.blair@buildcare.example"],
