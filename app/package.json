@@ -19,6 +19,7 @@
     "@anthropic-ai/sdk": "^0.117.1",
     "@auth/prisma-adapter": "^2.11.3",
     "@prisma/client": "^6.3.0",
+    "docx": "^9.7.1",
     "next": "^16.3.1",
     "next-auth": "^5.0.0-beta.32",
     "node-cron": "^4.6.0",

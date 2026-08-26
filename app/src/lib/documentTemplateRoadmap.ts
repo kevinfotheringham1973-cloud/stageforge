@@ -47,6 +47,21 @@ export const CORE_PROJECT_WIDE_TEMPLATES: DocumentTemplateRow[] = [
     gates: "Gate 4",
     autoFilledContent: "CDM works type, existing hazards, design hazards, site constraints",
     pmOwns: "Site-specific details & residual risks",
+    status: "live",
+  },
+  {
+    name: "Construction Phase Plan",
+    gates: "Gate 4 / Gate 5",
+    autoFilledContent:
+      "Site rules, welfare, communication & coordination arrangements, project directory, standard hazard list — carried forward from the PCI, GE 700 (CITB) structure",
+    pmOwns: "Method statements, phasing, contractor-specific arrangements",
+    status: "planned",
+  },
+  {
+    name: "F10 (HSE) Notification",
+    gates: "Gate 1 / Gate 4",
+    autoFilledContent: "Client, Principal Designer, Principal Contractor, project location, works description",
+    pmOwns: "Confirmed programme duration & workforce numbers",
     status: "planned",
   },
   {

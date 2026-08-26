@@ -353,6 +353,15 @@ export async function GateDetail({
         )}
         {d.description && <p className="mb-2 text-sm text-inkmuted">{d.description}</p>}
 
+        {d.key === "del.common_pre_construction_information" && canReplaceEvidence && (
+          <a
+            href={`/api/projects/${projectNumber}/pci-draft`}
+            className="mb-2 inline-block text-xs font-semibold text-accent hover:underline"
+          >
+            Generate PCI draft (.docx) — pre-filled from this project&rsquo;s own data, review and edit before uploading
+          </a>
+        )}
+
         {d.status === "EVIDENCED" && (
           <div className="flex flex-col gap-1">
             {d.evidenceFiles.map((f, i) => (
