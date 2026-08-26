@@ -3459,11 +3459,21 @@ async function main() {
         appliesToStageKeys: ["stage.handover"],
         appliesIfTags: ["lifting_equipment_affected"],
       },
+      // Four new safety-domain rules (26 Aug 2026): Work at Height, hot
+      // works, lone working, asbestos refurb/demolition survey. Authority
+      // choices, kept out of the stakeholder-facing description text
+      // above: hot works ties to FIRE_OFFICER, same as every other
+      // fire-domain rule in this set -- a hot-works permit is a
+      // fire-ignition control, not a generic H&S one. The other three
+      // stay on the default SRO override authority -- no SHTM/HTM scheme
+      // establishes a Trust-appointed AP for height, lone working, or
+      // asbestos the way it does for electrical/water/medical gases,
+      // same reasoning as comp.loler_thorough_examination above for lifts.
       {
         ruleSetId: scottishHealthCompliance.id,
         key: "comp.work_at_height_authorisation",
         label: "Work at Height risk assessment, RAMS and permit authorised before elevated/roof-level work starts",
-        description: "Applies wherever the works involve roof-level plant, external elevated access, or work above ground level (MEWP, scaffold, fragile-roof or edge-protection risk) — a distinct statutory duty from the general Designer's Risk Assessment under CDM, and from any system-specific isolation permit. No SHTM/HTM scheme establishes a Trust-appointed \"AP (Height)\" the way it does for electrical/water/medical gases, so this stays on the default SRO override authority, same reasoning as comp.loler_thorough_examination above.",
+        description: "Applies wherever the works involve roof-level plant, external elevated access, or work above ground level (MEWP, scaffold, fragile-roof or edge-protection risk) — a distinct statutory duty from the general Designer's Risk Assessment under CDM, and from any system-specific isolation permit.",
         ruleRef: "Work at Height Regulations 2005",
         blocksGate: true,
         appliesToStageKeys: ["stage.manufacturing_construction"],
@@ -3473,7 +3483,7 @@ async function main() {
         ruleSetId: scottishHealthCompliance.id,
         key: "comp.hot_works_permit",
         label: "Hot works permit authorised before welding/grinding/naked-flame work starts",
-        description: "Welding, grinding, brazing, and other naked-flame or spark-generating work is a distinct fire-ignition risk in an occupied healthcare building — a signed hot-works permit (isolation of the area, fire watch, extinguishing equipment) is required before work starts, on top of the general fire risk assessment. Tied to the Fire Officer, same authority as every other fire-domain rule in this set, not SRO.",
+        description: "Welding, grinding, brazing, and other naked-flame or spark-generating work is a distinct fire-ignition risk in an occupied healthcare building — a signed hot-works permit (isolation of the area, fire watch, extinguishing equipment) is required before work starts, on top of the general fire risk assessment.",
         ruleRef: "Fire (Scotland) Act 2005 / Joint Code of Practice on the Protection from Fire of Construction Sites — hot-work permit control",
         blocksGate: true,
         appliesToStageKeys: ["stage.manufacturing_construction"],
@@ -3484,7 +3494,7 @@ async function main() {
         ruleSetId: scottishHealthCompliance.id,
         key: "comp.lone_working_arrangements",
         label: "Lone working risk assessment and safe system of work confirmed for out-of-hours/isolated tasks",
-        description: "Out-of-hours, isolated-plant-room, or single-operative tasks need their own risk assessment and check-in/emergency-contact arrangement — a distinct duty from the general Designer's Risk Assessment or a task-specific method statement. No dedicated authority exists for this the way it does for electrical/water/fire, so it stays on the default SRO override authority.",
+        description: "Out-of-hours, isolated-plant-room, or single-operative tasks need their own risk assessment and check-in/emergency-contact arrangement — a distinct duty from the general Designer's Risk Assessment or a task-specific method statement.",
         ruleRef: "Management of Health and Safety at Work Regulations 1999, reg 3 / HSE INDG73 (Lone working)",
         blocksGate: true,
         appliesToStageKeys: ["stage.manufacturing_construction"],
