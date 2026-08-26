@@ -4,6 +4,7 @@ import { DELIVERY_FACING_ROLE_KEYS } from "@/lib/permissions";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { reinstateStage, setResourceAllocation } from "@/lib/actions";
 import { neededDisciplineRoleKeys } from "@/lib/disciplineTeam";
+import { constituentTemplateIds } from "@/lib/projectTemplates";
 import { SubmitButton } from "@/components/SubmitButton";
 
 /**
@@ -23,12 +24,21 @@ export default async function ProjectOverviewPage({
     where: { projectNumber },
     include: {
       template: { include: { stageTemplates: { orderBy: { order: "asc" } } } },
+      additionalTemplates: {
+        include: { template: { include: { stageTemplates: { orderBy: { order: "asc" } } } } },
+      },
       stages: { orderBy: { order: "asc" } },
       roleAssignments: { include: { role: true, user: true } },
       resourceAllocations: true,
     },
   });
   if (!project) notFound();
+
+  // A merged project (see ProjectAdditionalTemplate) is built from more
+  // than just its primary template — every "systems covered" / "which
+  // stages does this project's checklist define" computation below
+  // needs the full constituent set, not just project.template.
+  const constituentTemplates = [project.template, ...project.additionalTemplates.map((a) => a.template)];
 
   const roleKeys = await getCurrentUserRoleKeysForProject(project.id);
   const isPM = roleKeys.includes("PM");
@@ -50,7 +60,19 @@ export default async function ProjectOverviewPage({
     }));
 
   const instantiatedKeys = new Set(project.stages.map((s) => s.key));
-  const excludedTemplateStages = project.template.stageTemplates.filter((st) => !instantiatedKeys.has(st.key));
+  // Deduped by stage key across every constituent template — a stage
+  // key only one of two merged templates has excluded (already
+  // instantiated via the other) shouldn't show as "excluded from scope"
+  // just because it wasn't in the primary template's own list.
+  const seenStageKeys = new Set<string>();
+  const excludedTemplateStages = constituentTemplates
+    .flatMap((t) => t.stageTemplates)
+    .filter((st) => !instantiatedKeys.has(st.key))
+    .filter((st) => {
+      if (seenStageKeys.has(st.key)) return false;
+      seenStageKeys.add(st.key);
+      return true;
+    });
 
   // Discipline role requirements this project calls out (lib/
   // disciplineTeam.ts) but nobody's actually assigned to yet — either
@@ -59,7 +81,7 @@ export default async function ProjectOverviewPage({
   // department). Surfaced even without a name to put against it
   // (confirmed 24 Aug 2026), so the gap doesn't just silently disappear.
   const assignedRoleKeys = new Set(project.roleAssignments.map((a) => a.role.key));
-  const neededRoleKeys = await neededDisciplineRoleKeys(project.templateId, project.worksType);
+  const neededRoleKeys = await neededDisciplineRoleKeys(constituentTemplateIds(project), project.worksType);
   const unfilledRoleKeys = Array.from(neededRoleKeys).filter((k) => !assignedRoleKeys.has(k));
   const unfilledRoles =
     unfilledRoleKeys.length > 0
@@ -70,6 +92,22 @@ export default async function ProjectOverviewPage({
 
   return (
     <div className="flex flex-col gap-6">
+      {constituentTemplates.length > 1 && (
+        <div className="rounded-lg border border-rule bg-surface p-5">
+          <h2 className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Systems covered</h2>
+          <div className="flex flex-wrap gap-1.5">
+            {constituentTemplates.map((t) => (
+              <span
+                key={t.id}
+                className="rounded bg-accentsoft px-2 py-0.5 text-xs font-semibold text-accent"
+              >
+                {t.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="rounded-lg border border-rule bg-surface p-5">
         <h2 className="mb-3 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Team &amp; capacity</h2>
         {teamRows.length === 0 ? (
@@ -155,7 +193,7 @@ export default async function ProjectOverviewPage({
                   <div className="mt-1 text-sm text-inkmuted">Excluded from this project&rsquo;s scope</div>
                 </div>
                 {isPM ? (
-                  <form action={reinstateStage.bind(null, project.id, st.id, project.projectNumber)}>
+                  <form action={reinstateStage.bind(null, project.id, st.key, project.projectNumber)}>
                     <SubmitButton
                       pendingText="Reinstating…"
                       className="rounded-full border border-rule px-3 py-1.5 text-xs font-semibold text-accent hover:bg-surface2"

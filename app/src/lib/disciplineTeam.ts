@@ -71,9 +71,9 @@ const STANDING_TEAM_AUTHORITIES = new Set(["PM", "SRO", "COMPLIANCE_OFFICER", "F
  * "the roles should be added if the project calls them out... at least
  * the role requirement" even without a name to put against it yet).
  */
-export async function neededDisciplineRoleKeys(templateId: string, worksType: string): Promise<Set<string>> {
+export async function neededDisciplineRoleKeys(templateIds: string[], worksType: string): Promise<Set<string>> {
   const deliverableTemplates = await db.deliverableTemplate.findMany({
-    where: { gateTemplate: { stageTemplate: { templateId } } },
+    where: { gateTemplate: { stageTemplate: { templateId: { in: templateIds } } } },
     select: { bypassAuthority: true },
   });
 
@@ -100,8 +100,8 @@ export async function neededDisciplineRoleKeys(templateId: string, worksType: st
  * changed in between) — upserts are idempotent and this never touches
  * a row a human already added.
  */
-export async function suggestDisciplineTeam(projectId: string, templateId: string, worksType: string): Promise<void> {
-  const neededRoleKeys = await neededDisciplineRoleKeys(templateId, worksType);
+export async function suggestDisciplineTeam(projectId: string, templateIds: string[], worksType: string): Promise<void> {
+  const neededRoleKeys = await neededDisciplineRoleKeys(templateIds, worksType);
 
   for (const roleKey of neededRoleKeys) {
     const candidateEmails = CANDIDATES[roleKey];
