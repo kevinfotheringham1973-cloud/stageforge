@@ -119,7 +119,7 @@ async function main() {
     data: { name: "Serco Health : FVRH Scotland", type: "FM_CONTRACTOR" },
   });
   const buildCareNorth = await db.department.create({
-    data: { companyId: buildCare.id, name: "North Region" },
+    data: { companyId: buildCare.id, name: "Estates & Facilities" },
   });
   const buildCareCompliance = await db.department.create({
     data: { companyId: buildCare.id, name: "Central Compliance" },
