@@ -480,16 +480,25 @@ export async function GateDetail({
 
         {d.status === "EVIDENCED" && (
           <div className="flex flex-col gap-1">
-            {d.evidenceFiles.map((f, i) => (
-              <div key={f.id} className="font-mono text-xs text-inkmuted">
-                {i === 0 ? (
-                  <span className="font-bold text-ok">current</span>
-                ) : (
-                  <span className="text-inkmuted">v{f.version}, superseded</span>
-                )}{" "}
-                {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
-              </div>
-            ))}
+            {(() => {
+              // Grouped by version, not index (26 Aug 2026, "multiple
+              // file inputs") — a merged deliverable's evidence batch
+              // is however many files were uploaded in ONE submission,
+              // all sharing that submission's version number, so every
+              // file in the latest version is "current" together, not
+              // just the first one.
+              const maxVersion = Math.max(...d.evidenceFiles.map((f) => f.version));
+              return d.evidenceFiles.map((f) => (
+                <div key={f.id} className="font-mono text-xs text-inkmuted">
+                  {f.version === maxVersion ? (
+                    <span className="font-bold text-ok">current</span>
+                  ) : (
+                    <span className="text-inkmuted">v{f.version}, superseded</span>
+                  )}{" "}
+                  {f.fileName} &middot; uploaded {f.uploadedAt.toLocaleDateString("en-GB")}
+                </div>
+              ));
+            })()}
             <SharePointEvidenceLocation
               project={gate.stage.project}
               stageName={gate.stage.name}
@@ -503,7 +512,8 @@ export async function GateDetail({
                 <input
                   type="file"
                   name="file"
-                  aria-label={`Replacement evidence file for ${d.label}`}
+                  multiple
+                  aria-label={`Replacement evidence file(s) for ${d.label}`}
                   required
                   className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
                 />
@@ -534,7 +544,8 @@ export async function GateDetail({
                 <input
                   type="file"
                   name="file"
-                  aria-label={`Evidence file for ${d.label}`}
+                  multiple
+                  aria-label={`Evidence file(s) for ${d.label}`}
                   required
                   className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm file:mr-2 file:rounded file:border-0 file:bg-accentsoft file:px-2 file:py-1 file:text-xs file:font-semibold file:text-accent"
                 />
