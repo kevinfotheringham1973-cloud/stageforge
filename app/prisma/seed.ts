@@ -76,6 +76,17 @@ async function main() {
     { key: "AUTHORISING_ENGINEER_ELECTRICAL", name: "AE (Electrical)", category: "AUTHORISED_PERSON_ENGINEER" as const },
     { key: "AUTHORISING_ENGINEER_MEDICAL_GASES", name: "AE (Medical Gases)", category: "AUTHORISED_PERSON_ENGINEER" as const },
     { key: "AUTHORISING_ENGINEER_VENTILATION", name: "AE (Heating & Ventilation)", category: "AUTHORISED_PERSON_ENGINEER" as const },
+    // Distinct statutory duty under PSSR (Pressure Systems Safety
+    // Regulations 2000) and LOLER (Lifting Operations and Lifting
+    // Equipment Regulations 1998) — found missing 26 Aug 2026 while
+    // cross-checking "Project Roles and Responsibilities Template.docx"
+    // against the live deliverables: several boiler/steam/compressed
+    // air/lift items already named "a competent person's written
+    // scheme"/"thorough examination" in their own description text, but
+    // were gated on COMPLIANCE_OFFICER or SRO — neither of whom actually
+    // holds this competency. Same isExactMatchAuthority treatment as
+    // Fire Officer/AP: SRO has no standing to substitute for it.
+    { key: "COMPETENT_PERSON", name: "Competent Person (PSSR/LOLER)", isExactMatchAuthority: true, category: "AUTHORISED_PERSON_ENGINEER" as const },
     { key: "PRINCIPAL_DESIGNER", name: "Principal Designer", category: "STATUTORY_OFFICER" as const },
     // The site NHS Fire Officer — the only authority that can approve
     // or reject fire-related compliance (confirmed 20 Aug
@@ -332,7 +343,8 @@ async function main() {
       | "AUTHORISED_PERSON_VENTILATION"
       | "AUTHORISED_PERSON_MEDICAL_GASES"
       | "CLINICAL_SAFETY_OFFICER"
-      | "INFORMATION_GOVERNANCE_OFFICER";
+      | "INFORMATION_GOVERNANCE_OFFICER"
+      | "COMPETENT_PERSON";
   };
 
   async function createStageAndGateTemplates(templateId: string) {
@@ -1166,7 +1178,7 @@ async function main() {
       { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "SHTM 04-01." },
       { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00, SHTM 04-01 Part B." },
       { key: "del.boiler_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with manufacturer instructions for new boilers, temporary boilers, valves and filtration equipment" },
-      { key: "del.boiler_pssr_written_scheme", label: "PSSR written scheme of examination updates for the new boilers (pressure systems)", description: "Pressure Systems Safety Regulations 2000 — a boiler is a pressure system requiring a competent person's written scheme before use.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.boiler_pssr_written_scheme", label: "PSSR written scheme of examination updates for the new boilers (pressure systems)", description: "Pressure Systems Safety Regulations 2000 — a boiler is a pressure system requiring a competent person's written scheme before use.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
       { key: "del.boiler_training_records", label: "Training & demonstration records for Serco / estates staff (new boilers & isolation procedures)", description: "SHTM 00." },
       { key: "del.common_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
@@ -1744,14 +1756,14 @@ async function main() {
       { key: "del.lift_training_records", label: "Training & demonstration records for estates staff and rescue teams", description: "SHTM 08-02." },
       { key: "del.common_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
       { key: "del.common_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
-      { key: "del.lift_loler_thorough_examination", label: "Statutory thorough examination (LOLER) prior to use", description: "A lift is lifting equipment under LOLER — a competent person's thorough examination is a separate statutory step from SHTM 08-02/BS EN 81 commissioning.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.lift_loler_thorough_examination", label: "Statutory thorough examination (LOLER) prior to use", description: "A lift is lifting equipment under LOLER — a competent person's thorough examination is a separate statutory step from SHTM 08-02/BS EN 81 commissioning.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.lift_formal_acceptance", label: "Formal acceptance by client / Responsible Person", description: "SHTM 08-02." },
     ],
     // Gate 7 — Use
     [
       { key: "del.lift_soft_landings_review", label: "Soft landings / post-occupancy review (performance, reliability, user feedback)", description: "SHTM 00." },
       { key: "del.lift_updated_ppm_regime", label: "Updated maintenance regime and planned preventive maintenance schedule", description: "SHTM 08-02." },
-      { key: "del.lift_ongoing_loler_examination_records", label: "Ongoing thorough examination and inspection records (LOLER)", description: "Statutory requirement under LOLER — distinct from routine SHTM planned maintenance.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.lift_ongoing_loler_examination_records", label: "Ongoing thorough examination and inspection records (LOLER)", description: "Statutory requirement under LOLER — distinct from routine SHTM planned maintenance.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.common_defects_liability_final_account", label: "Defects liability records & final account" },
       { key: "del.common_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
     ],
@@ -2247,7 +2259,7 @@ async function main() {
       { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
       { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works", description: "Clear boundaries for what is and isn't included in the appointed contractor's price." },
       { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
-      { key: "del.steam_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.steam_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.steam_water_treatment_blowdown_strategy", label: "Water treatment / chemical dosing / blowdown strategy", description: "Manufacturer / BESSafe principles." },
       { key: "del.steam_control_strategy_bms_integration", label: "Control strategy, sequences and BMS integration" },
       { key: "del.steam_electrical_design", label: "Electrical design associated with boilers, pumps and controls", description: "SHTM 06 series." },
@@ -2255,7 +2267,7 @@ async function main() {
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, PSSR.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
-      { key: "del.steam_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.steam_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.common_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
       { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
@@ -2266,7 +2278,7 @@ async function main() {
       { key: "del.common_method_statements_compliance_gated", label: "Contractor's detailed Method Statements and full RAMS", description: "Critical for process users — cannot be bypassed at PM level. Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates", description: "PED / BS EN standards." },
       { key: "del.steam_boilers_pipework_prv_install", label: "Installation of boilers, pipework, PRVs, traps, insulation and controls" },
-      { key: "del.steam_ndt_pressure_welding_records", label: "NDT, pressure testing and welding records", description: "Critical life-safety verification for a pressure system, per PSSR / BS standards — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.steam_ndt_pressure_welding_records", label: "NDT, pressure testing and welding records", description: "Critical life-safety verification for a pressure system, per PSSR / BS standards — cannot be bypassed at PM level.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.steam_water_treatment_install_dosing", label: "Water treatment system installation and initial dosing records" },
       { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
       { key: "del.steam_temp_steam_hybrid_arrangements", label: "Temporary steam / hybrid working arrangements (if phased)", description: "Essential where required — cannot be bypassed at PM level.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -2275,9 +2287,9 @@ async function main() {
     // Gate 6 — Handover
     [
       { key: "del.steam_full_commissioning_validation_records", label: "Full commissioning & validation records (pressure, temperature, safety device function, control sequences)", description: "Manufacturer data, CIBSE." },
-      { key: "del.steam_safety_valve_setting_certification", label: "Safety valve setting and certification", description: "Critical life-safety verification for a pressure system, per PSSR — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.steam_safety_valve_setting_certification", label: "Safety valve setting and certification", description: "Critical life-safety verification for a pressure system, per PSSR — cannot be bypassed at PM level.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.steam_performance_testing_boilers_distribution", label: "Performance testing of boilers and distribution" },
-      { key: "del.steam_updated_written_scheme", label: "Updated Written Scheme of Examination", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.steam_updated_written_scheme", label: "Updated Written Scheme of Examination", description: "PSSR.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "PSSR." },
       { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.steam_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with PSSR, PED, relevant BS EN standards and manufacturer requirements" },
@@ -2290,7 +2302,7 @@ async function main() {
     // Gate 7 — Use
     [
       { key: "del.steam_soft_landings_review", label: "Soft landings / post-occupancy review (performance, reliability, safety, energy)", description: "SHTM 00." },
-      { key: "del.steam_updated_written_scheme_inspection_regime", label: "Updated Written Scheme of Examination and inspection regime", description: "Statutory requirement under PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.steam_updated_written_scheme_inspection_regime", label: "Updated Written Scheme of Examination and inspection regime", description: "Statutory requirement under PSSR.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.steam_ongoing_treatment_maintenance_examination", label: "Ongoing water treatment, maintenance and statutory examination programme", description: "Statutory requirement under PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_defects_liability_final_account", label: "Defects liability records & final account" },
       { key: "del.common_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
@@ -2902,7 +2914,7 @@ async function main() {
       { key: "del.compressedair_detailed_specifications", label: "Detailed specifications (compressors, receivers, dryers, filters, pipework, valves, regulators, controls)", description: "Relevant BS EN standards." },
       { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.compressedair_air_treatment_quality_spec", label: "Air treatment and quality specification (dryness, filtration, oil content)", description: "ISO 8573, where applicable." },
-      { key: "del.compressedair_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.compressedair_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.compressedair_control_strategy_bms_integration", label: "Control strategy, sequencing and BMS integration (if required)" },
       { key: "del.compressedair_electrical_design", label: "Electrical design associated with compressors and controls", description: "SHTM 06 series." },
       { key: "del.compressedair_noise_ventilation_heat_rejection", label: "Noise, ventilation and heat rejection design" },
@@ -2910,7 +2922,7 @@ async function main() {
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, PSSR.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
-      { key: "del.compressedair_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.compressedair_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.common_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
       { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
@@ -2928,9 +2940,9 @@ async function main() {
     // Gate 6 — Handover
     [
       { key: "del.compressedair_full_commissioning_validation_records", label: "Full commissioning & validation records (pressure, flow, air quality, control sequences, safety devices)", description: "Manufacturer data, CIBSE." },
-      { key: "del.compressedair_safety_valve_setting_certification", label: "Safety valve setting and certification", description: "Critical life-safety verification for a pressure system, per PSSR — cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.compressedair_safety_valve_setting_certification", label: "Safety valve setting and certification", description: "Critical life-safety verification for a pressure system, per PSSR — cannot be bypassed at PM level.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.compressedair_air_quality_verification_testing", label: "Air quality verification testing (particles, humidity, oil content as applicable)", description: "ISO 8573, where relevant." },
-      { key: "del.compressedair_updated_written_scheme", label: "Updated Written Scheme of Examination (if applicable)", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.compressedair_updated_written_scheme", label: "Updated Written Scheme of Examination (if applicable)", description: "PSSR.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules", description: "PSSR." },
       { key: "del.common_om_manuals", label: "Comprehensive O&M manuals", description: "SHTM 00." },
       { key: "del.compressedair_manufacturer_instructions_compliance_evidence", label: "Evidence of compliance with PSSR, PED, relevant BS EN standards, ISO 8573 (where applicable) and manufacturer requirements" },
@@ -2943,7 +2955,7 @@ async function main() {
     // Gate 7 — Use
     [
       { key: "del.compressedair_soft_landings_review", label: "Soft landings / post-occupancy review (performance, reliability, air quality, energy, user feedback)", description: "SHTM 00." },
-      { key: "del.compressedair_updated_written_scheme_inspection_regime", label: "Updated Written Scheme of Examination and inspection regime (if applicable)", description: "Statutory requirement under PSSR, where it applies.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.compressedair_updated_written_scheme_inspection_regime", label: "Updated Written Scheme of Examination and inspection regime (if applicable)", description: "Statutory requirement under PSSR, where it applies.", bypassAuthority: "COMPETENT_PERSON" },
       { key: "del.compressedair_ongoing_maintenance_examination", label: "Ongoing maintenance, filter/dryer servicing and statutory examination programme", description: "PSSR / manufacturer, where applicable.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_defects_liability_final_account", label: "Defects liability records & final account" },
       { key: "del.common_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
@@ -3448,6 +3460,7 @@ async function main() {
         label: "Written Scheme of Examination in place for pressure systems",
         description: "Boilers, steam plant, and compressed air systems above the PSSR threshold are pressure systems — a competent person's written scheme of examination must cover them before they're brought into service, distinct from and in addition to any SHTM water-safety or electrical compliance.",
         ruleRef: "Pressure Systems Safety Regulations 2000 (PSSR), reg 8",
+        overrideAuthority: "COMPETENT_PERSON",
         blocksGate: true,
         appliesToStageKeys: ["stage.handover"],
         appliesIfTags: ["pressure_systems_affected"],
@@ -3468,6 +3481,7 @@ async function main() {
         label: "LOLER thorough examination completed before the lift is brought into use",
         description: "A lift is lifting equipment under LOLER — a competent person's thorough examination is a separate statutory step from SHTM 08-02/BS EN 81 commissioning, and must be current before the lift is relied on.",
         ruleRef: "Lifting Operations and Lifting Equipment Regulations 1998 (LOLER), reg 9",
+        overrideAuthority: "COMPETENT_PERSON",
         blocksGate: true,
         appliesToStageKeys: ["stage.handover"],
         appliesIfTags: ["lifting_equipment_affected"],
