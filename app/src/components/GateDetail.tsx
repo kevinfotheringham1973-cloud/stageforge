@@ -45,6 +45,20 @@ const APPROVAL_BUCKET_LABELS: Record<string, string> = {
   VARIATION: "Variation",
 };
 
+// Every deliverable key that means "the project's Pre-Construction
+// Information" — most templates share del.common_pre_construction_information
+// (canonicalized in #82), but Ward Refresh, MHU, Theatre Refresh and
+// Ventilation kept their own key because their label adds "& input to
+// Construction Phase Plan". The PCI auto-draft link (below) needs to
+// recognise all of them, not just the common one.
+const PCI_DELIVERABLE_KEYS = new Set([
+  "del.common_pre_construction_information",
+  "del.wardrefresh_pre_construction_information",
+  "del.mhu_pre_construction_information",
+  "del.theatrerefresh_pre_construction_information",
+  "del.ventilation_pre_construction_information",
+]);
+
 function toDateInputValue(d: Date | null): string {
   return d ? d.toISOString().slice(0, 10) : "";
 }
@@ -368,7 +382,7 @@ export async function GateDetail({
         )}
         {d.description && <p className="mb-2 text-sm text-inkmuted">{d.description}</p>}
 
-        {d.key === "del.common_pre_construction_information" && canReplaceEvidence && (
+        {PCI_DELIVERABLE_KEYS.has(d.key) && canReplaceEvidence && (
           <a
             href={`/api/projects/${projectNumber}/pci-draft`}
             className="mb-2 inline-block text-xs font-semibold text-accent hover:underline"
