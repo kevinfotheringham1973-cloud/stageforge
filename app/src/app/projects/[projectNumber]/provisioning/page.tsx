@@ -44,6 +44,7 @@ export default async function ProvisioningReviewPage({
     include: {
       createdBy: true,
       template: true,
+      additionalTemplates: { include: { template: true } },
       provisioningReviews: { orderBy: { createdAt: "desc" }, include: { reviewedBy: true } },
     },
   });
@@ -80,8 +81,17 @@ export default async function ProvisioningReviewPage({
       </div>
 
       <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
-        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Selected system</h2>
-        <div className="mb-3 text-sm font-semibold">{project.template.name}</div>
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+          {project.additionalTemplates.length > 0 ? "Selected systems" : "Selected system"}
+        </h2>
+        <div className="mb-3 flex flex-wrap gap-1.5 text-sm font-semibold">
+          <span>{project.template.name}</span>
+          {project.additionalTemplates.map((a) => (
+            <span key={a.id} className="text-inkmuted">
+              &middot; {a.template.name}
+            </span>
+          ))}
+        </div>
         <div className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Proposed tags</div>
         <div className="mb-3 flex flex-wrap gap-1.5">
           {project.tags.length > 0 ? (

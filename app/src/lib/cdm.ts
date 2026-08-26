@@ -61,15 +61,18 @@ const HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS = new Set([
  * The tag set actually used to match ComplianceRuleTemplate.appliesIfTags
  * at Stage instantiation — a project's free-text tags, plus whichever
  * CDM tags its worksType answer implies, plus the HAI-SCRIBE
- * high-intensity tag if its Template is one of the five. Callers that
+ * high-intensity tag if ANY of its constituent Templates is one of the
+ * high-intensity ones (a project can now be built from more than one
+ * Template — see ProjectAdditionalTemplate in schema.prisma — so this
+ * takes every constituent template's key, not just one). Callers that
  * instantiate stages (approveProvisioning, reinstateStage, seed.ts)
- * pass this instead of project.tags directly. templateKey is optional
+ * pass this instead of project.tags directly. templateKeys is optional
  * only so existing callers that haven't been threaded through yet
- * don't break — always pass it where the Template is known.
+ * don't break — always pass it where the Templates are known.
  */
 export function effectiveComplianceTags(
   project: { tags: string[]; worksType: CdmWorksType },
-  templateKey?: string
+  templateKeys?: string[]
 ): string[] {
   const derivedTags: string[] = [];
   if (project.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR") {
@@ -78,7 +81,7 @@ export function effectiveComplianceTags(
   if (project.worksType === "BUILDING_MODIFICATION") {
     derivedTags.push(CDM_BUILDING_MODIFICATION_TAG);
   }
-  if (templateKey && HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS.has(templateKey)) {
+  if (templateKeys?.some((k) => HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS.has(k))) {
     derivedTags.push(HAISCRIBE_HIGH_INTENSITY_TAG);
   }
   return [...project.tags, ...derivedTags];

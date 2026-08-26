@@ -33,6 +33,7 @@ import { issueNextProjectNumber } from "./projectNumber";
 import { assignStandardTeam } from "./standardTeam";
 import { suggestDisciplineTeam } from "./disciplineTeam";
 import { resolveWorksPackageId } from "./worksPackages";
+import { assertSameSectorVariant, constituentTemplateIds, loadConstituentTemplatesForInstantiation } from "./projectTemplates";
 import { sendScheduledReport } from "./scheduledReportSender";
 import { evidenceFolderPath, isSharePointConfigured, uploadEvidenceFile } from "./sharepoint";
 
@@ -830,7 +831,7 @@ export async function rejectGate(gateId: string, projectNumber: string, formData
  */
 export async function reinstateStage(
   projectId: string,
-  stageTemplateId: string,
+  stageKey: string,
   projectNumber: string
 ) {
   const userId = await getCurrentUserId();
@@ -841,21 +842,20 @@ export async function reinstateStage(
     throw new Error("Only the Project Manager can reinstate a stage.");
   }
 
-  const stageTemplate = await db.stageTemplate.findUniqueOrThrow({
-    where: { id: stageTemplateId },
-    include: { gateTemplate: { include: { deliverableTemplates: true } }, template: true },
-  });
-  if (!stageTemplate.gateTemplate) {
-    throw new Error("This stage template has no gate template — nothing to reinstate.");
-  }
-
   const project = await db.project.findUniqueOrThrow({
     where: { id: projectId },
-    select: { tags: true, worksType: true },
+    include: { additionalTemplates: true },
   });
 
+  const templates = await loadConstituentTemplatesForInstantiation(db, project);
+  assertSameSectorVariant(templates);
+  const matchingStageTemplates = templates.flatMap((t) => t.stageTemplates).filter((st) => st.key === stageKey);
+  if (matchingStageTemplates.length === 0) {
+    throw new Error("This stage isn't defined by any of this project's templates.");
+  }
+
   const alreadyInstantiated = await db.stage.findFirst({
-    where: { projectId, key: stageTemplate.key },
+    where: { projectId, key: stageKey },
   });
   if (alreadyInstantiated) {
     throw new Error("This stage is already part of the project.");
@@ -866,15 +866,15 @@ export async function reinstateStage(
 
   const { stage } = await instantiateStage(db, {
     projectId,
-    projectTags: effectiveComplianceTags(project, stageTemplate.template.key),
-    sectorVariantId: stageTemplate.template.sectorVariantId,
+    projectTags: effectiveComplianceTags(project, templates.map((t) => t.key)),
+    sectorVariantId: templates[0]!.sectorVariantId,
     order: nextOrder,
-    stageTemplate,
+    stageTemplates: matchingStageTemplates,
   });
 
   await db.project.update({
     where: { id: projectId },
-    data: { includedStageKeys: { push: stageTemplate.key } },
+    data: { includedStageKeys: { push: stageKey } },
   });
 
   await db.auditLogEntry.create({
@@ -908,12 +908,6 @@ export async function createProvisioningDraft(formData: FormData) {
   const brief = String(formData.get("brief") ?? "").trim();
   const templateId = String(formData.get("templateId") ?? "").trim();
   const worksType = String(formData.get("worksType") ?? "");
-  // "There are times when multiple systems are required" (21 Aug
-  // 2026) — the works-package box doubles as a bundler: any additional
-  // systems checked there become sibling DRAFT projects in the same
-  // package as this one, created in the same submission. Each still
-  // goes through its own Compliance Officer review before going live —
-  // this only replaces re-filling the form once per system.
   const additionalTemplateIds = formData
     .getAll("additionalTemplateIds")
     .map((v) => String(v).trim())
@@ -933,101 +927,161 @@ export async function createProvisioningDraft(formData: FormData) {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
 
-  // Works Package (21 Aug 2026): a hospital runs 24/7, so extra
-  // opportunistic work often bundles into the same disruption window as
-  // the project that triggered it — a purely organisational link between
-  // otherwise-independent, discipline-pure Projects, never a merge of
-  // their checklists. Optional for a solo project; mandatory the moment
-  // additional systems are being bundled in, since that's what links
-  // them — auto-named after this project (22 Aug 2026) so
-  // bundling never depends on the PM having typed a package name.
-  const resolvedWorksPackage = await resolveWorksPackageId(
-    db,
-    userId,
-    formData,
-    additionalTemplateIds.length > 0 ? name : undefined
-  );
+  // The only signal distinguishing "brand-new project" from "add a
+  // system to an already-existing Works Package" (reached from that
+  // package's own detail page, which preselects it as a hidden field —
+  // see NewProjectForm.tsx) is whether this form submission carries an
+  // explicit worksPackageId. That other entry point keeps its original
+  // sibling-project behavior untouched below; a brand-new project's
+  // "additional systems" checkboxes instead merge into this one Project
+  // (26 Aug 2026, "true merge" — see ProjectAdditionalTemplate in
+  // schema.prisma for why this is a deliberate reversal of the
+  // WorksPackage model's "never a merge of checklists" comment for
+  // just this one entry point).
+  const explicitWorksPackageId = String(formData.get("worksPackageId") ?? "").trim();
 
-  const template = await db.template.findUniqueOrThrow({
-    where: { id: templateId },
-    include: { stageTemplates: { orderBy: { order: "asc" } } },
-  });
+  if (explicitWorksPackageId) {
+    // Works Package (21 Aug 2026): a hospital runs 24/7, so extra
+    // opportunistic work often bundles into the same disruption window as
+    // the project that triggered it — a purely organisational link between
+    // otherwise-independent, discipline-pure Projects, never a merge of
+    // their checklists. "There are times when multiple systems are
+    // required" (21 Aug 2026) — the works-package box doubles as a
+    // bundler: any additional systems checked there become sibling DRAFT
+    // projects in the same package as this one, created in the same
+    // submission. Each still goes through its own Compliance Officer
+    // review before going live — this only replaces re-filling the form
+    // once per system.
+    const resolvedWorksPackage = await resolveWorksPackageId(
+      db,
+      userId,
+      formData,
+      additionalTemplateIds.length > 0 ? name : undefined
+    );
 
-  const match = await matchComplianceTags(db, templateId, brief);
-
-  const projectNumber = await issueNextProjectNumber();
-
-  const project = await db.project.create({
-    data: {
-      projectNumber,
-      name,
-      templateId: template.id,
-      worksPackageId: resolvedWorksPackage?.id ?? null,
-      // Every RIBA-aligned Template shares the same stage keys (PRD.html
-      // §06 decided flag) — default to all of them, per §05's "default
-      // to all 8, editable later" resolution.
-      includedStageKeys: template.stageTemplates.map((st) => st.key),
-      tags: match.tags,
-      worksType,
-      status: "DRAFT",
-      createdById: userId,
-      provisioningBrief: brief,
-      provisioningMatchReasoning: match.reasoning,
-    },
-  });
-
-  // The standing hospital team (lib/standardTeam.ts), not just the
-  // creator as PM — a project no longer starts with every other role
-  // (Sponsor, SRO, Compliance Officer, Finance, ...) simply missing
-  // until someone notices and fills it in by hand.
-  await assignStandardTeam(project.id);
-  // Discipline-specific roster (lib/disciplineTeam.ts) — AP/AE, Clinical
-  // Safety/Information Governance, Principal Designer — suggested from
-  // what this template's own deliverables actually gate on. Re-run at
-  // approveProvisioning too, in case the template changes between now
-  // and then; upserts, so running it twice is harmless.
-  await suggestDisciplineTeam(project.id, template.id, worksType);
-
-  await db.auditLogEntry.create({
-    data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
-  });
-
-  for (const extraTemplateId of additionalTemplateIds) {
-    const extraTemplate = await db.template.findUniqueOrThrow({
-      where: { id: extraTemplateId },
+    const template = await db.template.findUniqueOrThrow({
+      where: { id: templateId },
       include: { stageTemplates: { orderBy: { order: "asc" } } },
     });
-    const extraMatch = await matchComplianceTags(db, extraTemplateId, brief);
-    const extraProjectNumber = await issueNextProjectNumber();
 
-    const extraProject = await db.project.create({
+    const match = await matchComplianceTags(db, templateId, brief);
+
+    const projectNumber = await issueNextProjectNumber();
+
+    const project = await db.project.create({
       data: {
-        projectNumber: extraProjectNumber,
-        name: `${resolvedWorksPackage!.name} — ${extraTemplate.name}`,
-        templateId: extraTemplate.id,
-        worksPackageId: resolvedWorksPackage!.id,
-        includedStageKeys: extraTemplate.stageTemplates.map((st) => st.key),
-        tags: extraMatch.tags,
+        projectNumber,
+        name,
+        templateId: template.id,
+        worksPackageId: resolvedWorksPackage?.id ?? null,
+        // Every RIBA-aligned Template shares the same stage keys (PRD.html
+        // §06 decided flag) — default to all of them, per §05's "default
+        // to all 8, editable later" resolution.
+        includedStageKeys: template.stageTemplates.map((st) => st.key),
+        tags: match.tags,
         worksType,
         status: "DRAFT",
         createdById: userId,
         provisioningBrief: brief,
-        provisioningMatchReasoning: extraMatch.reasoning,
+        provisioningMatchReasoning: match.reasoning,
       },
     });
 
-    await assignStandardTeam(extraProject.id);
-    await suggestDisciplineTeam(extraProject.id, extraTemplate.id, worksType);
+    // The standing hospital team (lib/standardTeam.ts), not just the
+    // creator as PM — a project no longer starts with every other role
+    // (Sponsor, SRO, Compliance Officer, Finance, ...) simply missing
+    // until someone notices and fills it in by hand.
+    await assignStandardTeam(project.id);
+    // Discipline-specific roster (lib/disciplineTeam.ts) — AP/AE, Clinical
+    // Safety/Information Governance, Principal Designer — suggested from
+    // what this template's own deliverables actually gate on. Re-run at
+    // approveProvisioning too, in case the template changes between now
+    // and then; upserts, so running it twice is harmless.
+    await suggestDisciplineTeam(project.id, [template.id], worksType);
 
     await db.auditLogEntry.create({
-      data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: extraProject.id },
+      data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
     });
+
+    for (const extraTemplateId of additionalTemplateIds) {
+      const extraTemplate = await db.template.findUniqueOrThrow({
+        where: { id: extraTemplateId },
+        include: { stageTemplates: { orderBy: { order: "asc" } } },
+      });
+      const extraMatch = await matchComplianceTags(db, extraTemplateId, brief);
+      const extraProjectNumber = await issueNextProjectNumber();
+
+      const extraProject = await db.project.create({
+        data: {
+          projectNumber: extraProjectNumber,
+          name: `${resolvedWorksPackage!.name} — ${extraTemplate.name}`,
+          templateId: extraTemplate.id,
+          worksPackageId: resolvedWorksPackage!.id,
+          includedStageKeys: extraTemplate.stageTemplates.map((st) => st.key),
+          tags: extraMatch.tags,
+          worksType,
+          status: "DRAFT",
+          createdById: userId,
+          provisioningBrief: brief,
+          provisioningMatchReasoning: extraMatch.reasoning,
+        },
+      });
+
+      await assignStandardTeam(extraProject.id);
+      await suggestDisciplineTeam(extraProject.id, [extraTemplate.id], worksType);
+
+      await db.auditLogEntry.create({
+        data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: extraProject.id },
+      });
+    }
+
+    if (additionalTemplateIds.length > 0 && resolvedWorksPackage) {
+      revalidatePath("/");
+      redirect(`/works-packages/${resolvedWorksPackage.id}`);
+    }
+
+    redirect(`/projects/${projectNumber}/provisioning`);
   }
 
-  if (additionalTemplateIds.length > 0 && resolvedWorksPackage) {
-    revalidatePath("/");
-    redirect(`/works-packages/${resolvedWorksPackage.id}`);
-  }
+  // Brand-new-project MERGE path: every checked "additional system"
+  // folds into this one Project instead of spawning a sibling.
+  const allTemplateIds = [templateId, ...additionalTemplateIds];
+  const templates = await db.template.findMany({
+    where: { id: { in: allTemplateIds } },
+    include: { stageTemplates: { orderBy: { order: "asc" } } },
+  });
+  assertSameSectorVariant(templates);
+
+  const primaryTemplate = templates.find((t) => t.id === templateId)!;
+  const matches = await Promise.all(templates.map((t) => matchComplianceTags(db, t.id, brief)));
+  const tags = Array.from(new Set(matches.flatMap((m) => m.tags))).sort();
+  const reasoning = templates.map((t, i) => `[${t.name}] ${matches[i]!.reasoning}`).join("\n\n");
+  const includedStageKeys = Array.from(new Set(templates.flatMap((t) => t.stageTemplates.map((st) => st.key))));
+
+  const projectNumber = await issueNextProjectNumber();
+  const project = await db.project.create({
+    data: {
+      projectNumber,
+      name,
+      templateId: primaryTemplate.id,
+      worksPackageId: null,
+      includedStageKeys,
+      tags,
+      worksType,
+      status: "DRAFT",
+      createdById: userId,
+      provisioningBrief: brief,
+      provisioningMatchReasoning: reasoning,
+      additionalTemplates: { create: additionalTemplateIds.map((id) => ({ templateId: id })) },
+    },
+  });
+
+  await assignStandardTeam(project.id);
+  await suggestDisciplineTeam(project.id, allTemplateIds, worksType);
+
+  await db.auditLogEntry.create({
+    data: { actorId: userId, action: "project.provisioning_drafted", entityType: "Project", entityId: project.id },
+  });
 
   redirect(`/projects/${projectNumber}/provisioning`);
 }
@@ -1046,10 +1100,21 @@ export async function reviseProvisioningBrief(projectId: string, projectNumber: 
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
 
-  const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
+  const project = await db.project.findUniqueOrThrow({ where: { id: projectId }, include: { additionalTemplates: true } });
   if (project.status !== "DRAFT") throw new Error("This project is no longer a draft.");
   if (project.createdById !== userId) {
     throw new Error("Only the project's creator can revise the description.");
+  }
+  if (project.additionalTemplates.length > 0) {
+    // This draft was created as a merge of multiple systems (see
+    // ProjectAdditionalTemplate) — this form only edits the primary
+    // template, so guard against picking one that's incompatible with
+    // the additional templates already merged in.
+    const newConstituents = await db.template.findMany({
+      where: { id: { in: [templateId, ...project.additionalTemplates.map((a) => a.templateId)] } },
+      select: { name: true, sectorVariantId: true },
+    });
+    assertSameSectorVariant(newConstituents);
   }
 
   const match = await matchComplianceTags(db, templateId, brief);
@@ -1093,12 +1158,24 @@ export async function updateProvisioningDraft(projectId: string, projectNumber: 
     throw new Error("Only a Compliance Officer can override a provisioning draft's proposed match.");
   }
 
-  const project = await db.project.findUniqueOrThrow({ where: { id: projectId } });
+  const project = await db.project.findUniqueOrThrow({ where: { id: projectId }, include: { additionalTemplates: true } });
   if (project.status !== "DRAFT") throw new Error("This project is no longer a draft.");
+
+  const nextTemplateId = templateId || project.templateId;
+  if (project.additionalTemplates.length > 0) {
+    // Same guard as reviseProvisioningBrief — this form only edits the
+    // primary template, so check the override doesn't produce an
+    // incoherent (cross-sector-variant) merge.
+    const newConstituents = await db.template.findMany({
+      where: { id: { in: [nextTemplateId, ...project.additionalTemplates.map((a) => a.templateId)] } },
+      select: { name: true, sectorVariantId: true },
+    });
+    assertSameSectorVariant(newConstituents);
+  }
 
   await db.project.update({
     where: { id: projectId },
-    data: { templateId: templateId || project.templateId, tags, worksType },
+    data: { templateId: nextTemplateId, tags, worksType },
   });
 
   await db.auditLogEntry.create({
@@ -1142,9 +1219,13 @@ export async function requestProvisioningRevision(projectId: string, projectNumb
 }
 
 /**
- * Instantiates every included Stage/Gate from the final templateId —
- * calls the same instantiateStage helper reinstateStage uses, not new
- * logic (ProvisioningModel.html §06) — and flips the Project to ACTIVE.
+ * Instantiates every included Stage/Gate from the project's constituent
+ * template(s) — calls the same instantiateStage helper reinstateStage
+ * uses, not new logic (ProvisioningModel.html §06) — and flips the
+ * Project to ACTIVE. A merged project (ProjectAdditionalTemplate rows
+ * present) groups every constituent template's StageTemplates by shared
+ * key first, so a stage key common to two templates gets exactly one
+ * Gate carrying both templates' deliverables, not two parallel gates.
  */
 export async function approveProvisioning(projectId: string, projectNumber: string) {
   const userId = await getCurrentUserId();
@@ -1157,16 +1238,7 @@ export async function approveProvisioning(projectId: string, projectNumber: stri
 
   const project = await db.project.findUniqueOrThrow({
     where: { id: projectId },
-    include: {
-      template: {
-        include: {
-          stageTemplates: {
-            orderBy: { order: "asc" },
-            include: { gateTemplate: { include: { deliverableTemplates: true } } },
-          },
-        },
-      },
-    },
+    include: { additionalTemplates: true },
   });
   if (project.status !== "DRAFT") throw new Error("This project is no longer a draft.");
 
@@ -1174,22 +1246,42 @@ export async function approveProvisioning(projectId: string, projectNumber: stri
     data: { projectId, decision: "APPROVED", reviewedById: userId },
   });
 
+  const templates = await loadConstituentTemplatesForInstantiation(db, project);
+  assertSameSectorVariant(templates);
+  const templateIds = constituentTemplateIds(project);
+
   // Re-run the discipline-roster suggestion (lib/disciplineTeam.ts)
-  // against the final template — the PM's revise-and-rematch or a
+  // against the final template set — the PM's revise-and-rematch or a
   // Compliance Officer's direct override (updateProvisioningDraft) can
   // both change templateId after the draft-creation suggestion ran.
-  await suggestDisciplineTeam(projectId, project.template.id, project.worksType);
+  await suggestDisciplineTeam(projectId, templateIds, project.worksType);
+
+  // Group every constituent template's StageTemplates by shared key —
+  // the primary template's own stage order wins; any stage key only an
+  // additional template defines is appended after.
+  const primaryTemplate = templates.find((t) => t.id === project.templateId)!;
+  const byKey = new Map<string, (typeof templates)[number]["stageTemplates"]>();
+  for (const t of templates) {
+    for (const st of t.stageTemplates) {
+      if (!byKey.has(st.key)) byKey.set(st.key, []);
+      byKey.get(st.key)!.push(st);
+    }
+  }
+  const orderedKeys = [
+    ...primaryTemplate.stageTemplates.map((st) => st.key),
+    ...Array.from(byKey.keys()).filter((k) => !primaryTemplate.stageTemplates.some((st) => st.key === k)),
+  ];
 
   const includedStageKeys = new Set(project.includedStageKeys);
   let order = 0;
-  for (const stageTemplate of project.template.stageTemplates) {
-    if (!includedStageKeys.has(stageTemplate.key)) continue;
+  for (const key of orderedKeys) {
+    if (!includedStageKeys.has(key)) continue;
     await instantiateStage(db, {
       projectId,
-      projectTags: effectiveComplianceTags(project, project.template.key),
-      sectorVariantId: project.template.sectorVariantId,
+      projectTags: effectiveComplianceTags(project, templates.map((t) => t.key)),
+      sectorVariantId: templates[0]!.sectorVariantId,
       order,
-      stageTemplate,
+      stageTemplates: byKey.get(key)!,
     });
     order += 1;
   }

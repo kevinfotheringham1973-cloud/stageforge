@@ -739,6 +739,7 @@ async function main() {
     [
       { key: "del.drainage_full_technical_design_package", label: "Full Technical Design Package — detailed drawings, invert levels, specifications" },
       { key: "del.drainage_design_calculations", label: "Design calculations — flow rates, pipe sizing and falls to BS EN 12056" },
+      { key: "del.drainage_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.drainage_pipework_spec_compliant", label: "Complete pipework and fittings specification compliant with SHTM 64 and the Building (Scotland) Regulations Section 3 (Environment)", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.drainage_installation_method_statements", label: "Detailed Installation Method Statements, confined-space/excavation permit procedures and RAMS" },
       { key: "del.drainage_compliance_matrix", label: "Compliance Matrix — mapping against BS EN 12056, SHTM 64, Building (Scotland) Regulations, Water Environment (Controlled Activities) (Scotland) Regulations 2011, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -746,6 +747,11 @@ async function main() {
       { key: "del.drainage_procurement_package", label: "Tender or direct-award procurement package" },
       { key: "del.drainage_updated_programme_resource_plan", label: "Updated Programme and Resource Plan" },
       { key: "del.drainage_design_risk_assessment_signed", label: "Design Risk Assessment signed by the Designer", bypassAuthority: "SRO" },
+      { key: "del.drainage_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.drainage_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.drainage_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.drainage_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.drainage_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -962,6 +968,7 @@ async function main() {
     [
       { key: "del.lighting_full_technical_design_package", label: "Full Technical Design Package — detailed lighting drawings, schematics, specifications" },
       { key: "del.lighting_design_calculations", label: "Design calculations — lux levels, glare, emergency lighting duration/coverage to BS 5266" },
+      { key: "del.lighting_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.lighting_spec_compliant", label: "Complete luminaire and control gear specification compliant with BS 7671 and BS EN 12464-1", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.lighting_installation_method_statements", label: "Detailed Installation Method Statements and RAMS" },
       { key: "del.lighting_compliance_matrix", label: "Compliance Matrix — mapping against BS 7671, BS 5266, BS EN 12464-1, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -969,6 +976,11 @@ async function main() {
       { key: "del.lighting_procurement_package", label: "Tender or direct-award procurement package" },
       { key: "del.lighting_updated_programme_resource_plan", label: "Updated Programme and Resource Plan" },
       { key: "del.lighting_design_risk_assessment_signed", label: "Design Risk Assessment signed by the Designer", bypassAuthority: "SRO" },
+      { key: "del.lighting_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.lighting_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.lighting_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.lighting_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.lighting_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -1575,6 +1587,7 @@ async function main() {
     [
       { key: "del.firealarm_full_technical_design_package", label: "Full technical design drawings, schematics and zone plans", description: "SHTM 82, BS 5839-1." },
       { key: "del.firealarm_detailed_specifications", label: "Detailed specifications (CIE, detectors, manual call points, sounders, visual devices, cabling, power supplies)", description: "SHTM 82, BS 5839-1." },
+      { key: "del.firealarm_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.firealarm_cause_effect_matrix", label: "Cause & effect matrix / interface schedule (doors, plant, lifts, smoke control, etc.)", description: "SHTM 82." },
       { key: "del.firealarm_battery_power_supply_design", label: "Battery autonomy and power supply design", description: "BS 5839-1." },
       { key: "del.firealarm_ufas_reduction_strategy", label: "UFAS reduction strategy (detector selection, multi-criteria, verification technology)", description: "SHTM 82." },
@@ -1583,6 +1596,11 @@ async function main() {
       { key: "del.firealarm_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 82.", bypassAuthority: "SRO" },
       { key: "del.firealarm_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.firealarm_fsa_design_approval", label: "Fire Safety Advisor / stakeholder review and approval of design", description: "SHTM 82 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.firealarm_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.firealarm_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.firealarm_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.firealarm_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.firealarm_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -1704,6 +1722,7 @@ async function main() {
     [
       { key: "del.lift_full_technical_design_package", label: "Full technical design drawings & schematics (shafts, cars, landings, machine rooms, interfaces)", description: "SHTM 08-02." },
       { key: "del.lift_detailed_specifications", label: "Detailed specifications (drive system, controller, doors, safety gear, finishes, communication systems)", description: "SHTM 08-02, BS EN 81 series." },
+      { key: "del.lift_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.lift_structural_design", label: "Structural design information (loads, fixings, machine room / pit)" },
       { key: "del.lift_electrical_design", label: "Electrical design (main supply, emergency supply, lighting, alarms)", description: "SHTM 06 series, SHTM 08-02." },
       { key: "del.lift_firefighting_escape_requirements", label: "Firefighting lift / escape bed lift specific requirements (controls, communications, power)", description: "SHTM 81, SFPN 3, BS EN 81-72." },
@@ -1712,6 +1731,11 @@ async function main() {
       { key: "del.lift_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 08-02.", bypassAuthority: "SRO" },
       { key: "del.lift_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.lift_fsa_design_approval", label: "Stakeholder / Fire Safety Advisor review and approval of design", description: "SHTM 08-02 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.lift_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.lift_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.lift_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.lift_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.lift_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -1831,6 +1855,7 @@ async function main() {
     [
       { key: "del.nursecall_full_technical_design_package", label: "Full technical design drawings, schematics and device schedules", description: "SHTM 08-03." },
       { key: "del.nursecall_detailed_specifications", label: "Detailed specifications (call points, handsets, indicators, controllers, speech units, paging interfaces, logging software)", description: "SHTM 08-03." },
+      { key: "del.nursecall_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.nursecall_power_supply_resilience", label: "Power supply, resilience and backup arrangements", description: "SHTM 06 series." },
       { key: "del.nursecall_integration_design", label: "Integration design (cardiac arrest, fire alert, staff attack, BMS if required)", description: "SHTM 08-03." },
       { key: "del.nursecall_wireless_coverage_radio_survey", label: "Wireless coverage / radio survey (if applicable)", description: "Manufacturer requirements, radio licensing." },
@@ -1839,6 +1864,11 @@ async function main() {
       { key: "del.nursecall_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 08-03.", bypassAuthority: "SRO" },
       { key: "del.nursecall_tender_documentation", label: "Tender documentation / Scope of Works" },
       { key: "del.nursecall_clinical_design_approval", label: "Clinical stakeholder review and approval", description: "SHTM 08-03 — patient safety, staff response times, and audit-trail requirements need clinical sign-off, not just engineering sign-off.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
+      { key: "del.nursecall_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.nursecall_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.nursecall_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.nursecall_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.nursecall_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -1957,6 +1987,7 @@ async function main() {
     [
       { key: "del.bms_full_technical_design_package", label: "Full technical design drawings, network schematics and system architecture", description: "CIBSE / BSRIA." },
       { key: "del.bms_point_schedules_control_strategies", label: "Detailed point schedules, control strategies and cause-and-effect matrices", description: "Linked SHTMs (03-01, 04-01, etc.)." },
+      { key: "del.bms_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.bms_detailed_specifications", label: "Detailed specifications (controllers, sensors, actuators, servers, software, graphics, cybersecurity)", description: "Manufacturer and industry standards." },
       { key: "del.bms_integration_design", label: "Integration design with existing/new plant (boilers, AHUs, medical gases, fire, lifts, nurse call etc.)", description: "Relevant system SHTMs." },
       { key: "del.bms_energy_monitoring_analytics_spec", label: "Energy monitoring, reporting and analytics specification" },
@@ -1967,6 +1998,11 @@ async function main() {
       { key: "del.bms_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 00.", bypassAuthority: "SRO" },
       { key: "del.bms_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.bms_stakeholder_design_approval", label: "Stakeholder review and approval of design (including clinical & energy teams)", description: "SHTM 00.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.bms_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.bms_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.bms_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.bms_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.bms_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -2501,6 +2537,7 @@ async function main() {
     [
       { key: "del.security_full_technical_design_package", label: "Full technical design drawings, schematics, camera schedules and access control schedules", description: "BS EN standards." },
       { key: "del.security_detailed_specifications", label: "Detailed specifications (cameras, recorders/VMS, readers, controllers, detectors, software, networks)", description: "Manufacturer and BS EN standards." },
+      { key: "del.security_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.security_network_cybersecurity_design", label: "Network architecture, cybersecurity design and hardening measures", description: "NHS cyber standards." },
       { key: "del.security_dpia", label: "Data protection / privacy impact assessment (DPIA) for CCTV and access control", description: "GDPR / UK Data Protection Act 2018.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
       { key: "del.security_recording_retention_audit_design", label: "Recording, retention, export and audit trail design", description: "Information Governance.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
@@ -2511,6 +2548,11 @@ async function main() {
       { key: "del.security_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015.", bypassAuthority: "SRO" },
       { key: "del.security_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.security_stakeholder_design_approval", label: "Stakeholder review and approval of design (Security, IG, Cyber, Estates)", description: "Essential.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
+      { key: "del.security_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.security_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.security_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.security_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.security_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -2763,6 +2805,7 @@ async function main() {
     [
       { key: "del.abovedrainage_full_technical_design_package", label: "Full technical design drawings, schematics, stack schedules and drain schedules", description: "BS EN 12056, Building Standards." },
       { key: "del.abovedrainage_detailed_specifications", label: "Detailed specifications (pipework materials, fittings, floor drains, channels, traps, access fittings, insulation if required)", description: "BS EN 12056." },
+      { key: "del.abovedrainage_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.abovedrainage_venting_antisiphonage_strategy", label: "Venting strategy and anti-siphonage measures", description: "BS EN 12056." },
       { key: "del.abovedrainage_access_rodding_cleaning_design", label: "Access, rodding and cleaning point design", description: "Maintainability focus." },
       { key: "del.abovedrainage_belowground_interface_design", label: "Interface design with below-ground drainage and sanitary fittings" },
@@ -2771,6 +2814,11 @@ async function main() {
       { key: "del.abovedrainage_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, IPC.", bypassAuthority: "SRO" },
       { key: "del.abovedrainage_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.abovedrainage_stakeholder_design_approval", label: "Stakeholder review and approval of design (Estates, IPC)", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.abovedrainage_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.abovedrainage_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.abovedrainage_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.abovedrainage_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.abovedrainage_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -2885,6 +2933,7 @@ async function main() {
     [
       { key: "del.compressedair_full_technical_design_package", label: "Full technical design drawings, schematics and pipework layouts", description: "CIBSE, manufacturer data." },
       { key: "del.compressedair_detailed_specifications", label: "Detailed specifications (compressors, receivers, dryers, filters, pipework, valves, regulators, controls)", description: "Relevant BS EN standards." },
+      { key: "del.compressedair_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency", description: "A realistic budget envelope for the PFI Board / NHS lifecycle approval below." },
       { key: "del.compressedair_air_treatment_quality_spec", label: "Air treatment and quality specification (dryness, filtration, oil content)", description: "ISO 8573, where applicable." },
       { key: "del.compressedair_pressure_system_design_safety_schedule", label: "Pressure system design and safety device schedule", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.compressedair_control_strategy_bms_integration", label: "Control strategy, sequencing and BMS integration (if required)" },
@@ -2895,6 +2944,11 @@ async function main() {
       { key: "del.compressedair_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, PSSR.", bypassAuthority: "SRO" },
       { key: "del.compressedair_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.compressedair_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.compressedair_competitive_quotations", label: "Obtain minimum of two competitive quotations", description: "Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
+      { key: "del.compressedair_pfi_nhs_lifecycle_submission", label: "Submit quotations, cost comparison, contingency and recommendation to PFI Board / NHS for lifecycle approval" },
+      { key: "del.compressedair_ppm_documentation", label: "Provide valid PPM (Planned Preventative Maintenance) documentation for the existing plant being replaced", description: "Maintenance history and current compliance status of the asset being replaced, submitted alongside the quotations for PFI Board / NHS lifecycle approval." },
+      { key: "del.compressedair_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
+      { key: "del.compressedair_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -3744,7 +3798,7 @@ async function main() {
       db,
       health.id,
       def.key,
-      effectiveComplianceTags(project, meTemplate.key)
+      effectiveComplianceTags(project, [meTemplate.key])
     );
     if (matchingRules.length > 0) {
       await db.complianceRequirement.createMany({
@@ -3874,10 +3928,10 @@ async function main() {
   for (let i = 0; i < waterStageTemplatesFull.length; i++) {
     await instantiateStage(db, {
       projectId: waterProject.id,
-      projectTags: effectiveComplianceTags(waterProject, waterTemplate.key),
+      projectTags: effectiveComplianceTags(waterProject, [waterTemplate.key]),
       sectorVariantId: health.id,
       order: i,
-      stageTemplate: waterStageTemplatesFull[i]!,
+      stageTemplates: [waterStageTemplatesFull[i]!],
     });
   }
 
@@ -3948,10 +4002,10 @@ async function main() {
   for (let i = 0; i < drainageStageTemplatesFull.length; i++) {
     await instantiateStage(db, {
       projectId: drainageProject.id,
-      projectTags: effectiveComplianceTags(drainageProject, drainageTemplate.key),
+      projectTags: effectiveComplianceTags(drainageProject, [drainageTemplate.key]),
       sectorVariantId: health.id,
       order: i,
-      stageTemplate: drainageStageTemplatesFull[i]!,
+      stageTemplates: [drainageStageTemplatesFull[i]!],
     });
   }
 
@@ -4027,10 +4081,10 @@ async function main() {
   for (let i = 0; i < coldWaterStageTemplatesFull.length; i++) {
     await instantiateStage(db, {
       projectId: coldWaterProject.id,
-      projectTags: effectiveComplianceTags(coldWaterProject, coldWaterTemplate.key),
+      projectTags: effectiveComplianceTags(coldWaterProject, [coldWaterTemplate.key]),
       sectorVariantId: health.id,
       order: i,
-      stageTemplate: coldWaterStageTemplatesFull[i]!,
+      stageTemplates: [coldWaterStageTemplatesFull[i]!],
     });
   }
 
@@ -4098,10 +4152,10 @@ async function main() {
   for (let i = 0; i < lightingStageTemplatesFull.length; i++) {
     await instantiateStage(db, {
       projectId: lightingProject.id,
-      projectTags: effectiveComplianceTags(lightingProject, lightingTemplate.key),
+      projectTags: effectiveComplianceTags(lightingProject, [lightingTemplate.key]),
       sectorVariantId: health.id,
       order: i,
-      stageTemplate: lightingStageTemplatesFull[i]!,
+      stageTemplates: [lightingStageTemplatesFull[i]!],
     });
   }
 

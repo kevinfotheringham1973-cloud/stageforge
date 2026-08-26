@@ -124,7 +124,7 @@ export function NewProjectForm({
       </fieldset>
       <fieldset className="rounded-lg border border-dashed border-rule p-4">
         <legend className="mb-1 font-mono text-xs uppercase tracking-wide text-inkmuted">
-          Part of a combined works package? {preselectedWorksPackage ? "" : "(optional)"}
+          {preselectedWorksPackage ? "Part of a combined works package?" : "Other systems this project also covers (optional)"}
         </legend>
         {preselectedWorksPackage ? (
           <>
@@ -132,35 +132,50 @@ export function NewProjectForm({
               Adding a system to <span className="font-semibold text-ink">{preselectedWorksPackage.name}</span>.
             </p>
             <input type="hidden" name="worksPackageId" value={preselectedWorksPackage.id} />
+            <div>
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                Also create these systems in the same package (optional)
+              </div>
+              <p className="mb-2 text-xs text-inkmuted">
+                Check every other system riding along in the same disruption window &mdash; each becomes its
+                own project with its own complete, discipline-specific checklist, created in this same
+                submission. StageForge names the package after this project automatically &mdash; the name is
+                just a label on the portfolio, nothing hinges on it.
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {bundleableTemplates.map((t) => (
+                  <label key={t.id} className="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="additionalTemplateIds" value={t.id} className="mt-1" />
+                    {t.name}
+                  </label>
+                ))}
+              </div>
+            </div>
           </>
         ) : (
-          <p className="mb-3 text-sm text-inkmuted">
-            A hospital runs 24&#8209;7, so a disruption window is precious &mdash; if this project opens
-            one up (an area decanted, a system isolated) and other work is riding along with it, check off
-            whichever other systems are riding along below. Each project keeps its own complete,
-            discipline-specific checklist &mdash; this just labels them as one combined package on the
-            portfolio.
-          </p>
+          <>
+            <p className="mb-3 text-sm text-inkmuted">
+              A hospital runs 24&#8209;7, so a disruption window is precious &mdash; if this project opens
+              one up (an area decanted, a system isolated) and other work needs the same window, check off
+              whichever other systems belong to it below.
+            </p>
+            <div>
+              <p className="mb-2 text-xs text-inkmuted">
+                Check every other system this project also needs to cover &mdash; they&rsquo;ll be folded
+                into this one project&rsquo;s checklist (one shared gate per stage, with deliverables and
+                compliance requirements from every system combined), not created as separate projects.
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {bundleableTemplates.map((t) => (
+                  <label key={t.id} className="flex items-start gap-2 text-sm">
+                    <input type="checkbox" name="additionalTemplateIds" value={t.id} className="mt-1" />
+                    {t.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </>
         )}
-        <div>
-          <div className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-            Also create these systems in the same package (optional)
-          </div>
-          <p className="mb-2 text-xs text-inkmuted">
-            Check every other system riding along in the same disruption window &mdash; each becomes its
-            own project with its own complete, discipline-specific checklist, created in this same
-            submission. StageForge names the package after this project automatically &mdash; the name is
-            just a label on the portfolio, nothing hinges on it.
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {bundleableTemplates.map((t) => (
-              <label key={t.id} className="flex items-start gap-2 text-sm">
-                <input type="checkbox" name="additionalTemplateIds" value={t.id} className="mt-1" />
-                {t.name}
-              </label>
-            ))}
-          </div>
-        </div>
       </fieldset>
       <div className="flex flex-col items-start gap-2">
         <SubmitButton

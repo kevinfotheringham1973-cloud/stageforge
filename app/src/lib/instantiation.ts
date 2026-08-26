@@ -1,11 +1,22 @@
-// Stage instantiation — creating a live Stage/Gate from a StageTemplate,
-// with its delivery checklist copied from DeliverableTemplate and its
-// compliance checklist merged in via matchingComplianceRuleTemplates
-// (ConfigSchema.html §05). Extracted so reinstateStage and
-// approveProvisioning (ProvisioningModel.html §06) share one
-// implementation instead of writing this sequence out inline a third
-// time — the same "copy at instantiation, never a live join" rule
-// applies to every caller.
+// Stage instantiation — creating a live Stage/Gate from one or more
+// StageTemplates sharing the same key, with its delivery checklist
+// copied from DeliverableTemplate and its compliance checklist merged
+// in via matchingComplianceRuleTemplates (ConfigSchema.html §05).
+// Extracted so reinstateStage and approveProvisioning
+// (ProvisioningModel.html §06) share one implementation instead of
+// writing this sequence out inline a third time — the same "copy at
+// instantiation, never a live join" rule applies to every caller.
+//
+// Accepts a GROUP of StageTemplates, not one (26 Aug 2026, "merge
+// additional systems into one Project") — a merged project's Gate for
+// a shared RIBA stage key (e.g. "stage.design_planning") carries the
+// UNION of every constituent template's deliverables for that stage,
+// not a separate gate per template. Compliance-requirement matching
+// needs no equivalent union logic: matchingComplianceRuleTemplates
+// already matches purely on stage key + Project.tags against global
+// ComplianceRuleSet rows, never per-template, so it's already
+// template-count-agnostic as long as the caller passes the union of
+// tags across every constituent template.
 
 import type { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "./compliance";
@@ -36,21 +47,36 @@ export async function instantiateStage(
     projectTags: string[];
     sectorVariantId: string;
     order: number;
-    stageTemplate: StageTemplateForInstantiation;
+    // Every entry must share the same `.key` — one per constituent
+    // Template that defines this stage. Index 0 (the primary
+    // template's version, when present) drives Stage/Gate naming and
+    // Stage.sourceStageTemplateId provenance — that field is
+    // informational-only and never read elsewhere in the app, so
+    // recording only the primary source is a safe simplification.
+    stageTemplates: StageTemplateForInstantiation[];
   }
 ) {
-  const { projectId, projectTags, sectorVariantId, order, stageTemplate } = params;
-  if (!stageTemplate.gateTemplate) {
-    throw new Error(`Stage template "${stageTemplate.key}" has no gate template — nothing to instantiate.`);
+  const { projectId, projectTags, sectorVariantId, order, stageTemplates } = params;
+  if (stageTemplates.length === 0) {
+    throw new Error("instantiateStage called with no stage templates.");
   }
-  const gateTemplate = stageTemplate.gateTemplate;
+  const key = stageTemplates[0]!.key;
+  if (stageTemplates.some((st) => st.key !== key)) {
+    throw new Error(`instantiateStage: mismatched stage template keys in group (${stageTemplates.map((st) => st.key).join(", ")}).`);
+  }
+  const withGate = stageTemplates.filter((st) => st.gateTemplate);
+  if (withGate.length === 0) {
+    throw new Error(`Stage template "${key}" has no gate template in any constituent template — nothing to instantiate.`);
+  }
+  const primary = withGate[0]!;
+  const gateTemplate = primary.gateTemplate!;
 
   const stage = await db.stage.create({
     data: {
       projectId,
-      sourceStageTemplateId: stageTemplate.id,
-      key: stageTemplate.key,
-      name: stageTemplate.name,
+      sourceStageTemplateId: primary.id,
+      key,
+      name: primary.name,
       order,
     },
   });
@@ -64,9 +90,28 @@ export async function instantiateStage(
     },
   });
 
-  if (gateTemplate.deliverableTemplates.length > 0) {
-    await db.deliverable.createMany({
-      data: gateTemplate.deliverableTemplates.map((dt) => ({
+  // Union every contributing template's deliverables onto this one
+  // Gate, deduping by `key` (first-template-wins, primary first) — a
+  // shared key across two templates almost certainly means the same
+  // real-world artifact, and creating two Deliverable rows for it would
+  // force duplicate evidence uploads for one requirement.
+  const seenDeliverableKeys = new Set<string>();
+  const deliverableRows: {
+    gateId: string;
+    templateId: string;
+    key: string;
+    label: string;
+    description: string | null;
+    minFiles: number;
+    blocksGate: boolean;
+    bypassAuthority: string;
+    status: "PENDING";
+  }[] = [];
+  for (const st of withGate) {
+    for (const dt of st.gateTemplate!.deliverableTemplates) {
+      if (seenDeliverableKeys.has(dt.key)) continue;
+      seenDeliverableKeys.add(dt.key);
+      deliverableRows.push({
         gateId: gate.id,
         templateId: dt.id,
         key: dt.key,
@@ -75,12 +120,15 @@ export async function instantiateStage(
         minFiles: dt.minFiles,
         blocksGate: dt.blocksGate,
         bypassAuthority: dt.bypassAuthority,
-        status: "PENDING" as const,
-      })),
-    });
+        status: "PENDING",
+      });
+    }
+  }
+  if (deliverableRows.length > 0) {
+    await db.deliverable.createMany({ data: deliverableRows });
   }
 
-  const matchingRules = await matchingComplianceRuleTemplates(db, sectorVariantId, stageTemplate.key, projectTags);
+  const matchingRules = await matchingComplianceRuleTemplates(db, sectorVariantId, key, projectTags);
   if (matchingRules.length > 0) {
     await db.complianceRequirement.createMany({
       data: matchingRules.map((rt) => ({
