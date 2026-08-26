@@ -219,6 +219,7 @@ export async function generateEnglandVariant(
           create: {
             gateTemplateId: englandGate.id,
             key: dt.key,
+            order: dt.order,
             label: convertGuidanceText(dt.label),
             description: convertGuidanceText(dt.description),
             minFiles: dt.minFiles,

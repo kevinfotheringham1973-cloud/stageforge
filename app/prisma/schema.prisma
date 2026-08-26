@@ -297,6 +297,17 @@ model DeliverableTemplate {
   minFiles        Int           @default(1)
   blocksGate      Boolean       @default(true)
   bypassAuthority String        @default("PM") // a Role.key
+  // This item's position within its own Template's gate (26 Aug 2026,
+  // "shared deliverable slot boxes") — every Template's own gates
+  // follow a highly consistent positional pattern (Concept options ->
+  // Outline strategy -> Preliminary design at Gate 2, etc., confirmed
+  // by auditing every template's labels gate-by-gate), so a merged
+  // project (ProjectAdditionalTemplate) can pair up different
+  // disciplines' items that occupy the same slot into one shared
+  // display box (see GateDetail.tsx) instead of one card per
+  // discipline. Set once at authoring time (seed.ts's
+  // createDeliverableTemplates helper); never re-derived live.
+  order           Int           @default(0)
   deliverables    Deliverable[]
 
   @@unique([gateTemplateId, key])

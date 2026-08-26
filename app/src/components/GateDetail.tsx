@@ -130,7 +130,7 @@ export async function GateDetail({
         include: {
           evidenceFiles: { orderBy: { uploadedAt: "desc" } },
           bypass: { include: { bypassedBy: true } },
-          template: { select: { gateTemplate: { select: { stageTemplate: { select: { templateId: true } } } } } },
+          template: { select: { order: true, gateTemplate: { select: { stageTemplate: { select: { templateId: true } } } } } },
         },
       },
       complianceRequirements: {
@@ -168,32 +168,62 @@ export async function GateDetail({
   const roleLabelByKey = Object.fromEntries(allRoles.map((r) => [r.key, r.name]));
   const exactMatchAuthorityKeys = new Set(allRoles.filter((r) => r.isExactMatchAuthority).map((r) => r.key));
 
-  // Grouped deliverable display for a merged project (26 Aug 2026, per
-  // reviewer feedback on #30033) — a project built from more than one
-  // Template (see ProjectAdditionalTemplate) gets its deliverables
-  // sectioned into "Common" (items canonicalized to a shared
-  // `del.common_*` key across templates, see prisma/seed.ts) plus one
-  // section per constituent Template, instead of one long interleaved
-  // list. A solo-template project (still the common case) renders
-  // exactly as before — no grouping, no visual change.
+  // Shared-slot deliverable display for a merged project (26 Aug 2026,
+  // superseding the "Common + one section per Template" grouping —
+  // Kevin's own follow-up feedback on #30033 was that section-grouping
+  // alone still reads as too many boxes). Every Template's own gates
+  // follow a highly consistent positional pattern (Concept options ->
+  // Outline strategy -> Preliminary design at Gate 2, etc., confirmed
+  // by auditing every template's labels gate-by-gate) — DeliverableTemplate.order
+  // records each item's position within its own Template's gate, so a
+  // merged project's items sharing a position collapse into ONE shared
+  // box instead of one card per discipline. A del.common_* item
+  // (already deduped to one row by instantiateStage) just needs no
+  // special handling here — it's simply a group of size 1, like any
+  // unmatched item. A solo-template project (still the common case)
+  // renders exactly as before — no grouping, no visual change.
   const constituentTemplates = [
     gate.stage.project.template,
     ...gate.stage.project.additionalTemplates.map((a) => a.template),
   ];
   const isMerged = constituentTemplates.length > 1;
-  const deliverableGroups = isMerged
-    ? [
-        {
-          label: "Common",
-          deliverables: gate.deliverables.filter((d) => d.key.startsWith("del.common_")),
-        },
-        ...constituentTemplates.map((t) => ({
-          label: t.name,
-          deliverables: gate.deliverables.filter(
-            (d) => !d.key.startsWith("del.common_") && d.template?.gateTemplate?.stageTemplate.templateId === t.id
-          ),
-        })),
-      ].filter((group) => group.deliverables.length > 0)
+  const primaryTemplateId = gate.stage.project.template.id;
+  let fallbackGroupKey = 0;
+  // The Pre-Contract Hold Point block (src/lib/instantiation.ts's
+  // seed.ts content, added 26 Aug 2026) is deliberately per-discipline,
+  // not canonicalized — a merged project genuinely needs one commercial
+  // hold point per discipline. Its wording is identical (or
+  // near-identical) across most templates, so slot-matching it here
+  // would show the exact same text twice inside one box, reading as
+  // the very duplication problem this feature exists to fix. Excluded
+  // the same way del.common_* is, below.
+  const NEVER_SLOT_MATCH_SUFFIXES = [
+    "_updated_cost_plan_contingency",
+    "_competitive_quotations",
+    "_pfi_nhs_lifecycle_submission",
+    "_ppm_documentation",
+    "_pre_contract_hold_point",
+    "_post_appointment_full_design",
+  ];
+  const slotGroups = isMerged
+    ? Array.from(
+        gate.deliverables
+          .reduce((groups, d) => {
+            // A del.common_* item (already deduped to one row across
+            // every constituent template in instantiateStage) always
+            // stands alone here — it inherits whichever template "won"
+            // the dedup's own order value, which can otherwise
+            // coincidentally collide with an unrelated item at that
+            // same position in another template's own numbering.
+            const neverMatch =
+              d.key.startsWith("del.common_") || NEVER_SLOT_MATCH_SUFFIXES.some((suffix) => d.key.endsWith(suffix));
+            const slotKey = d.template && !neverMatch ? `order:${d.template.order}` : `solo:${fallbackGroupKey++}`;
+            if (!groups.has(slotKey)) groups.set(slotKey, { order: d.template?.order ?? Infinity, deliverables: [] });
+            groups.get(slotKey)!.deliverables.push(d);
+            return groups;
+          }, new Map<string, { order: number; deliverables: typeof gate.deliverables }>())
+          .values()
+      ).sort((a, b) => a.order - b.order)
     : [];
   const ready = isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements, gate.spendRecords);
   const outstanding = gate.deliverables.filter((d) => d.blocksGate && d.status === "PENDING").length;
@@ -226,7 +256,13 @@ export async function GateDetail({
 
   // Extracted so the grouped (merged-project) and flat (solo-project)
   // render paths below share one identical card, no logic duplicated.
-  const renderDeliverable = (d: (typeof gate.deliverables)[number]) => {
+  // Split into "body" (label/badge + description + status content +
+  // controls) and the full bordered card, so a shared slot box (below)
+  // can reuse the exact same body content without nesting a second
+  // border inside its own — and, for the box's primary item, without
+  // repeating the label a second time (the box's own header already is
+  // that item's label).
+  const renderDeliverableBody = (d: (typeof gate.deliverables)[number], showLabel = true) => {
     const canBypass =
       d.status === "PENDING" &&
       canBypassDeliverable(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
@@ -240,26 +276,23 @@ export async function GateDetail({
     // Authorised-Person-only requirement should never read the same
     // as a document a PM can wave through themselves.
     const isHeavyAuthority = d.bypassAuthority === "SRO" || exactMatchAuthorityKeys.has(d.bypassAuthority);
-    const cardClass = isHeavyAuthority
-      ? "border-2 border-risk bg-risk/5"
-      : d.bypassAuthority === "COMPLIANCE_OFFICER"
-        ? "border-dashed border-flag bg-surface"
-        : "border-rule bg-surface";
 
     return (
-      <div key={d.id} className={`rounded-lg border p-5 ${cardClass}`}>
-        <div className="mb-1 flex flex-wrap items-center gap-2">
-          <span className="font-semibold">{d.label}</span>
-          {d.bypassAuthority !== "PM" && (
-            <span
-              className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
-                isHeavyAuthority ? "bg-risk text-white" : "bg-accentsoft text-flag"
-              }`}
-            >
-              Requires {roleLabelByKey[d.bypassAuthority] ?? d.bypassAuthority}
-            </span>
-          )}
-        </div>
+      <>
+        {showLabel && (
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <span className="font-semibold">{d.label}</span>
+            {d.bypassAuthority !== "PM" && (
+              <span
+                className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+                  isHeavyAuthority ? "bg-risk text-white" : "bg-accentsoft text-flag"
+                }`}
+              >
+                Requires {roleLabelByKey[d.bypassAuthority] ?? d.bypassAuthority}
+              </span>
+            )}
+          </div>
+        )}
         {d.description && <p className="mb-2 text-sm text-inkmuted">{d.description}</p>}
 
         {d.status === "EVIDENCED" && (
@@ -349,6 +382,20 @@ export async function GateDetail({
             )}
           </div>
         )}
+      </>
+    );
+  };
+
+  const renderDeliverable = (d: (typeof gate.deliverables)[number]) => {
+    const isHeavyAuthority = d.bypassAuthority === "SRO" || exactMatchAuthorityKeys.has(d.bypassAuthority);
+    const cardClass = isHeavyAuthority
+      ? "border-2 border-risk bg-risk/5"
+      : d.bypassAuthority === "COMPLIANCE_OFFICER"
+        ? "border-dashed border-flag bg-surface"
+        : "border-rule bg-surface";
+    return (
+      <div key={d.id} className={`rounded-lg border p-5 ${cardClass}`}>
+        {renderDeliverableBody(d)}
       </div>
     );
   };
@@ -492,13 +539,36 @@ export async function GateDetail({
           </h3>
 
           {isMerged ? (
-            <div className="flex flex-col gap-5">
-              {deliverableGroups.map((group) => (
-                <div key={group.label}>
-                  <h4 className="mb-2 font-mono text-[10px] uppercase tracking-wide text-inkmuted">{group.label}</h4>
-                  <div className="flex flex-col gap-3">{group.deliverables.map(renderDeliverable)}</div>
-                </div>
-              ))}
+            <div className="flex flex-col gap-3">
+              {slotGroups.map((group) => {
+                if (group.deliverables.length === 1) {
+                  return renderDeliverable(group.deliverables[0]!);
+                }
+                // Shared slot box: header is the primary template's own
+                // item at this position (falls back to the first item
+                // in the group if the primary has nothing here) — its
+                // own controls sit right under the header with no
+                // restated label; every other contributing template's
+                // item gets its own labelled sub-row below.
+                const primaryIndex = group.deliverables.findIndex(
+                  (d) => d.template?.gateTemplate?.stageTemplate.templateId === primaryTemplateId
+                );
+                const primary = group.deliverables[primaryIndex === -1 ? 0 : primaryIndex]!;
+                const others = group.deliverables.filter((d) => d.id !== primary.id);
+                return (
+                  <div key={primary.id} className="rounded-lg border border-rule bg-surface p-5">
+                    <h4 className="mb-1 flex flex-wrap items-center gap-2 font-semibold">{primary.label}</h4>
+                    {renderDeliverableBody(primary, false)}
+                    <div className="mt-3 flex flex-col divide-y divide-rule">
+                      {others.map((d) => (
+                        <div key={d.id} className="pt-3 first:pt-0">
+                          {renderDeliverableBody(d)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="flex flex-col gap-3">{gate.deliverables.map(renderDeliverable)}</div>

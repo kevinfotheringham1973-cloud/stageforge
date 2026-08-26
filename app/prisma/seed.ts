@@ -359,8 +359,9 @@ async function main() {
         where: { stageTemplateId: stageTemplatesForTemplate[i]!.id },
       });
       await db.deliverableTemplate.createMany({
-        data: deliverableDefsByStage[i]!.map((d) => ({
+        data: deliverableDefsByStage[i]!.map((d, order) => ({
           gateTemplateId: gateTemplate.id,
+          order,
           key: d.key,
           label: d.label,
           description: d.description,
