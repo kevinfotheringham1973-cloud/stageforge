@@ -1433,6 +1433,7 @@ export async function deleteProject(projectId: string, formData: FormData) {
     db.deliverableBypass.deleteMany({ where: { deliverable: { gate: { stage: { projectId } } } } }),
     db.deliverable.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.complianceEvidenceFile.deleteMany({ where: { complianceRequirement: { gate: { stage: { projectId } } } } }),
+    db.complianceCoSignOff.deleteMany({ where: { complianceRequirement: { gate: { stage: { projectId } } } } }),
     db.complianceRequirement.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.complianceOverride.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.spendApproval.deleteMany({ where: { spendRecord: { gate: { stage: { projectId } } } } }),
