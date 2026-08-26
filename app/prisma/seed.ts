@@ -442,7 +442,7 @@ async function main() {
       { key: "del.electrical_outline_strategy", label: "Outline electrical strategy (primary/secondary supplies, essential vs non-essential)", description: "SHTM 06 series." },
       { key: "del.electrical_preliminary_single_line_diagrams", label: "Preliminary single-line diagrams and load schedules", description: "SHTM 06." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.electrical_concept_risk_assessment", label: "Design risk assessment (high-level only)", description: "CDM 2015, SHTM 00, SHTM 06." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 06." },
       { key: "del.electrical_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination (the running mid-flight example)
@@ -478,7 +478,7 @@ async function main() {
       { key: "del.electrical_stakeholder_design_approval", label: "Stakeholder review and approval of design", description: "SHTM 06.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.electrical_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.electrical_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.electrical_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -594,7 +594,7 @@ async function main() {
       { key: "del.water_outline_system_strategy", label: "Outline water system strategy (temperatures, flow rates, resilience, stagnation prevention)", description: "SHTM 04-01 Part A." },
       { key: "del.water_preliminary_schematics_demand", label: "Preliminary schematics and load/demand assessment", description: "SHTM 04-01." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.water_concept_risk_assessment", label: "Design risk assessment (including Legionella)", description: "CDM 2015, SHTM 00, SHTM 04-01." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 04-01." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -627,7 +627,7 @@ async function main() {
       { key: "del.water_sbar_submission_to_wsg", label: "Prepare and submit formal SBAR to the Water Safety Group", description: "Covering proposed works, water treatment strategy, risk assessment and temporary arrangements. SHTM 04-01 Part B." },
       { key: "del.water_wsg_written_approval", label: "Obtain written WSG approval / endorsement", description: "SHTM 04-01 — one of two conditions for the Pre-Contract Hold Point below.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.water_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until both PFI/NHS cost approval and Water Safety Group approval are received", description: "Clear commercial & governance cut-off. Requires the written WSG approval and a formal PFI Board/NHS lifecycle cost approval to both be in place before Gate 5 can begin.", bypassAuthority: "SRO" },
-      { key: "del.water_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -720,7 +720,7 @@ async function main() {
       { key: "del.drainage_concept_invert_drawings", label: "Concept drainage schematics and invert-level drawings" },
       { key: "del.drainage_updated_programme_shutdowns", label: "Updated Programme showing phased zone shutdowns" },
       { key: "del.drainage_stakeholder_feedback_log", label: "Stakeholder consultation feedback log" },
-      { key: "del.drainage_concept_risk_assessment", label: "Concept-level Risk Assessment" },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment" },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -746,7 +746,7 @@ async function main() {
       { key: "del.drainage_design_risk_assessment_signed", label: "Design Risk Assessment signed by the Designer", bypassAuthority: "SRO" },
       { key: "del.drainage_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.drainage_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.drainage_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -836,7 +836,7 @@ async function main() {
       { key: "del.coldwater_concept_schematics", label: "Concept distribution schematics" },
       { key: "del.coldwater_updated_programme_shutdowns", label: "Updated Programme showing phased shutdowns" },
       { key: "del.coldwater_stakeholder_feedback_log", label: "Stakeholder consultation feedback log" },
-      { key: "del.coldwater_concept_risk_assessment", label: "Concept-level Risk Assessment" },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment" },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -947,7 +947,7 @@ async function main() {
       { key: "del.lighting_concept_layout_drawings", label: "Concept lighting layout drawings — lux levels, emergency lighting zones" },
       { key: "del.lighting_updated_programme_sections", label: "Updated Programme showing phased corridor sections" },
       { key: "del.lighting_stakeholder_feedback_log", label: "Stakeholder consultation feedback log" },
-      { key: "del.lighting_concept_risk_assessment", label: "Concept-level Risk Assessment" },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment" },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -973,7 +973,7 @@ async function main() {
       { key: "del.lighting_design_risk_assessment_signed", label: "Design Risk Assessment signed by the Designer", bypassAuthority: "SRO" },
       { key: "del.lighting_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.lighting_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.lighting_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -1104,7 +1104,7 @@ async function main() {
       { key: "del.boiler_outline_mechanical_strategy", label: "Outline mechanical services strategy (new boilers, headers, valves, pumps, filtration, corrosion monitoring)", description: "SHTM 04-01 Part A." },
       { key: "del.boiler_flue_combustion_air_strategy", label: "Preliminary flue / combustion air / gas & oil supply strategy" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.boiler_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -1138,7 +1138,7 @@ async function main() {
       { key: "del.boiler_sbar_submission_to_wsg", label: "Prepare and submit formal SBAR to the Water Safety Group", description: "Covering proposed works, water treatment strategy, risk assessment and temporary arrangements. SHTM 04-01 Part B." },
       { key: "del.boiler_wsg_written_approval", label: "Obtain written WSG approval / endorsement", description: "SHTM 04-01 — one of two conditions for the Pre-Contract Hold Point below.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.boiler_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until both PFI/NHS cost approval and Water Safety Group approval are received", description: "Clear commercial & governance cut-off. Requires the written WSG approval and a formal PFI Board/NHS lifecycle cost approval to both be in place before Gate 5 can begin.", bypassAuthority: "SRO" },
-      { key: "del.boiler_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -1270,7 +1270,7 @@ async function main() {
       { key: "del.ventilation_outline_services_strategy", label: "Outline ventilation strategy (air change rates, pressure regimes, filtration, resilience)", description: "SHTM 03-01 Part A." },
       { key: "del.ventilation_preliminary_schematics_load_assessment", label: "Preliminary schematics and load assessment", description: "SHTM 03-01." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.ventilation_concept_risk_assessment", label: "Design risk assessment (including infection control)", description: "CDM 2015, SHTM 00, HAI-SCRIBE." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, HAI-SCRIBE." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -1303,7 +1303,7 @@ async function main() {
       { key: "del.ventilation_sbar_submission_to_vsg", label: "Prepare and submit formal SBAR (or equivalent) to the Ventilation Safety Group / IPC", description: "SHTM 03-01, HAI-SCRIBE." },
       { key: "del.ventilation_vsg_ipc_written_approval", label: "Obtain written VSG / IPC approval", description: "One of two conditions for the Pre-Contract Hold Point below.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.ventilation_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until both PFI/NHS cost approval and VSG/IPC approval are received", description: "Clear commercial & governance cut-off. Requires the written VSG/IPC approval and a formal PFI Board/NHS lifecycle cost approval to both be in place before Gate 5 can begin.", bypassAuthority: "SRO" },
-      { key: "del.ventilation_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -1420,7 +1420,7 @@ async function main() {
       { key: "del.medgas_outline_mgps_strategy", label: "Outline MGPS strategy (sources of supply, distribution, terminal units, pendants, AGSS)", description: "SHTM 02-01 Part A." },
       { key: "del.medgas_pendant_selection_locations", label: "Preliminary pendant / medical supply unit selection and locations", description: "SHTM 02-01, BS EN ISO 11197." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.medgas_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 02-01." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 02-01." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -1452,7 +1452,7 @@ async function main() {
       { key: "del.medgas_sbar_submission_to_mgsg", label: "Prepare and submit formal SBAR (or equivalent) to the Medical Gas Safety Group / Authorised Person (MGPS)", description: "SHTM 02-01." },
       { key: "del.medgas_mgsg_ap_written_approval", label: "Obtain written MGSG / AP (MGPS) approval", description: "One of two conditions for the Pre-Contract Hold Point below.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.medgas_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until both PFI/NHS cost approval and MGSG/AP approval are received", description: "Clear commercial & governance cut-off. Requires the written MGSG/AP (MGPS) approval and a formal PFI Board/NHS lifecycle cost approval to both be in place before Gate 5 can begin.", bypassAuthority: "SRO" },
-      { key: "del.medgas_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -1561,7 +1561,7 @@ async function main() {
       { key: "del.firealarm_outline_detection_alarm_strategy", label: "Outline detection & alarm strategy (Category L1 addressable, zoning, interfaces)", description: "SHTM 82, BS 5839-1." },
       { key: "del.firealarm_detector_type_selection", label: "Preliminary detector type selection (multi-sensor preference to reduce UFAS)", description: "SHTM 82." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.firealarm_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 82." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 82." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -1585,7 +1585,7 @@ async function main() {
       { key: "del.firealarm_fsa_design_approval", label: "Fire Safety Advisor / stakeholder review and approval of design", description: "SHTM 82 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.firealarm_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.firealarm_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.firealarm_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -1693,7 +1693,7 @@ async function main() {
       { key: "del.lift_outline_lift_strategy", label: "Outline lift strategy (number, type, capacity, speed, grouping, fire/escape designation)", description: "SHTM 08-02." },
       { key: "del.lift_car_size_door_config", label: "Preliminary car sizes and door configurations (bed/passenger requirements)", description: "SHTM 08-02." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.lift_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 08-02." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 08-02." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -1718,7 +1718,7 @@ async function main() {
       { key: "del.lift_fsa_design_approval", label: "Stakeholder / Fire Safety Advisor review and approval of design", description: "SHTM 08-02 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.lift_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.lift_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.lift_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -1825,7 +1825,7 @@ async function main() {
       { key: "del.nursecall_outline_architecture_zoning", label: "Outline system architecture and zoning strategy", description: "SHTM 08-03." },
       { key: "del.nursecall_preliminary_device_schedule", label: "Preliminary device schedule (bedhead, WC, staff emergency, indicators, pagers)", description: "SHTM 08-03." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.nursecall_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 08-03." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 08-03." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -1849,7 +1849,7 @@ async function main() {
       { key: "del.nursecall_clinical_design_approval", label: "Clinical stakeholder review and approval", description: "SHTM 08-03 — patient safety, staff response times, and audit-trail requirements need clinical sign-off, not just engineering sign-off.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
       { key: "del.nursecall_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.nursecall_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.nursecall_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -1955,7 +1955,7 @@ async function main() {
       { key: "del.bms_outline_architecture_resilience", label: "Outline system architecture, network topology and resilience strategy" },
       { key: "del.bms_point_schedule_integration_matrix", label: "High-level point schedule and integration matrix with other systems", description: "Linked system SHTMs." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.bms_concept_risk_assessment", label: "Design risk assessment (including cybersecurity)", description: "CDM 2015, SHTM 00." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -1981,7 +1981,7 @@ async function main() {
       { key: "del.bms_stakeholder_design_approval", label: "Stakeholder review and approval of design (including clinical & energy teams)", description: "SHTM 00.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.bms_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.bms_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.bms_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -2088,7 +2088,7 @@ async function main() {
       { key: "del.chilledwater_outline_cooling_strategy", label: "Outline cooling strategy (temperatures, flow rates, primary/secondary, buffer vessels)", description: "CIBSE." },
       { key: "del.chilledwater_preliminary_schematics_load", label: "Preliminary schematics and load schedules" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.chilledwater_concept_risk_assessment", label: "Design risk assessment (high-level only)", description: "CDM 2015, SHTM 00." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00." },
       { key: "del.chilledwater_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
@@ -2119,7 +2119,7 @@ async function main() {
       { key: "del.chilledwater_stakeholder_design_approval", label: "Stakeholder review and approval of design", description: "SHTM 00.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.chilledwater_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.chilledwater_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.chilledwater_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -2227,7 +2227,7 @@ async function main() {
       { key: "del.steam_outline_system_strategy", label: "Outline steam system strategy (generation, distribution, reduction, condensate)" },
       { key: "del.steam_preliminary_schematics_load", label: "Preliminary schematics and load assessment" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.steam_concept_risk_assessment", label: "Design risk assessment (including pressure system hazards, high-level only)", description: "CDM 2015, PSSR." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, PSSR." },
       { key: "del.steam_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
@@ -2258,7 +2258,7 @@ async function main() {
       { key: "del.steam_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.steam_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.steam_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.steam_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -2360,7 +2360,7 @@ async function main() {
       { key: "del.firesuppression_outline_strategy", label: "Outline suppression strategy aligned with fire strategy and compartmentation", description: "SHTM 81." },
       { key: "del.firesuppression_preliminary_layouts_hazard_class", label: "Preliminary schematic layouts and hazard classification", description: "Relevant BS EN standards." },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.firesuppression_concept_risk_assessment", label: "Design risk assessment (high-level only)", description: "CDM 2015, SHTM 00, SHTM 81." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, SHTM 00, SHTM 81." },
       { key: "del.firesuppression_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
@@ -2389,7 +2389,7 @@ async function main() {
       { key: "del.firesuppression_fsa_design_approval", label: "Fire Safety Advisor / Authorising Engineer review and approval of design", description: "SHTM 81, SHTM 86 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.firesuppression_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.firesuppression_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.firesuppression_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -2496,7 +2496,7 @@ async function main() {
       { key: "del.security_outline_strategy", label: "Outline security strategy (coverage, detection, response, recording, retention)", description: "NHS Scotland Security Standards." },
       { key: "del.security_preliminary_layouts", label: "Preliminary layouts (camera locations, access points, control room)" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.security_concept_risk_assessment", label: "Design risk assessment (including privacy and cybersecurity)", description: "CDM 2015, GDPR." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, GDPR." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -2523,7 +2523,7 @@ async function main() {
       { key: "del.security_stakeholder_design_approval", label: "Stakeholder review and approval of design (Security, IG, Cyber, Estates)", description: "Essential.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
       { key: "del.security_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.security_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.security_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -2629,7 +2629,7 @@ async function main() {
       { key: "del.pts_outline_system_strategy", label: "Outline system strategy (routing, prioritisation, redundancy, future expansion)", description: "Clinical requirements." },
       { key: "del.pts_preliminary_station_routing", label: "Preliminary station location plan and tube routing strategy" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.pts_concept_risk_assessment", label: "Design risk assessment (including clinical and IPC risks, high-level only)", description: "CDM 2015, IPC." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, IPC." },
       { key: "del.pts_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
@@ -2660,7 +2660,7 @@ async function main() {
       { key: "del.pts_clinical_ipc_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
       { key: "del.pts_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.pts_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.pts_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -2760,7 +2760,7 @@ async function main() {
       { key: "del.abovedrainage_outline_strategy", label: "Outline drainage strategy (foul, waste, venting, gradients, capacity)", description: "Building Standards (Scotland)." },
       { key: "del.abovedrainage_preliminary_layouts_schedules", label: "Preliminary schematic layouts and stack schedules" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.abovedrainage_concept_risk_assessment", label: "Design risk assessment (including maintenance access and IPC)", description: "CDM 2015, IPC." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, IPC." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -2785,7 +2785,7 @@ async function main() {
       { key: "del.abovedrainage_stakeholder_design_approval", label: "Stakeholder review and approval of design (Estates, IPC)", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.abovedrainage_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.abovedrainage_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.abovedrainage_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -2886,7 +2886,7 @@ async function main() {
       { key: "del.compressedair_outline_strategy", label: "Outline compressed air strategy (pressure levels, air quality class, duty/standby, storage)", description: "ISO 8573 air quality classes, where relevant." },
       { key: "del.compressedair_preliminary_schematics_demand", label: "Preliminary schematics and demand assessment" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.compressedair_concept_risk_assessment", label: "Design risk assessment (including pressure system hazards)", description: "CDM 2015, PSSR." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, PSSR." },
     ],
     // Gate 3 — Spatial Coordination
     [
@@ -2913,7 +2913,7 @@ async function main() {
       { key: "del.compressedair_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.compressedair_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.compressedair_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.compressedair_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction
     [
@@ -3035,7 +3035,7 @@ async function main() {
       { key: "del.wardrefresh_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
       { key: "del.wardrefresh_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.wardrefresh_concept_risk_assessment", label: "Design risk assessment (including HAI risks, high-level only)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, HAI-SCRIBE." },
       { key: "del.wardrefresh_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
@@ -3065,7 +3065,7 @@ async function main() {
       { key: "del.wardrefresh_clinical_stakeholder_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.wardrefresh_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.wardrefresh_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.wardrefresh_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -3145,7 +3145,7 @@ async function main() {
       { key: "del.mhu_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
       { key: "del.mhu_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.mhu_concept_risk_assessment", label: "Design risk assessment (including ligature and HAI risks, high-level only)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, HAI-SCRIBE." },
       { key: "del.mhu_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
@@ -3175,7 +3175,7 @@ async function main() {
       { key: "del.mhu_clinical_stakeholder_design_approval", label: "Clinical, IPC and Mental Health stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.mhu_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.mhu_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.mhu_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.
@@ -3254,7 +3254,7 @@ async function main() {
       { key: "del.theatrerefresh_infection_control_strategy", label: "Outline clinical environment strategy (infection control, cleanability, durability)", description: "IPC." },
       { key: "del.theatrerefresh_preliminary_finishes_schedule", label: "Preliminary room data sheets / layouts" },
       { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
-      { key: "del.theatrerefresh_concept_risk_assessment", label: "Design risk assessment (including HAI risks, high-level only)", description: "CDM 2015, HAI-SCRIBE." },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, HAI-SCRIBE." },
       { key: "del.theatrerefresh_outline_construction_phasing_principles", label: "Outline construction / phasing principles (no method statements)" },
     ],
     // Gate 3 — Spatial Coordination
@@ -3284,7 +3284,7 @@ async function main() {
       { key: "del.theatrerefresh_clinical_stakeholder_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.theatrerefresh_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
       { key: "del.theatrerefresh_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off — no construction or detailed contractor documentation until this approval is received.", bypassAuthority: "SRO" },
-      { key: "del.theatrerefresh_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details", description: "Post-appointment activity, still recorded under Gate 4 — follows contractor appointment once the Pre-Contract Hold Point above clears." },
     ],
     // Gate 5 — Manufacturing & Construction. Only starts once the Gate
     // 4 Pre-Contract Hold Point is cleared and a contractor is onboarded.

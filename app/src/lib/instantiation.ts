@@ -21,6 +21,25 @@
 import type { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "./compliance";
 
+// Regulatory citations, comma-separated (e.g. "CDM 2015, SHTM 00.") --
+// every del.common_* deliverable's description already follows this
+// shape. Unioning them (26 Aug 2026, "merge CDM 2015, SHTM 00 and
+// SHTM 08-03... I would standardise this") rather than silently
+// keeping only the first-seen template's copy means a merged project
+// (e.g. Nurse Call + BMS both carrying "Design risk assessment") shows
+// every citation that actually applies, not just whichever template
+// happened to instantiate first.
+function unionCitations(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  const parts = (s: string) => s.replace(/\.\s*$/, "").split(",").map((p) => p.trim()).filter(Boolean);
+  const merged = parts(a);
+  for (const p of parts(b)) {
+    if (!merged.some((m) => m.toLowerCase() === p.toLowerCase())) merged.push(p);
+  }
+  return merged.length > 0 ? `${merged.join(", ")}.` : null;
+}
+
 type StageTemplateForInstantiation = {
   id: string;
   key: string;
@@ -91,12 +110,17 @@ export async function instantiateStage(
   });
 
   // Union every contributing template's deliverables onto this one
-  // Gate, deduping by `key` (first-template-wins, primary first) — a
-  // shared key across two templates almost certainly means the same
-  // real-world artifact, and creating two Deliverable rows for it would
-  // force duplicate evidence uploads for one requirement.
-  const seenDeliverableKeys = new Set<string>();
-  const deliverableRows: {
+  // Gate, deduping by `key` (primary template's own copy anchors the
+  // row — label, minFiles, blocksGate, bypassAuthority all come from
+  // whichever template is seen first) — a shared key across two
+  // templates almost certainly means the same real-world artifact, and
+  // creating two Deliverable rows for it would force duplicate evidence
+  // uploads for one requirement. The description (regulatory citations)
+  // is the one field unioned rather than just kept from the first
+  // template, so e.g. Nurse Call + BMS's shared "Design risk
+  // assessment" shows "CDM 2015, SHTM 00, SHTM 08-03." rather than only
+  // whichever template happened to instantiate first.
+  type DeliverableRow = {
     gateId: string;
     templateId: string;
     key: string;
@@ -106,12 +130,17 @@ export async function instantiateStage(
     blocksGate: boolean;
     bypassAuthority: string;
     status: "PENDING";
-  }[] = [];
+  };
+  const deliverableRowByKey = new Map<string, DeliverableRow>();
+  const deliverableRows: DeliverableRow[] = [];
   for (const st of withGate) {
     for (const dt of st.gateTemplate!.deliverableTemplates) {
-      if (seenDeliverableKeys.has(dt.key)) continue;
-      seenDeliverableKeys.add(dt.key);
-      deliverableRows.push({
+      const existing = deliverableRowByKey.get(dt.key);
+      if (existing) {
+        existing.description = unionCitations(existing.description, dt.description);
+        continue;
+      }
+      const row: DeliverableRow = {
         gateId: gate.id,
         templateId: dt.id,
         key: dt.key,
@@ -121,7 +150,9 @@ export async function instantiateStage(
         blocksGate: dt.blocksGate,
         bypassAuthority: dt.bypassAuthority,
         status: "PENDING",
-      });
+      };
+      deliverableRowByKey.set(dt.key, row);
+      deliverableRows.push(row);
     }
   }
   if (deliverableRows.length > 0) {
