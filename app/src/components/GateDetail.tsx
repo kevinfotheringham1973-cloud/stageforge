@@ -272,6 +272,26 @@ export async function GateDetail({
     /building (regulations|standards).{0,5}statutory compliance/i,
     /^pre-construction information/i,
     /^tender documentation/i,
+    // Ventilation + Ward Refresh's Gate 4 arrays don't line up
+    // positionally at all past this point (found via a real merged
+    // project, #30036, showing "BMS / controls philosophy" boxed
+    // together with "HAI-SCRIBE Stage 2 design review" — not even one
+    // word in common) — position-matching's fallback was pairing
+    // unrelated items purely by array index. Each of these anchors
+    // either correctly groups the same real action across templates
+    // (fire strategy/means of escape; the MEP interface-design item;
+    // HAI-SCRIBE's two distinct infection-control items, kept as two
+    // separate anchors rather than one so they never conflate design
+    // review with construction-phase measures) or, where a concept is
+    // genuinely unique to one template (filter/hygiene strategy), just
+    // takes it out of position-matching's blast radius entirely.
+    /filter.{0,20}hygiene/i,
+    /^bms.{0,10}(controls?|control philosophy)/i,
+    /^electrical design associated with/i,
+    /^fire strategy and means of escape/i,
+    /^interface design with/i,
+    /^hai-scribe stage 2 design review/i,
+    /^dust, water and infection control measures during construction/i,
   ];
   const keywordAnchorIndex = (label: string): number | null => {
     const index = KEYWORD_ANCHORS.findIndex((pattern) => pattern.test(label));
