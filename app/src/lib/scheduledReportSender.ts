@@ -19,7 +19,10 @@ const PLACEHOLDER_DOMAIN = /\.example$/i;
 export async function sendScheduledReport(reportId: string): Promise<SendScheduledReportResult> {
   const report = await db.scheduledReport.findUniqueOrThrow({ where: { id: reportId } });
   const recipients = await db.user.findMany({
-    where: { id: { in: report.recipientUserIds } },
+    // archivedAt: null so someone who's left the company since this
+    // report was set up (archiveUser) quietly stops receiving it,
+    // rather than needing every existing schedule hand-edited.
+    where: { id: { in: report.recipientUserIds }, archivedAt: null },
     select: { email: true },
   });
   const allEmails = recipients.map((u) => u.email);
