@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { assignUserToProject, updateUser } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -106,46 +106,64 @@ export function TeamRoster({
                 <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-wide text-accent">
                   Assign to a project
                 </summary>
-                <form action={assignUserToProject.bind(null, u.id)} className="mt-2 flex flex-wrap items-end gap-3">
-                  <div>
-                    <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                      Project
-                    </label>
-                    <select
-                      name="projectId"
-                      required
-                      className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
-                    >
-                      <option value="">Select…</option>
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} (#{p.projectNumber})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                      Role
-                    </label>
-                    <select name="roleId" required className="w-48 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
-                      <option value="">Select…</option>
-                      {roles.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <SubmitButton pendingText="Assigning…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
-                    Assign
-                  </SubmitButton>
-                </form>
+                <AssignToProjectForm userId={u.id} projects={projects} roles={roles} />
               </details>
             </div>
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Its own component (not inlined in the roster's .map) so
+ * useActionState gets one call per user row, following the Rules of
+ * Hooks — the roster's row count changes as the search box filters.
+ */
+function AssignToProjectForm({
+  userId,
+  projects,
+  roles,
+}: {
+  userId: string;
+  projects: { id: string; name: string; projectNumber: string }[];
+  roles: { id: string; name: string }[];
+}) {
+  const [state, formAction] = useActionState(assignUserToProject.bind(null, userId), undefined);
+
+  return (
+    <form action={formAction} className="mt-2 flex flex-wrap items-end gap-3">
+      <div>
+        <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Project</label>
+        <select name="projectId" required className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
+          <option value="">Select…</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} (#{p.projectNumber})
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Role</label>
+        <select name="roleId" required className="w-48 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
+          <option value="">Select…</option>
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <SubmitButton pendingText="Assigning…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+        Assign
+      </SubmitButton>
+      {state?.error && (
+        <p className="w-full text-sm font-semibold text-risk" role="alert">
+          {state.error}
+        </p>
+      )}
+    </form>
   );
 }
