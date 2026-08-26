@@ -1726,6 +1726,44 @@ export async function createRole(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+/**
+ * Platform-admin-only, for undoing an "Add role" mistake before it's
+ * actually in use. bypassAuthority/overrideAuthority and additional
+ * approver lists are open Role.key strings, not foreign keys (23 Aug
+ * 2026, "fully dynamic authority roles"), and every place that
+ * displays one already falls back to the raw key if no Role matches
+ * (see roleLabelByKey lookups in GateDetail.tsx) — so deleting a Role
+ * row can't corrupt those. The one real foreign key is
+ * ProjectRoleAssignment, which is why this blocks outright rather than
+ * cascading: a role someone is actually assigned to isn't a mistake to
+ * silently unwind.
+ */
+export async function deleteRole(roleId: string) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const actor = await db.user.findUniqueOrThrow({ where: { id: actorId } });
+  if (!actor.isPlatformAdmin) {
+    throw new Error("Only a platform admin can delete a role.");
+  }
+
+  const role = await db.role.findUniqueOrThrow({ where: { id: roleId } });
+  const assignmentCount = await db.projectRoleAssignment.count({ where: { roleId } });
+  if (assignmentCount > 0) {
+    throw new Error(
+      `"${role.name}" is assigned to ${assignmentCount} project role assignment${assignmentCount === 1 ? "" : "s"} — remove those first.`
+    );
+  }
+
+  await db.$transaction([
+    db.role.delete({ where: { id: roleId } }),
+    db.auditLogEntry.create({
+      data: { actorId, action: "role.deleted", entityType: "Role", entityId: roleId, reason: `Role "${role.name}" (${role.key}) deleted` },
+    }),
+  ]);
+
+  revalidatePath("/", "layout");
+}
+
 // ── Share links ──────────────────────────────────────────────────────
 // Read-only, expiring, revocable demo access -- see shareLinks.ts and
 // ShareLink's schema comment for the full design. Platform-admin-only to

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-import { createRole, createUser } from "@/lib/actions";
+import { createRole, createUser, deleteRole } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { TeamRoster } from "@/components/TeamRoster";
 import { forbidden } from "next/navigation";
@@ -25,7 +25,7 @@ export default async function TeamPage() {
     }),
     db.department.findMany({ orderBy: { name: "asc" }, include: { company: true } }),
     db.project.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, projectNumber: true } }),
-    db.role.findMany({ orderBy: { name: "asc" } }),
+    db.role.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { assignments: true } } } }),
   ]);
 
   const users = usersRaw.map((u) => ({
@@ -154,12 +154,23 @@ export default async function TeamPage() {
                 {group.roles.map((role) => (
                   <span
                     key={role.id}
-                    className={`rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+                    className={`inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
                       role.isExactMatchAuthority ? "bg-risk/15 text-risk" : "bg-accentsoft text-accent"
                     }`}
                     title={role.isExactMatchAuthority ? "Nobody else, including SRO, can act in its place" : "SRO can act through this role too"}
                   >
                     {role.name}
+                    {role._count.assignments > 0 ? (
+                      <span title={`Assigned on ${role._count.assignments} project role assignment${role._count.assignments === 1 ? "" : "s"} — remove those first to delete`}>
+                        🔒
+                      </span>
+                    ) : (
+                      <form action={deleteRole.bind(null, role.id)} className="inline">
+                        <button type="submit" title={`Delete "${role.name}"`} className="hover:text-risk">
+                          ×
+                        </button>
+                      </form>
+                    )}
                   </span>
                 ))}
               </div>
