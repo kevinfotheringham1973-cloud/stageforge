@@ -25,17 +25,16 @@
 // database or Next.js request/response; the route handler
 // (src/app/api/projects/[projectNumber]/pci-draft/route.ts) is
 // responsible for loading data and serving the file.
-import { Document, Packer, Paragraph, HeadingLevel, Table, TableRow, TableCell, WidthType, TextRun } from "docx";
 import type { CdmWorksType } from "@prisma/client";
+import type { DraftBlock } from "./docDraft";
+
+// Re-exported under the original names — this module's own consumers
+// (pci-draft/route.ts) need no changes now that the generic block type
+// and renderer live in docDraft.ts (see that file's header comment).
+export type { DraftBlock as PciBlock } from "./docDraft";
+export { renderDraftDocx as renderPciDocx } from "./docDraft";
 
 const PRINCIPAL_DESIGNER_PLACEHOLDER = "[PRINCIPAL DESIGNER / PM TO COMPLETE — site-specific detail, not auto-filled]";
-
-export type PciBlock =
-  | { type: "heading1"; text: string }
-  | { type: "heading2"; text: string }
-  | { type: "paragraph"; text: string }
-  | { type: "placeholder"; text: string }
-  | { type: "table"; header?: string[]; rows: string[][] };
 
 export type PciRoleAssignmentInput = {
   roleName: string;
@@ -194,9 +193,9 @@ function hazardMatchesProject(hazard: (typeof STANDARD_HAZARDS)[number], neededR
   return hazard.emphasise.some((k) => neededRoleKeys.has(k));
 }
 
-export function buildPciSections(input: PciInput): PciBlock[] {
-  const blocks: PciBlock[] = [];
-  const add = (b: PciBlock) => blocks.push(b);
+export function buildPciSections(input: PciInput): DraftBlock[] {
+  const blocks: DraftBlock[] = [];
+  const add = (b: DraftBlock) => blocks.push(b);
 
   add({ type: "heading1", text: `${input.projectName} — Pre-Construction Information` });
   add({
@@ -429,57 +428,4 @@ export function buildPciSections(input: PciInput): PciBlock[] {
   });
 
   return blocks;
-}
-
-export async function renderPciDocx(blocks: PciBlock[]): Promise<Buffer> {
-  const children: (Paragraph | Table)[] = [];
-
-  for (const block of blocks) {
-    if (block.type === "heading1") {
-      children.push(new Paragraph({ text: block.text, heading: HeadingLevel.HEADING_1 }));
-    } else if (block.type === "heading2") {
-      children.push(new Paragraph({ text: block.text, heading: HeadingLevel.HEADING_2 }));
-    } else if (block.type === "paragraph") {
-      children.push(new Paragraph({ text: block.text, spacing: { after: 200 } }));
-    } else if (block.type === "placeholder") {
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text: block.text, italics: true, color: "B45309" })],
-          spacing: { after: 200 },
-        })
-      );
-    } else if (block.type === "table") {
-      const headerRow = block.header
-        ? new TableRow({
-            children: block.header.map(
-              (h) =>
-                new TableCell({
-                  children: [new Paragraph({ text: h })],
-                  width: { size: 100 / block.header!.length, type: WidthType.PERCENTAGE },
-                })
-            ),
-          })
-        : null;
-      const dataRows = block.rows.map(
-        (row) =>
-          new TableRow({
-            children: row.map(
-              (cell) =>
-                new TableCell({
-                  children: [new Paragraph({ text: cell })],
-                })
-            ),
-          })
-      );
-      children.push(
-        new Table({
-          rows: headerRow ? [headerRow, ...dataRows] : dataRows,
-          width: { size: 100, type: WidthType.PERCENTAGE },
-        })
-      );
-    }
-  }
-
-  const doc = new Document({ sections: [{ children }] });
-  return Packer.toBuffer(doc);
 }
