@@ -541,6 +541,19 @@ export async function GateDetail({
           </a>
         )}
 
+        {d.key === "del.common_construction_phase_plan" && canReplaceEvidence && (
+          <a
+            href={`/api/projects/${projectNumber}/construction-phase-plan-draft`}
+            className="mb-3 flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
+          >
+            <span aria-hidden="true">⬇</span>
+            <span>
+              Generate Construction Phase Plan draft (.docx)
+              <span className="block text-xs font-normal">Pre-filled from this project&rsquo;s own data — review and edit before uploading</span>
+            </span>
+          </a>
+        )}
+
         {d.key.endsWith("_expanded_risk_register") && canReplaceEvidence && (
           <a
             href={`/api/projects/${projectNumber}/risk-register-draft`}

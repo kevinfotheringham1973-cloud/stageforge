@@ -51,18 +51,18 @@ export const CORE_PROJECT_WIDE_TEMPLATES: DocumentTemplateRow[] = [
   },
   {
     name: "Construction Phase Plan",
-    gates: "Gate 4 / Gate 5",
+    gates: "Gate 4",
     autoFilledContent:
-      "Site rules, welfare, communication & coordination arrangements, project directory, standard hazard list — carried forward from the PCI, GE 700 (CITB) structure",
+      "Site rules, welfare, communication & coordination arrangements, project team & programme dates, standard risk categories — GE 700 (CITB) structure",
     pmOwns: "Method statements, phasing, contractor-specific arrangements",
-    status: "planned",
+    status: "live",
   },
   {
     name: "F10 (HSE) Notification",
-    gates: "Gate 1 / Gate 4",
-    autoFilledContent: "Client, Principal Designer, Principal Contractor, project location, works description",
-    pmOwns: "Confirmed programme duration & workforce numbers",
-    status: "planned",
+    gates: "Gate 4",
+    autoFilledContent: "Notifiability declared at intake (CDM 2015 reg 6), written into the PCI's HSE Notification section",
+    pmOwns: "Confirmed programme duration & workforce numbers; the actual F10 submission",
+    status: "live",
   },
   {
     name: "Designer's Risk Assessment",

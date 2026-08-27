@@ -68,8 +68,10 @@ const STANDING_TEAM_AUTHORITIES = new Set(["PM", "SRO", "COMPLIANCE_OFFICER", "F
 /**
  * Which discipline role keys a project needs, based on which
  * bypassAuthority values its matched Template's own deliverables
- * actually use (paired AEs included), plus Principal Designer when the
- * CDM 2015 works-type answer requires one. Pure/read-only — shared by
+ * actually use (paired AEs included), plus Principal Designer and
+ * Principal Contractor when the CDM 2015 works-type answer requires
+ * them (reg 5(1) — same "more than one contractor" trigger for both).
+ * Pure/read-only — shared by
  * suggestDisciplineTeam (which acts on it) and the project overview
  * page (which shows any of these still unassigned, even the ones
  * CANDIDATES has no named holder for — Kevin's follow-up, 24 Aug 2026:
@@ -92,6 +94,7 @@ export async function neededDisciplineRoleKeys(templateIds: string[], worksType:
 
   if (worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR") {
     neededRoleKeys.add("PRINCIPAL_DESIGNER");
+    neededRoleKeys.add("PRINCIPAL_CONTRACTOR");
   }
 
   return neededRoleKeys;

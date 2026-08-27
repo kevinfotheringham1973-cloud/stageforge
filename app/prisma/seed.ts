@@ -17,6 +17,7 @@ import { instantiateStage } from "../src/lib/instantiation";
 import { generateEnglandVariant } from "../src/lib/englandConversion";
 import {
   CDM_BUILDING_MODIFICATION_TAG,
+  CDM_F10_NOTIFIABLE_TAG,
   CDM_PRINCIPAL_DESIGNER_TAG,
   effectiveComplianceTags,
   HAISCRIBE_HIGH_INTENSITY_TAG,
@@ -88,6 +89,17 @@ async function main() {
     // Fire Officer/AP: SRO has no standing to substitute for it.
     { key: "COMPETENT_PERSON", name: "Competent Person (PSSR/LOLER)", isExactMatchAuthority: true, category: "AUTHORISED_PERSON_ENGINEER" as const },
     { key: "PRINCIPAL_DESIGNER", name: "Principal Designer", category: "STATUTORY_OFFICER" as const },
+    // CDM 2015 reg 5(1) requires the client to appoint BOTH a Principal
+    // Designer and a Principal Contractor whenever more than one
+    // contractor is or will be working — same trigger, distinct duty
+    // holder (construction-phase management vs pre-construction design
+    // coordination). Distinct from the existing FM_CONTRACTOR role
+    // (SENIOR_CONTRACTUAL) — that's the company-level commercial
+    // relationship (Serco), not the project-specific CDM duty holder
+    // (27 Aug 2026, Sample_Template_Documents/
+    // Ward3_Construction_Phase_Plan_Document_v2.0.pdf, where a named
+    // Serco individual holds the PC appointment on one project).
+    { key: "PRINCIPAL_CONTRACTOR", name: "Principal Contractor", category: "STATUTORY_OFFICER" as const },
     // The site NHS Fire Officer — the only authority that can approve
     // or reject fire-related compliance (confirmed 20 Aug
     // 2026: an SRO has no legal standing to assess fire safety). See
@@ -493,6 +505,7 @@ async function main() {
       { key: "del.electrical_earthing_bonding_lightning_design", section: "Technical Design Package", label: "Earthing, bonding and lightning protection design", description: "BS 7671, SHTM 06." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 06.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.electrical_stakeholder_design_approval", label: "Stakeholder review and approval of design", description: "SHTM 06.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -641,6 +654,7 @@ async function main() {
       { key: "del.water_electrical_design", section: "Technical Design Package", label: "Electrical design associated with pumps and controls", description: "SHTM 06 series." },
       { key: "del.water_byelaws_compliance_info", label: "Building Regulations / Water Byelaws compliance information", description: "Scottish Water Byelaws.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 04-01.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
@@ -761,6 +775,7 @@ async function main() {
       { key: "del.drainage_installation_method_statements", label: "Detailed Installation Method Statements, confined-space/excavation permit procedures and RAMS" },
       { key: "del.drainage_compliance_matrix", label: "Compliance Matrix — mapping against BS EN 12056, SHTM 64, Building (Scotland) Regulations, Water Environment (Controlled Activities) (Scotland) Regulations 2011, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)" },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.drainage_procurement_package", label: "Tender or direct-award procurement package" },
       { key: "del.drainage_updated_programme_resource_plan", label: "Updated Programme and Resource Plan" },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015.", bypassAuthority: "SRO" },
@@ -876,6 +891,7 @@ async function main() {
       { key: "del.coldwater_installation_method_statements", label: "Detailed Installation Method Statements and RAMS" },
       { key: "del.coldwater_compliance_matrix", label: "Compliance Matrix — mapping against SHTM 04-01, BS 8558, Water Byelaws, HSE ACOP L8, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)" },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.coldwater_procurement_package", label: "Tender or direct-award procurement package" },
       { key: "del.coldwater_updated_programme_resource_plan", label: "Updated Programme and Resource Plan" },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015.", bypassAuthority: "SRO" },
@@ -988,6 +1004,7 @@ async function main() {
       { key: "del.lighting_installation_method_statements", label: "Detailed Installation Method Statements and RAMS" },
       { key: "del.lighting_compliance_matrix", label: "Compliance Matrix — mapping against BS 7671, BS 5266, BS EN 12464-1, CDM 2015", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)" },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.lighting_procurement_package", label: "Tender or direct-award procurement package" },
       { key: "del.lighting_updated_programme_resource_plan", label: "Updated Programme and Resource Plan" },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015.", bypassAuthority: "SRO" },
@@ -1152,6 +1169,7 @@ async function main() {
       { key: "del.boiler_thermal_insulation_spec", section: "Technical Design Package", label: "Thermal insulation specification" },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 00.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
@@ -1317,6 +1335,7 @@ async function main() {
       { key: "del.ventilation_duct_insulation_spec", section: "Technical Design Package", label: "Duct insulation specification" },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 03-01, HAI-SCRIBE.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
@@ -1466,6 +1485,7 @@ async function main() {
       { key: "del.medgas_alarm_system_design", section: "Technical Design Package", label: "Alarm system design and interface requirements", description: "SHTM 02-01 Part A." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 02-01.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM (Planned Preventative Maintenance) documentation and current compliance status for the existing plant being replaced. Critical commercial requirement — a condition for the Pre-Contract Hold Point below." },
@@ -1600,6 +1620,7 @@ async function main() {
       { key: "del.firealarm_ufas_reduction_strategy", section: "Technical Design Package", label: "UFAS reduction strategy (detector selection, multi-criteria, verification technology)", description: "SHTM 82." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 82.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.firealarm_fsa_design_approval", label: "Fire Safety Advisor / stakeholder review and approval of design", description: "SHTM 82 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
@@ -1733,6 +1754,7 @@ async function main() {
       { key: "del.lift_firefighting_escape_requirements", section: "Technical Design Package", label: "Firefighting lift / escape bed lift specific requirements (controls, communications, power)", description: "SHTM 81, SFPN 3, BS EN 81-72." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 08-02.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.lift_fsa_design_approval", label: "Stakeholder / Fire Safety Advisor review and approval of design", description: "SHTM 08-02 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
@@ -1864,6 +1886,7 @@ async function main() {
       { key: "del.nursecall_wireless_coverage_radio_survey", section: "Technical Design Package", label: "Wireless coverage / radio survey (if applicable)", description: "Manufacturer requirements, radio licensing." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 08-03.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.nursecall_clinical_design_approval", label: "Clinical stakeholder review and approval", description: "SHTM 08-03 — patient safety, staff response times, and audit-trail requirements need clinical sign-off, not just engineering sign-off.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
@@ -1996,6 +2019,7 @@ async function main() {
       { key: "del.bms_electrical_design", section: "Technical Design Package", label: "Electrical design associated with BMS power and controls", description: "SHTM 06 series." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 00.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.bms_stakeholder_design_approval", label: "Stakeholder review and approval of design (including clinical & energy teams)", description: "SHTM 00.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -2134,6 +2158,7 @@ async function main() {
       { key: "del.chilledwater_refrigerant_fgas_management", section: "Technical Design Package", label: "Refrigerant management and F-Gas compliance (if applicable)", description: "F-Gas Regulations." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 00.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.chilledwater_stakeholder_design_approval", label: "Stakeholder review and approval of design", description: "SHTM 00.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -2273,6 +2298,7 @@ async function main() {
       { key: "del.steam_electrical_design", section: "Technical Design Package", label: "Electrical design associated with boilers, pumps and controls", description: "SHTM 06 series." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, PSSR.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.steam_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPETENT_PERSON" },
@@ -2404,6 +2430,7 @@ async function main() {
       { key: "del.firesuppression_water_agent_storage_design", section: "Technical Design Package", label: "Water supply / storage or agent storage design", description: "Relevant standards." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 81.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.firesuppression_fsa_design_approval", label: "Fire Safety Advisor / Authorising Engineer review and approval of design", description: "SHTM 81, SHTM 86 — only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
@@ -2538,6 +2565,7 @@ async function main() {
       { key: "del.security_interface_design_other_systems", section: "Technical Design Package", label: "Interface design with other systems (fire, BMS, nurse call, lifts if required)" },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.security_stakeholder_design_approval", label: "Stakeholder review and approval of design (Security, IG, Cyber, Estates)", description: "Essential.", bypassAuthority: "INFORMATION_GOVERNANCE_OFFICER" },
@@ -2675,6 +2703,7 @@ async function main() {
       { key: "del.pts_noise_vibration_considerations", section: "Technical Design Package", label: "Noise and vibration considerations", description: "SHTM 08-01, where relevant." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, IPC.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.pts_clinical_ipc_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "CLINICAL_SAFETY_OFFICER" },
@@ -2800,6 +2829,7 @@ async function main() {
       { key: "del.abovedrainage_belowground_interface_design", section: "Technical Design Package", label: "Interface design with below-ground drainage and sanitary fittings" },
       { key: "del.abovedrainage_building_standards_compliance_info", label: "Building Standards (Scotland) compliance information", description: "Section 3 Environment.", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, IPC.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.abovedrainage_stakeholder_design_approval", label: "Stakeholder review and approval of design (Estates, IPC)", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -2928,6 +2958,7 @@ async function main() {
       { key: "del.compressedair_noise_ventilation_heat_rejection", section: "Technical Design Package", label: "Noise, ventilation and heat rejection design" },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, PSSR.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.compressedair_competent_person_design_review", label: "Competent Person review of design (where required under Written Scheme)", description: "PSSR.", bypassAuthority: "COMPETENT_PERSON" },
@@ -3080,6 +3111,7 @@ async function main() {
       { key: "del.common_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.wardrefresh_clinical_stakeholder_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3190,6 +3222,7 @@ async function main() {
       { key: "del.common_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.mhu_clinical_stakeholder_design_approval", label: "Clinical, IPC and Mental Health stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3299,6 +3332,7 @@ async function main() {
       { key: "del.common_fire_strategy_means_of_escape", label: "Fire strategy and means of escape implications", description: "Firecode.", bypassAuthority: "FIRE_OFFICER" },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
+      { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, HAI-SCRIBE.", bypassAuthority: "SRO" },
       { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
       { key: "del.theatrerefresh_clinical_stakeholder_design_approval", label: "Clinical and IPC stakeholder review and approval of design", description: "Essential.", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -3617,6 +3651,43 @@ async function main() {
         blocksGate: true,
         appliesToStageKeys: ["stage.concept_design"],
         appliesIfTags: [CDM_BUILDING_MODIFICATION_TAG],
+      },
+      // F10 (HSE) notification (27 Aug 2026, external review feedback —
+      // Sample_Template_Documents/F10 Notification - Ward 3.pdf) — driven
+      // by Project.notifiableUnderCdm, a third self-declared CDM answer
+      // captured alongside worksType at creation, same reasoning as the
+      // two rules above. Sits at Gate 4 (stage.technical_design), same
+      // stage as comp.building_warrant and every other "must clear before
+      // Gate 5 construction starts" item — reg 6 requires notification
+      // before the construction phase begins.
+      {
+        ruleSetId: scottishHealthCompliance.id,
+        key: "comp.cdm_f10_notification",
+        label: "F10 notification submitted to HSE (or confirmed not required)",
+        description: "Required before the construction phase begins if the project will last more than 30 working days AND have more than 20 workers on site simultaneously at any point, or involve more than 500 person-days of construction work in total.",
+        ruleRef: "Construction (Design and Management) Regulations 2015, reg 6",
+        blocksGate: true,
+        appliesToStageKeys: ["stage.technical_design"],
+        appliesIfTags: [CDM_F10_NOTIFIABLE_TAG],
+      },
+      // Principal Contractor appointment (27 Aug 2026, same source doc —
+      // Sample_Template_Documents/Ward3_Construction_Phase_Plan_Document_
+      // v2.0.pdf) — same reg 5(1) trigger as comp.cdm_principal_designer_
+      // appointed above, so reuses CDM_PRINCIPAL_DESIGNER_TAG rather than
+      // a new tag. Sits at Gate 4, not Gate 1 like Principal Designer:
+      // the Principal Contractor is the appointed contractor's own site
+      // representative, so the appointment naturally coincides with
+      // contractor appointment at the Gate 4 Pre-Contract Hold Point,
+      // not before design work has even started.
+      {
+        ruleSetId: scottishHealthCompliance.id,
+        key: "comp.cdm_principal_contractor_appointed",
+        label: "Principal Contractor appointed under CDM 2015",
+        description: "Required as soon as practicable, and before the construction phase begins, whenever more than one contractor is or will be working on the project.",
+        ruleRef: "Construction (Design and Management) Regulations 2015, reg 5(1)",
+        blocksGate: true,
+        appliesToStageKeys: ["stage.technical_design"],
+        appliesIfTags: [CDM_PRINCIPAL_DESIGNER_TAG],
       },
     ],
   });

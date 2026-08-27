@@ -605,6 +605,12 @@ model Project {
   // free text (see lib/provisioning.ts, which excludes the derived tag
   // from its tag-matching vocabulary for exactly this reason).
   worksType                  CdmWorksType                @default(DIRECT_REPLACEMENT_SINGLE_CONTRACTOR)
+  // Self-declared at creation, same reasoning as worksType above — the
+  // CDM 2015 reg 6 F10 notification test (>30 working days AND >20
+  // simultaneous workers, OR >500 person-days) is a fact the PM/
+  // Compliance Officer states, not something an LLM or the app should
+  // infer. Defaults false only so existing/seeded rows have a value.
+  notifiableUnderCdm         Boolean                     @default(false)
   status                     ProjectStatus               @default(ACTIVE)
   createdById                String?
   createdBy                  User?                       @relation("ProjectCreatedBy", fields: [createdById], references: [id])
