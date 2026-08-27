@@ -4,7 +4,7 @@
   "private": true,
   "description": "StageForge Phase 1 MVP scaffold — Stage-Gate Engine, Deliverable/Evidence, tiered bypass authority, Sponsor sign-off, audit trail, multi-tenancy.",
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
