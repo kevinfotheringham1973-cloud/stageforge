@@ -122,6 +122,33 @@ export function NewProjectForm({
           </label>
         </div>
       </fieldset>
+      <fieldset className="rounded-lg border border-dashed border-flag bg-accentsoft/30 p-4">
+        <legend className="mb-1 font-mono text-xs uppercase tracking-wide text-flag">
+          F10 notification (CDM 2015, reg 6) — required
+        </legend>
+        <p className="mb-3 text-sm text-inkmuted">
+          Will this project last more than 30 working days <strong>and</strong> have more than 20
+          workers on site at once, or involve more than 500 person-days of construction work in
+          total? If either test is met, an F10 must be submitted to the HSE before construction
+          starts.
+        </p>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-start gap-2 text-sm">
+            <input type="radio" name="notifiableUnderCdm" value="true" required className="mt-1" />
+            <span>
+              <span className="font-semibold">Yes / not sure yet</span> — an F10 will need to be
+              submitted before construction starts. Safer default if unsure; a Compliance Officer
+              can correct this at review.
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="radio" name="notifiableUnderCdm" value="false" required className="mt-1" />
+            <span>
+              <span className="font-semibold">No</span> — neither threshold will be met.
+            </span>
+          </label>
+        </div>
+      </fieldset>
       <fieldset className="rounded-lg border border-dashed border-rule p-4">
         <legend className="mb-1 font-mono text-xs uppercase tracking-wide text-inkmuted">
           {preselectedWorksPackage ? "Part of a combined works package?" : "Other systems this project also covers (optional)"}

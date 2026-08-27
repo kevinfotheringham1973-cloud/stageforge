@@ -120,6 +120,17 @@ export default async function ProvisioningReviewPage({
         <p className="text-sm text-inkmuted">{WORKS_TYPE_DESCRIPTION[project.worksType]}</p>
       </div>
 
+      <div className="mb-6 rounded-lg border border-rule bg-surface p-5">
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">F10 notification (CDM 2015, reg 6)</h2>
+        <div className={`mb-1 text-sm font-semibold ${project.notifiableUnderCdm ? "text-flag" : ""}`}>
+          {project.notifiableUnderCdm ? "Yes / not sure yet — F10 required before construction starts" : "No"}
+        </div>
+        <p className="text-sm text-inkmuted">
+          Declared at creation: will the project last more than 30 working days and have more than 20
+          workers on site at once, or involve more than 500 person-days of work in total?
+        </p>
+      </div>
+
       {project.provisioningReviews.length > 0 && (
         <div className="mb-6">
           <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wide text-inkmuted">Review history</h2>
@@ -213,6 +224,21 @@ export default async function ProvisioningReviewPage({
                     {WORKS_TYPE_LABEL[wt]}
                   </label>
                 ))}
+              </div>
+            </fieldset>
+            <fieldset className="w-full basis-full">
+              <legend className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                F10 notification (CDM 2015, reg 6)
+              </legend>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-1.5 text-sm">
+                  <input type="radio" name="notifiableUnderCdm" value="true" defaultChecked={project.notifiableUnderCdm} />
+                  Yes / not sure yet
+                </label>
+                <label className="flex items-center gap-1.5 text-sm">
+                  <input type="radio" name="notifiableUnderCdm" value="false" defaultChecked={!project.notifiableUnderCdm} />
+                  No
+                </label>
               </div>
             </fieldset>
             <SubmitButton pendingText="Updating…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">

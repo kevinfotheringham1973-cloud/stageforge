@@ -48,6 +48,7 @@ export type PciInput = {
   projectNumber: string;
   brief: string | null;
   worksType: CdmWorksType;
+  notifiableUnderCdm: boolean;
   constituentTemplateNames: string[];
   neededRoleKeys: Set<string>;
   fmContractorName: string | null;
@@ -73,23 +74,23 @@ function scopeSummary(input: PciInput): string {
   );
 }
 
-function notificationParagraph(worksType: CdmWorksType): string {
-  if (worksType === "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR") {
+function notificationParagraph(notifiableUnderCdm: boolean): string {
+  if (!notifiableUnderCdm) {
     return (
-      "With reference to Regulation 6 of the Construction (Design and Management) Regulations 2015 (CDM 2015), this project " +
-      "is a like-for-like replacement delivered by a single contractor. On that basis it is not anticipated to meet the " +
-      "notification thresholds, but this should be confirmed once final programme duration and workforce levels are known " +
-      "— if notification does become required, an F10 notification must be submitted to the Health and Safety Executive " +
-      "prior to commencement of construction activities, and a copy displayed on site for the duration of the works."
+      "With reference to Regulation 6 of the Construction (Design and Management) Regulations 2015 (CDM 2015), the " +
+      "project team has confirmed that this project will not exceed 30 working days with more than 20 workers on site " +
+      "simultaneously, nor 500 person-days of construction work in total. On that basis no F10 notification to the " +
+      "Health and Safety Executive is required. This assessment should be revisited if the programme duration or " +
+      "workforce numbers change materially."
     );
   }
   return (
-    "With reference to Regulation 6 of the Construction (Design and Management) Regulations 2015 (CDM 2015), the works " +
-    "are anticipated to be notifiable subject to confirmation of final programme duration and workforce levels. Where the " +
-    "notification thresholds are met, an F10 notification shall be submitted to the Health and Safety Executive prior to " +
-    "commencement of construction activities. Where notification is required, the Principal Contractor shall ensure that a " +
-    "copy of the F10 is clearly displayed on site for the duration of the works and kept up to date should any material " +
-    "changes occur. No construction activities shall commence until statutory notification requirements have been satisfied."
+    "With reference to Regulation 6 of the Construction (Design and Management) Regulations 2015 (CDM 2015), this " +
+    "project is expected to exceed the statutory notification thresholds. An F10 notification shall be submitted to the " +
+    "Health and Safety Executive prior to commencement of construction activities. The Principal Contractor shall " +
+    "ensure that a copy of the F10 is clearly displayed on site for the duration of the works and kept up to date should " +
+    "any material changes occur. No construction activities shall commence until statutory notification requirements " +
+    "have been satisfied."
   );
 }
 
@@ -217,7 +218,7 @@ export function buildPciSections(input: PciInput): PciBlock[] {
   });
   add({ type: "paragraph", text: scopeSummary(input) });
   add({ type: "heading2", text: "Notification of project" });
-  add({ type: "paragraph", text: notificationParagraph(input.worksType) });
+  add({ type: "paragraph", text: notificationParagraph(input.notifiableUnderCdm) });
 
   add({ type: "heading1", text: "Project Details" });
   add({ type: "heading2", text: "Description of the Project" });
@@ -311,7 +312,7 @@ export function buildPciSections(input: PciInput): PciBlock[] {
     text: "The Principal Contractor is responsible for establishing and managing the construction site in a manner that ensures the safety of the workforce, hospital staff, patients and visitors, with the construction area clearly segregated from operational areas using temporary hoarding, barriers and signage.",
   });
   add({ type: "heading2", text: "HSE Notification" });
-  add({ type: "paragraph", text: notificationParagraph(input.worksType) });
+  add({ type: "paragraph", text: notificationParagraph(input.notifiableUnderCdm) });
   add({ type: "heading2", text: "Smoking Restrictions" });
   add({
     type: "paragraph",

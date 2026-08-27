@@ -59,10 +59,10 @@ export const CORE_PROJECT_WIDE_TEMPLATES: DocumentTemplateRow[] = [
   },
   {
     name: "F10 (HSE) Notification",
-    gates: "Gate 1 / Gate 4",
-    autoFilledContent: "Client, Principal Designer, Principal Contractor, project location, works description",
-    pmOwns: "Confirmed programme duration & workforce numbers",
-    status: "planned",
+    gates: "Gate 4",
+    autoFilledContent: "Notifiability declared at intake (CDM 2015 reg 6), written into the PCI's HSE Notification section",
+    pmOwns: "Confirmed programme duration & workforce numbers; the actual F10 submission",
+    status: "live",
   },
   {
     name: "Designer's Risk Assessment",

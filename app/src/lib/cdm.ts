@@ -21,6 +21,11 @@ import type { CdmWorksType } from "@prisma/client";
 
 export const CDM_PRINCIPAL_DESIGNER_TAG = "cdm_principal_designer_required";
 export const CDM_BUILDING_MODIFICATION_TAG = "cdm_building_modification";
+// Reg 6 F10 notification duty (27 Aug 2026) — driven by
+// Project.notifiableUnderCdm, a self-declared answer captured
+// alongside worksType at creation, same reasoning as the two tags
+// above: a fact the PM/Compliance Officer states, not an inference.
+export const CDM_F10_NOTIFIABLE_TAG = "cdm_f10_notifiable";
 
 export const CDM_WORKS_TYPES: CdmWorksType[] = [
   "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR",
@@ -71,7 +76,7 @@ const HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS = new Set([
  * don't break — always pass it where the Templates are known.
  */
 export function effectiveComplianceTags(
-  project: { tags: string[]; worksType: CdmWorksType },
+  project: { tags: string[]; worksType: CdmWorksType; notifiableUnderCdm: boolean },
   templateKeys?: string[]
 ): string[] {
   const derivedTags: string[] = [];
@@ -80,6 +85,9 @@ export function effectiveComplianceTags(
   }
   if (project.worksType === "BUILDING_MODIFICATION") {
     derivedTags.push(CDM_BUILDING_MODIFICATION_TAG);
+  }
+  if (project.notifiableUnderCdm) {
+    derivedTags.push(CDM_F10_NOTIFIABLE_TAG);
   }
   if (templateKeys?.some((k) => HAISCRIBE_HIGH_INTENSITY_TEMPLATE_KEYS.has(k))) {
     derivedTags.push(HAISCRIBE_HIGH_INTENSITY_TAG);

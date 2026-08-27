@@ -955,6 +955,11 @@ export async function createProvisioningDraft(formData: FormData) {
       "The CDM 2015 works-type question is required: single-contractor direct replacement, multiple-contractor direct replacement, or building modification?"
     );
   }
+  const notifiableUnderCdmRaw = String(formData.get("notifiableUnderCdm") ?? "");
+  if (notifiableUnderCdmRaw !== "true" && notifiableUnderCdmRaw !== "false") {
+    throw new Error("The F10 notification question is required.");
+  }
+  const notifiableUnderCdm = notifiableUnderCdmRaw === "true";
 
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
@@ -1012,6 +1017,7 @@ export async function createProvisioningDraft(formData: FormData) {
         includedStageKeys: template.stageTemplates.map((st) => st.key),
         tags: match.tags,
         worksType,
+        notifiableUnderCdm,
         status: "DRAFT",
         createdById: userId,
         provisioningBrief: brief,
@@ -1053,6 +1059,7 @@ export async function createProvisioningDraft(formData: FormData) {
           includedStageKeys: extraTemplate.stageTemplates.map((st) => st.key),
           tags: extraMatch.tags,
           worksType,
+          notifiableUnderCdm,
           status: "DRAFT",
           createdById: userId,
           provisioningBrief: brief,
@@ -1101,6 +1108,7 @@ export async function createProvisioningDraft(formData: FormData) {
       includedStageKeys,
       tags,
       worksType,
+      notifiableUnderCdm,
       status: "DRAFT",
       createdById: userId,
       provisioningBrief: brief,
@@ -1182,6 +1190,11 @@ export async function updateProvisioningDraft(projectId: string, projectNumber: 
   if (!isCdmWorksType(worksType)) {
     throw new Error("A valid CDM 2015 works-type answer is required.");
   }
+  const notifiableUnderCdmRaw = String(formData.get("notifiableUnderCdm") ?? "");
+  if (notifiableUnderCdmRaw !== "true" && notifiableUnderCdmRaw !== "false") {
+    throw new Error("A valid F10 notification answer is required.");
+  }
+  const notifiableUnderCdm = notifiableUnderCdmRaw === "true";
 
   const userId = await getCurrentUserId();
   if (!userId) throw new Error("Not signed in.");
@@ -1208,7 +1221,7 @@ export async function updateProvisioningDraft(projectId: string, projectNumber: 
 
   await db.project.update({
     where: { id: projectId },
-    data: { templateId: nextTemplateId, tags, worksType },
+    data: { templateId: nextTemplateId, tags, worksType, notifiableUnderCdm },
   });
 
   await db.auditLogEntry.create({
