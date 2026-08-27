@@ -45,6 +45,26 @@ const APPROVAL_BUCKET_LABELS: Record<string, string> = {
   VARIATION: "Variation",
 };
 
+// One-line "what is this gate actually asking" summary (27 Aug 2026,
+// "Project Manager - What to look for at each gate deliverable.docx")
+// — keyed by Gate.key, not per-template: every template shares the
+// same Gate 0-7 shape and the underlying question at each gate is the
+// same regardless of discipline (confirmed against every template's
+// own Gate 4 Pre-Contract Hold Point pattern), so this covers the
+// whole library from one small map instead of per-template content.
+// Wording is the source document's own "Quick PM Summary" table,
+// unmodified.
+const GATE_PM_FOCUS: Record<string, string> = {
+  "gate.g0_strategic_definition": "Is this problem real?",
+  "gate.g1_preparation_briefing": "Do we understand the starting position?",
+  "gate.g2_concept_design": "Have we chosen a sensible direction?",
+  "gate.g3_spatial_coordination": "Will it fit and can we keep the hospital running?",
+  "gate.g4_technical_design": "Do we have robust prices and the required approvals before appointing a contractor?",
+  "gate.g5_manufacturing_construction": "Is the work being delivered safely and in line with the approved scope?",
+  "gate.g6_handover": "Can the hospital safely take over and operate the new system?",
+  "gate.g7_use": "Is it performing and have we learned from it?",
+};
+
 // Matched by key suffix, not an enumerated list (26 Aug 2026) — an
 // earlier enumerated Set (#89) missed BMS entirely: its live
 // DeliverableTemplate/Deliverable rows still carry the pre-#82
@@ -683,8 +703,17 @@ export async function GateDetail({
     );
   };
 
+  const pmFocus = GATE_PM_FOCUS[gate.key];
+
   return (
     <div>
+      {pmFocus && (
+        <div className="mb-6 rounded-lg border border-accent bg-accentsoft px-4 py-3">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-wide text-accent">PM focus</div>
+          <div className="mt-0.5 text-sm font-semibold">{pmFocus}</div>
+        </div>
+      )}
+
       <details className="group mb-6 rounded-lg border border-rule bg-surface px-4 py-3">
         <summary className="cursor-pointer select-none font-mono text-[10px] font-bold uppercase tracking-wide text-inkmuted">
           What do Upload, Bypass, Override &amp; Reject mean?
