@@ -320,6 +320,15 @@ model DeliverableTemplate {
   // discipline. Set once at authoring time (seed.ts's
   // createDeliverableTemplates helper); never re-derived live.
   order           Int           @default(0)
+  // Optional shared-heading label for grouping several of this
+  // template's own Gate 4 design-output items into one visual box
+  // (27 Aug 2026, external review feedback: Gate 4 "feels long" as a
+  // flat list of cards). Same live-relation pattern as `order` above —
+  // deliberately not copied onto Deliverable, so updating this field
+  // retroactively regroups every already-instantiated project's gate
+  // with no risk to evidence/bypass data. Null means "no grouping",
+  // the default for nearly every deliverable.
+  section         String?
   deliverables    Deliverable[]
 
   @@unique([gateTemplateId, key])

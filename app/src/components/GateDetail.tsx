@@ -144,7 +144,9 @@ export async function GateDetail({
         include: {
           evidenceFiles: { orderBy: { uploadedAt: "desc" } },
           bypass: { include: { bypassedBy: true } },
-          template: { select: { order: true, gateTemplate: { select: { stageTemplate: { select: { templateId: true } } } } } },
+          template: {
+            select: { order: true, section: true, gateTemplate: { select: { stageTemplate: { select: { templateId: true } } } } },
+          },
         },
       },
       complianceRequirements: {
@@ -415,6 +417,33 @@ export async function GateDetail({
           .values()
       ).sort((a, b) => a.order - b.order)
     : [];
+
+  // Solo-template section grouping (27 Aug 2026, external review
+  // feedback: Gate 4 "feels long" as a flat list of cards). Separate
+  // and independent from the isMerged/slotGroups logic above — that
+  // machinery only ever fires on a merged multi-template project, so a
+  // solo-template project's own gate never benefited from any
+  // grouping at all, even where the template itself groups several
+  // design-output items under one DeliverableTemplate.section (e.g.
+  // Boiler's water treatment / BMS / electrical / flue / structural /
+  // insulation items all share "Technical Design Package"). Deriving
+  // this only when !isMerged keeps it from interacting with the
+  // already-intricate cross-template keyword-anchor matching above.
+  // A null section is its own singleton group — renders exactly as a
+  // plain solo card, unchanged from before this feature existed.
+  const soloSectionGroups = isMerged
+    ? []
+    : Array.from(
+        gate.deliverables
+          .reduce((groups, d) => {
+            const sectionKey = d.template?.section ?? `solo:${d.id}`;
+            if (!groups.has(sectionKey)) groups.set(sectionKey, { section: d.template?.section ?? null, deliverables: [] });
+            groups.get(sectionKey)!.deliverables.push(d);
+            return groups;
+          }, new Map<string, { section: string | null; deliverables: typeof gate.deliverables }>())
+          .values()
+      );
+
   const ready = isGateReadyForSponsor(gate.deliverables, gate.complianceRequirements, gate.spendRecords);
   const outstanding = gate.deliverables.filter((d) => d.blocksGate && d.status === "PENDING").length;
   // "Outstanding" means not yet truly gate-clear — PENDING, or already
@@ -815,7 +844,35 @@ export async function GateDetail({
               })}
             </div>
           ) : (
-            <div className="flex flex-col gap-3">{gate.deliverables.map(renderDeliverable)}</div>
+            <div className="flex flex-col gap-3">
+              {soloSectionGroups.map((group) => {
+                if (group.deliverables.length === 1) {
+                  return renderDeliverable(group.deliverables[0]!);
+                }
+                // Section box: several of this same template's own
+                // Gate 4 design-output items sharing one
+                // DeliverableTemplate.section (e.g. "Technical Design
+                // Package") collapse into one bordered box under a
+                // plain section heading — unlike the merged slot box
+                // above, no single item's label stands in for the
+                // group, since these are genuinely distinct
+                // deliverables, not near-duplicates across templates.
+                // Every member keeps its own full label, status and
+                // upload/bypass controls.
+                return (
+                  <div key={group.section} className="rounded-lg border border-rule bg-surface p-5">
+                    <h4 className="mb-3 font-mono text-xs font-bold uppercase tracking-wide text-accent">{group.section}</h4>
+                    <div className="flex flex-col divide-y divide-rule">
+                      {group.deliverables.map((d) => (
+                        <div key={d.id} className="pt-3 first:pt-0">
+                          {renderDeliverableBody(d)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </>
       )}
