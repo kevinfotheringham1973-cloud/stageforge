@@ -28,20 +28,6 @@ const db = new PrismaClient();
 async function main() {
   console.log("Seeding StageForge Phase 1 dev data…");
 
-  // ── Managed project-number counter (lib/projectNumber.ts) — starts a
-  // fresh block at 30001, deliberately unrelated to the ad-hoc numbers
-  // the first three demo projects below already carry (20456, 20777,
-  // 55998). Seeded to 30002, not 30000: the fourth and fifth demo
-  // projects below are themselves the real projects issued 30001 and
-  // 30002 live, so the counter has to already account for both numbers
-  // being taken — otherwise the next real project created after a
-  // reset would collide with one of them.
-  await db.projectNumberCounter.upsert({
-    where: { id: 1 },
-    update: {},
-    create: { id: 1, value: 30002 },
-  });
-
   // ── Roles (global, Phase 1's core eight, plus three project-specific
   // gate-approver roles named in the UPS example — informational only,
   // same non-bypass standing as FM Contractor / Client Authority) ────
@@ -135,6 +121,22 @@ async function main() {
     where: { key: "health" },
     update: {},
     create: { key: "health", name: "Health", brandName: "StageForge" },
+  });
+
+  // ── Managed project-number counter (lib/projectNumber.ts) — one row
+  // per SectorVariant (28 Aug 2026, see the schema's own comment), not
+  // a single global row: England's block below gets its own. Scotland's
+  // starts a fresh block at 30001, deliberately unrelated to the
+  // ad-hoc numbers the first three demo projects below already carry
+  // (20456, 20777, 55998). Seeded to 30002, not 30000: the fourth and
+  // fifth demo projects below are themselves the real projects issued
+  // 30001 and 30002 live, so the counter has to already account for
+  // both numbers being taken — otherwise the next real project created
+  // after a reset would collide with one of them.
+  await db.projectNumberCounter.upsert({
+    where: { sectorVariantId: health.id },
+    update: {},
+    create: { sectorVariantId: health.id, value: 30002 },
   });
 
   // ── Companies & departments ────────────────────────────────────
@@ -4271,6 +4273,16 @@ async function main() {
   // the same conversion engine a live DB re-runs with `npm run
   // england:generate` — see src/lib/englandConversion.ts.
   const englandResult = await generateEnglandVariant(db);
+
+  // England's own project-number counter (see the Scotland one above) —
+  // starts at 40001 not 40000: seedEnglandDemo below issues project
+  // #40001 directly via db.project.create, bypassing this counter, so
+  // the first number actually issued through it must be #40002.
+  await db.projectNumberCounter.upsert({
+    where: { sectorVariantId: englandResult.sectorVariantId },
+    update: {},
+    create: { sectorVariantId: englandResult.sectorVariantId, value: 40001 },
+  });
 
   // The England demo tenant itself (28 Aug 2026) — its own companies,
   // role-name-only users, and one demo project, entirely separate from

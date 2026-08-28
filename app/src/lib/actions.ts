@@ -1017,7 +1017,7 @@ export async function createProvisioningDraft(formData: FormData) {
 
     const match = await matchComplianceTags(db, templateId, brief);
 
-    const projectNumber = await issueNextProjectNumber();
+    const projectNumber = await issueNextProjectNumber(template.sectorVariantId);
 
     const project = await db.project.create({
       data: {
@@ -1062,7 +1062,7 @@ export async function createProvisioningDraft(formData: FormData) {
         include: { stageTemplates: { orderBy: { order: "asc" } } },
       });
       const extraMatch = await matchComplianceTags(db, extraTemplateId, brief);
-      const extraProjectNumber = await issueNextProjectNumber();
+      const extraProjectNumber = await issueNextProjectNumber(extraTemplate.sectorVariantId);
 
       const extraProject = await db.project.create({
         data: {
@@ -1112,7 +1112,7 @@ export async function createProvisioningDraft(formData: FormData) {
   const reasoning = templates.map((t, i) => `[${t.name}] ${matches[i]!.reasoning}`).join("\n\n");
   const includedStageKeys = Array.from(new Set(templates.flatMap((t) => t.stageTemplates.map((st) => st.key))));
 
-  const projectNumber = await issueNextProjectNumber();
+  const projectNumber = await issueNextProjectNumber(primaryTemplate.sectorVariantId);
   const project = await db.project.create({
     data: {
       projectNumber,

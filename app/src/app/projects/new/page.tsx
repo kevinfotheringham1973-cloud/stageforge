@@ -27,7 +27,13 @@ export default async function NewProjectPage({
   searchParams: Promise<{ worksPackageId?: string }>;
 }) {
   const { worksPackageId: preselectedWorksPackageId } = await searchParams;
-  const nextProjectNumber = await peekNextProjectNumber();
+  // The System/Template pick (and with it, which sector's counter
+  // actually gets issued from) doesn't happen until the form below is
+  // submitted -- this preview always assumes the default Scotland
+  // sector, same "just a peek, can drift" caveat as before, now also
+  // covering picking a different sector's system.
+  const defaultSector = await db.sectorVariant.findUniqueOrThrow({ where: { key: "health" } });
+  const nextProjectNumber = await peekNextProjectNumber(defaultSector.id);
   const [templates, allWorksPackages] = await Promise.all([
     listMatchableTemplates(db),
     listWorksPackages(db),
