@@ -199,6 +199,16 @@
   .built-for h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted); margin: 0 0 10px; }
   .built-for p { margin: 0; font-size: 15.5px; }
 
+  .wrap-wide { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+  .shots {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .shots figure { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+  .shots img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--rule); }
+  .shots figcaption { padding: 14px 18px; font-size: 15px; color: var(--ink-muted); }
+
   footer {
     padding: 40px 0;
     border-top: 1px solid var(--rule);
@@ -302,6 +312,42 @@
         <p>Built to re-skin for other regulated Hard FM sectors — defence, justice, transport —
           once the Health version is proven.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2 class="section-title">See it in action</h2>
+    <p class="section-lead">
+      A live project running through StageForge Health — from the portfolio dashboard down to a single
+      gate's evidence checklist.
+    </p>
+    <div class="shots">
+      <figure class="wide">
+        <img src="/screenshots/dashboard.png" alt="StageForge project dashboard showing gate activity, cost, and a full 8-gate timeline" loading="lazy" />
+        <figcaption>Every project's full stage-gate timeline, cost, and team on one screen.</figcaption>
+      </figure>
+      <figure>
+        <img src="/screenshots/gate-timeline.png" alt="A signed-off gate with its target and actual dates" loading="lazy" />
+        <figcaption>Each gate tracked against target vs. actual dates — nothing closes silently.</figcaption>
+      </figure>
+      <figure>
+        <img src="/screenshots/deliverables-checklist.png" alt="Deliverables checklist for a gate, each item citing its HTM regulatory source" loading="lazy" />
+        <figcaption>Every deliverable traced to its real regulatory citation, with evidence attached.</figcaption>
+      </figure>
+      <figure>
+        <img src="/screenshots/compliance-rules.png" alt="Compliance rule configuration showing override authority and required co-sign-off roles" loading="lazy" />
+        <figcaption>Override authority and multi-party sign-off, configured per rule.</figcaption>
+      </figure>
+      <figure>
+        <img src="/screenshots/regulatory-reference.png" alt="Regulatory reference table mapping Scotland SHTM guidance to England HTM equivalents" loading="lazy" />
+        <figcaption>Built once, mapped to every jurisdiction — Scotland (SHTM) and England (HTM) today.</figcaption>
+      </figure>
+      <figure>
+        <img src="/screenshots/conversion-notes.png" alt="Key conversion notes summarising the biggest differences between Scotland and England guidance" loading="lazy" />
+        <figcaption>The differences that actually matter, called out — not just a find-and-replace.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
