@@ -98,3 +98,14 @@ nsis:
 # needs no other code changes.
 portable:
   artifactName: "${productName}-${version}-portable.${ext}"
+  # Default is a per-BUILD uuid ("changed on each build of portable
+  # executable" -- electron-builder's own doc comment), so every
+  # extraction lands at a different %TEMP% path. Windows Firewall keys
+  # its "allow this app" prompt off the exe's path, so a moving path
+  # means Kevin re-triggers the "Do you want to allow public and
+  # private networks to access this app?" dialog on every single
+  # rebuild even after already clicking Allow once (found live, 28 Aug
+  # 2026). Fixed name here makes the extraction path stable across
+  # rebuilds too, not just across launches of one build, so Allow only
+  # has to happen once, ever.
+  unpackDirName: "stageforge-desktop"
