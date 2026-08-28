@@ -640,6 +640,7 @@ model Project {
   roleAssignments            ProjectRoleAssignment[]
   resourceAllocations        ResourceAllocation[]
   stages                     Stage[]
+  shareLinks                 ShareLink[]
   createdAt                  DateTime                    @default(now())
 }
 
@@ -970,6 +971,15 @@ model ShareLink {
   label       String?
   createdById String
   createdBy   User      @relation(fields: [createdById], references: [id])
+  // Which single project this link's viewer is confined to (added 28 Aug
+  // 2026, closing a real leak: without this, the anonymous Demo Viewer
+  // could browse to ANY project on the platform via the homepage/finance/
+  // resources listings, exposing real people's names on the live Scotland
+  // projects -- found live testing the landing page's demo link).
+  // proxy.ts enforces the confinement; this column is just the source of
+  // truth for which project that is.
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id])
   createdAt   DateTime  @default(now())
   expiresAt   DateTime
   revokedAt   DateTime? // NULL = active
