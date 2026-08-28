@@ -16,20 +16,16 @@ const EFFORT_CLASS: Record<string, string> = {
  * Platform-admin-only to reach normally; also viewable read-only through
  * a /share-links demo link (canViewAdminReferencePage) -- pure reference
  * content, nothing sensitive, good to show off. The table below is still
- * the static reference
- * (Regulation Conversion_England_Scotland.docx, 24 Aug 2026) — but the
- * conversion it describes is no longer just notes: src/lib/
- * englandConversion.ts actually generates a second, "health_england"
- * SectorVariant (22 Templates + 17 compliance rules, SHTM->HTM
- * converted) from the live Scotland corpus, re-runnable any time that
- * corpus changes with `npm run england:generate`. The banner below
- * confirms it actually exists in this DB right now. Its Templates carry
- * empty matchKeywords deliberately (same trick the retired Cold Water
- * Storage template uses) — listMatchableTemplates only offers templates
- * with matchKeywords set, so this stays invisible in the current
- * single-tenant (Scotland) demo's project-creation dropdown until a
- * real England tenant is onboarded and someone deliberately populates
- * them.
+ * the static reference (Regulation Conversion_England_Scotland.docx,
+ * 24 Aug 2026) — but the conversion it describes is no longer just
+ * notes: src/lib/englandConversion.ts actually generates a second,
+ * "health_england" SectorVariant (22 templates + compliance rules,
+ * SHTM->HTM converted) from the live Scotland corpus, re-runnable any
+ * time that corpus changes (`npm run england:generate`, a maintenance
+ * command, not something this page's own banner needs to expose).
+ * The banner below confirms it's actually live in this DB and points
+ * at the Region picker on New Project (28 Aug 2026) that now makes
+ * every matchable one of these selectable, not a dev-only artifact.
  */
 export default async function RegulatoryReferencePage() {
   const currentUser = await getCurrentUser();
@@ -63,17 +59,13 @@ export default async function RegulatoryReferencePage() {
 
       {englandVariant ? (
         <div className="mb-8 rounded-lg border border-ok/30 bg-ok/10 px-4 py-3 text-sm">
-          <span className="font-semibold text-ok">Generated and live in this database:</span>{" "}
-          {englandVariant._count.templates} converted templates and {englandRuleCount} compliance rules under the
-          &ldquo;{englandVariant.name}&rdquo; SectorVariant. Not yet selectable in this demo&rsquo;s project-creation
-          dropdown — its templates carry empty matchKeywords until a real England tenant needs them. Re-run{" "}
-          <code className="rounded bg-surface2 px-1 py-0.5 font-mono text-xs">npm run england:generate</code> any
-          time the Scotland corpus changes to refresh it.
+          <span className="font-semibold text-ok">Live in this deployment:</span> {englandVariant._count.templates}{" "}
+          converted templates and {englandRuleCount} compliance rules under &ldquo;{englandVariant.name}&rdquo; —
+          select &ldquo;England (HTM)&rdquo; as the Region when starting a new project to use them.
         </div>
       ) : (
         <div className="mb-8 rounded-lg border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
-          Not yet generated in this database — run{" "}
-          <code className="rounded bg-surface2 px-1 py-0.5 font-mono text-xs">npm run england:generate</code>.
+          England guidance hasn&rsquo;t been generated in this deployment yet.
         </div>
       )}
 
