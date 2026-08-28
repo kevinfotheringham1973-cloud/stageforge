@@ -9,7 +9,7 @@ import { ActingAsSwitcher } from "@/components/ActingAsSwitcher";
 import { isShareLinkViewerEmail, getActiveShareLinkFromCookie } from "@/lib/shareLinks";
 
 export const metadata: Metadata = {
-  title: "StageForge (dev scaffold)",
+  title: "StageForge Health",
 };
 
 export default async function RootLayout({
