@@ -34,6 +34,8 @@ const EFFORT_CLASS: Record<string, string> = {
 export default async function RegulatoryReferencePage() {
   const currentUser = await getCurrentUser();
   if (!canViewAdminReferencePage(currentUser)) forbidden();
+  // Desktop build only -- see layout.tsx's admin-nav block for why.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") forbidden();
 
   const allTemplateKeys = REGULATION_CONVERSION_ROWS.flatMap((r) => r.templateKeys);
   const templates = await db.template.findMany({

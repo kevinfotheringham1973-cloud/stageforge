@@ -28,6 +28,7 @@ import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import Resend from "next-auth/providers/resend";
+import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "./db";
 
@@ -35,6 +36,16 @@ const hasEntraIdConfig = Boolean(
   process.env.AUTH_MICROSOFT_ENTRA_ID_ID && process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET
 );
 const hasResendConfig = Boolean(process.env.RESEND_API_KEY);
+
+// Third path, alongside Entra ID and Resend above: the self-contained
+// desktop build (see electron/). No network, no email, no org account --
+// STAGEFORGE_LOCAL_MODE=1 is set only in that build's own env, never in
+// the real deployed app, and skips straight to a single fixed local
+// admin identity. authorize() upserts that User row itself so the
+// desktop installer never has to run a separate seed step just to get a
+// signed-in identity to exist.
+const hasLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
+export const LOCAL_ADMIN_EMAIL = "local-admin@stageforge.local";
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(db),
@@ -75,6 +86,50 @@ export const authConfig: NextAuthConfig = {
           Resend({
             apiKey: process.env.RESEND_API_KEY,
             from: process.env.RESEND_FROM_EMAIL ?? "StageForge <onboarding@resend.dev>",
+          }),
+        ]
+      : []),
+    ...(hasLocalMode
+      ? [
+          Credentials({
+            id: "local",
+            name: "Local",
+            credentials: {},
+            authorize: async () => {
+              // A ProjectRoleAssignment always needs a departmentId
+              // (standardTeam.ts's assignOne), sourced from the actor's
+              // own homeDepartmentId -- without one, Local Admin
+              // couldn't be auto-assigned PM on a project it creates
+              // itself (assignStandardTeam silently no-ops, found live
+              // 28 Aug 2026, right after removing "view as" as a way
+              // around this: with that gone, this was the only route
+              // left to any real usability at all). Not tied to either
+              // seeded demo's branding -- a small standing home of its
+              // own, since Local Admin isn't really part of either.
+              // Company/Department have no compound unique constraint to
+              // upsert against -- find-or-create instead, same effect.
+              const localCompany =
+                (await db.company.findFirst({ where: { name: "Desktop Trial", type: "FM_CONTRACTOR" } })) ??
+                (await db.company.create({ data: { name: "Desktop Trial", type: "FM_CONTRACTOR" } }));
+              const localDepartment =
+                (await db.department.findFirst({ where: { companyId: localCompany.id, name: "Estates & Facilities" } })) ??
+                (await db.department.create({ data: { companyId: localCompany.id, name: "Estates & Facilities" } }));
+
+              const localUser = await db.user.upsert({
+                where: { email: LOCAL_ADMIN_EMAIL },
+                create: {
+                  email: LOCAL_ADMIN_EMAIL,
+                  name: "Local Admin",
+                  isPlatformAdmin: true,
+                  emailVerified: new Date(),
+                  homeDepartmentId: localDepartment.id,
+                },
+                // Self-healing for a desktop install created before this
+                // fix, whose Local Admin row still has no home department.
+                update: { homeDepartmentId: localDepartment.id },
+              });
+              return { id: localUser.id, email: localUser.email, name: localUser.name };
+            },
           }),
         ]
       : []),

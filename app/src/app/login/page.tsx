@@ -1,6 +1,7 @@
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
+import { AutoLocalSignIn } from "./AutoLocalSignIn";
 
 const ERROR_MESSAGES: Record<string, string> = {
   AccessDenied: "That email isn't set up yet — ask a platform admin to add you first.",
@@ -21,6 +22,16 @@ async function emailSignIn(formData: FormData) {
   "use server";
   try {
     await signIn("resend", { email: formData.get("email"), redirectTo: "/" });
+  } catch (error) {
+    if (error instanceof AuthError) redirect(`/login?error=${error.type}`);
+    throw error;
+  }
+}
+
+async function localSignIn() {
+  "use server";
+  try {
+    await signIn("local", { redirectTo: "/" });
   } catch (error) {
     if (error instanceof AuthError) redirect(`/login?error=${error.type}`);
     throw error;
@@ -48,6 +59,13 @@ export default async function LoginPage({
   const { error, checkEmail } = await searchParams;
   const hasEntraId = Boolean(process.env.AUTH_MICROSOFT_ENTRA_ID_ID);
   const hasResend = Boolean(process.env.RESEND_API_KEY);
+  const hasLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
+
+  // Self-contained desktop build: no org account, no email round-trip --
+  // auto-submits straight to the local admin identity, see AutoLocalSignIn.
+  if (hasLocalMode && !error) {
+    return <AutoLocalSignIn action={localSignIn} />;
+  }
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-6 px-4">

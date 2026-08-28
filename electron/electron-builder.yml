@@ -1,0 +1,100 @@
+# First working installer -- see main.js's header comment.
+#
+# Two separate live bugs got fixed here, worth knowing about if this
+# ever needs touching again (27 Aug 2026):
+#
+# 1. Dynamic import() of an external module, called from *inside
+#    Electron's own main GUI process* in a packaged app, fails outright
+#    (ERR_MODULE_NOT_FOUND for files that genuinely exist) -- confirmed
+#    across resources/app, a plain extraResources folder, with asar on,
+#    and with asar off, so it's not about location or archiving at all.
+#    embedded-postgres's dynamic import() moved into its own spawned
+#    child process instead (pgWorker.js, ELECTRON_RUN_AS_NODE=1 -- see
+#    localDb.js), the same "spawn a real Node child rather than do it
+#    in-process" pattern already relied on for prisma/tsx/next.
+#
+# 2. Two separate extraResources entries (nextapp + pg) -- the second one
+#    consistently ended up missing from the NSIS-installed copy: present
+#    in the unpacked build, present inside the compiled installer
+#    archive itself (confirmed with 7z), even present in NSIS's own temp
+#    extraction staging folder mid-install, but never actually landing
+#    in the final install directory. Ruled out individually: file count,
+#    size, path length, antivirus (tested with an explicit Defender
+#    exclusion), list ordering, and source location inside vs. outside
+#    the electron/ project directory -- this matches a real,
+#    previously-reported electron-builder/NSIS bug class specifically
+#    around *multiple* extraResources entries. prepare-resources.js
+#    (npm's own "predist" hook) now stages both nextapp/ and pg/ under
+#    one combined build-resources/ directory, copied by a SINGLE
+#    extraResources entry below -- merging into one entry is the
+#    documented workaround, and fixed it here too.
+#
+# asar itself is off for simplicity (avoid asarUnpack patterns for every
+# native binary involved) -- nothing left actually needs it on.
+appId: com.transitioninsightpartners.stageforge
+productName: StageForge
+directories:
+  output: dist
+asar: false
+# Single 1024x1024 source PNG -- electron-builder generates the actual
+# multi-resolution .ico from this itself (build/icon.png is also its own
+# default lookup path, but named explicitly here so it doesn't silently
+# fall back to the generic Electron icon if this ever moves).
+icon: build/icon.png
+files:
+  - main.js
+  - localDb.js
+  - localAuthSecret.js
+  - pgWorker.js
+  - package.json
+  # Exclusions have to come after the broad include they're meant to
+  # filter, not before -- an earlier exclude here just got overridden by
+  # this same node_modules/** below (found live, 27 Aug 2026: both
+  # packages ended up duplicated into resources/app AND resources/pg).
+  - node_modules/**
+  - "!node_modules/embedded-postgres/**"
+  - "!node_modules/@embedded-postgres/**"
+  - "!node_modules/async-exit-hook/**"
+  - "!node_modules/pg/**"
+  - "!node_modules/pg-connection-string/**"
+  - "!node_modules/pg-pool/**"
+  - "!node_modules/pg-protocol/**"
+  - "!node_modules/pg-types/**"
+  - "!node_modules/pg-int8/**"
+  - "!node_modules/postgres-array/**"
+  - "!node_modules/postgres-bytea/**"
+  - "!node_modules/postgres-date/**"
+  - "!node_modules/postgres-interval/**"
+  - "!node_modules/xtend/**"
+  - "!node_modules/pgpass/**"
+  - "!node_modules/split2/**"
+extraResources:
+  # ONE entry, not two -- see this file's header comment (bug 2). Both
+  # nextapp/ and pg/ already exist as subfolders of build-resources/
+  # (prepare-resources.js), so this just copies that whole tree straight
+  # into resources/. "nextapp", not "app" -- "app" is electron-builder's
+  # own reserved location for the Electron entry point itself (main.js),
+  # and colliding with it left Electron unable to find its own entry
+  # point at all (found live, 27 Aug 2026, packaging the first
+  # installer). Renamed here and in main.js's packaged-APP_DIR path
+  # together.
+  - from: ../build-resources
+    to: .
+win:
+  target:
+    - nsis
+    - portable
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+# Sidesteps the Smart App Control block entirely (see this file's header
+# and main.js's header comment, 27 Aug 2026) -- a portable build never
+# writes anything into a protected system install location
+# (Program Files / AppData\Local\Programs) in the first place, so
+# there's nothing for it to silently block. All of this app's own
+# persistent state (bundled Postgres data, evidence files, the
+# per-install auth secret) already lives in app.getPath("userData")
+# regardless of where the portable .exe itself is run from, so this
+# needs no other code changes.
+portable:
+  artifactName: "${productName}-${version}-portable.${ext}"

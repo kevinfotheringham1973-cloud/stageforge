@@ -84,9 +84,11 @@ function toDateInputValue(d: Date | null): string {
 }
 
 /**
- * currentFileRef is the most recent evidence file's fileRef — a real
+ * currentFileRef is the most recent evidence file's fileRef: a real
  * https:// SharePoint webUrl once resolveEvidenceUpload actually
- * uploaded it (actions.ts), or the local://dev-upload stub otherwise.
+ * uploaded it (actions.ts); a /api/evidence/local/... path when it was
+ * saved to disk instead (STAGEFORGE_LOCAL_MODE — the desktop build, see
+ * localEvidenceStorage.ts); or the local://dev-upload stub otherwise.
  * That one string is enough to tell which state we're in — no need to
  * separately check env vars here.
  */
@@ -99,7 +101,8 @@ function SharePointEvidenceLocation({
   stageName: string;
   currentFileRef: string;
 }) {
-  const isSynced = currentFileRef.startsWith("https://");
+  const isSharePointSynced = currentFileRef.startsWith("https://");
+  const isLocalSaved = currentFileRef.startsWith("/api/evidence/local/");
   const folderIcon = (
     <svg width="14" height="14" viewBox="0 0 16 16" className="shrink-0 text-accent" aria-hidden="true">
       <path
@@ -109,7 +112,7 @@ function SharePointEvidenceLocation({
     </svg>
   );
 
-  if (isSynced) {
+  if (isSharePointSynced) {
     return (
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-inkmuted">
         {folderIcon}
@@ -118,6 +121,22 @@ function SharePointEvidenceLocation({
         </a>
         <span className="rounded bg-ok/15 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ok">
           Synced to SharePoint
+        </span>
+      </div>
+    );
+  }
+
+  if (isLocalSaved) {
+    return (
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-inkmuted">
+        {folderIcon}
+        {/* Same-window, not target="_blank" — the desktop shell's window
+            denies popups (main.js), and this is the same app either way. */}
+        <a href={currentFileRef} className="font-mono text-accent underline">
+          Open file
+        </a>
+        <span className="rounded bg-ok/15 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-ok">
+          Saved locally
         </span>
       </div>
     );

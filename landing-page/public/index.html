@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>StageForge Health — stage-gate delivery for regulated Hard FM</title>
+<meta name="description" content="A single system of record for stage-gate delivery and compliance in regulated Hard FM programmes — built for hospital estates, starting with NHS Scotland." />
+<link rel="icon" href="/favicon.png" type="image/png" />
+<link rel="canonical" href="https://pmopassport.co.uk/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="StageForge Health" />
+<meta property="og:title" content="StageForge Health — stage-gate delivery for regulated Hard FM" />
+<meta property="og:description" content="A single system of record for stage-gate delivery and compliance in regulated Hard FM programmes — built for hospital estates, starting with NHS Scotland." />
+<meta property="og:url" content="https://pmopassport.co.uk/" />
+<meta property="og:image" content="https://pmopassport.co.uk/favicon.png" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="StageForge Health — stage-gate delivery for regulated Hard FM" />
+<meta name="twitter:description" content="A single system of record for stage-gate delivery and compliance in regulated Hard FM programmes — built for hospital estates, starting with NHS Scotland." />
+<meta name="twitter:image" content="https://pmopassport.co.uk/favicon.png" />
+<style>
+  :root {
+    --blue: #28659B;
+    --teal: #2D9A9C;
+    --ink: #1a1f26;
+    --ink-muted: #5b6472;
+    --rule: #e4e8ec;
+    --surface: #ffffff;
+    --bg: #f7f8fa;
+    --accentsoft: #eef4f8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+  }
+  .wordmark {
+    display: flex;
+    flex-direction: column;
+    line-height: 0.95;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 22px;
+  }
+  .wordmark .sf { color: var(--blue); }
+  .wordmark .h { color: var(--teal); }
+  .nav a.cta {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--blue);
+    text-decoration: none;
+    border: 1px solid var(--blue);
+    padding: 8px 16px;
+    border-radius: 6px;
+  }
+  .nav a.cta:hover { background: var(--accentsoft); }
+
+  .hero {
+    padding: 72px 0 56px;
+  }
+  .hero h1 {
+    font-size: 40px;
+    line-height: 1.15;
+    margin: 0 0 20px;
+    max-width: 720px;
+  }
+  .hero p.lead {
+    font-size: 18px;
+    color: var(--ink-muted);
+    max-width: 620px;
+    margin: 0 0 28px;
+  }
+  .hero .buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 12px 22px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-secondary {
+    color: var(--blue);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 12px 22px;
+    border-radius: 6px;
+    border: 1px solid var(--rule);
+    display: inline-block;
+  }
+  .btn-secondary:hover { background: var(--accentsoft); }
+
+  section.band { padding: 56px 0; }
+  section.band.alt { background: var(--surface); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+
+  h2.section-title {
+    font-size: 26px;
+    margin: 0 0 12px;
+  }
+  p.section-lead {
+    color: var(--ink-muted);
+    max-width: 640px;
+    margin: 0 0 36px;
+    font-size: 16px;
+  }
+
+  .grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .grid2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 760px) {
+    .grid3, .grid2 { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 30px; }
+  }
+  .version-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 28px;
+  }
+  .version-card .tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+  .version-card.cloud .tag { background: var(--accentsoft); color: var(--blue); }
+  .version-card.desktop .tag { background: #fdf1e0; color: #a5670f; }
+  .version-card h3 { font-size: 19px; margin: 0 0 10px; }
+  .version-card ul { margin: 0; padding-left: 20px; }
+  .version-card li { font-size: 14.5px; color: var(--ink-muted); margin-bottom: 8px; }
+  .version-card li strong { color: var(--ink); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 24px;
+  }
+  .card .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--accentsoft);
+    color: var(--blue);
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 14px;
+  }
+  .card h3 { font-size: 17px; margin: 0 0 8px; }
+  .card p { font-size: 14.5px; color: var(--ink-muted); margin: 0; }
+
+  .quote-block {
+    border-left: 3px solid var(--teal);
+    padding-left: 20px;
+    margin: 0;
+    font-size: 17px;
+    color: var(--ink);
+    max-width: 700px;
+  }
+
+  .built-for {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .built-for .col { flex: 1; min-width: 240px; }
+  .built-for h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted); margin: 0 0 10px; }
+  .built-for p { margin: 0; font-size: 15.5px; }
+
+  footer {
+    padding: 40px 0;
+    border-top: 1px solid var(--rule);
+  }
+  footer .foot-grid {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 13.5px;
+    color: var(--ink-muted);
+  }
+  footer a { color: var(--ink-muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="wordmark"><span class="sf">StageForge</span><span class="h">Health</span></div>
+    <a class="cta" href="mailto:kevin@pmopassport.co.uk">Get in touch</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>One system of record for stage-gate delivery and compliance in regulated Hard&nbsp;FM.</h1>
+    <p class="lead">
+      Every stage carries a deliverables checklist. Every deliverable needs uploaded evidence.
+      A gate can't close without a Sponsor's sign-off against that evidence — and compliance runs
+      alongside delivery as a concurrent, config-driven module, not a separate spreadsheet nobody
+      trusts.
+    </p>
+    <div class="buttons">
+      <a class="btn-primary" href="mailto:kevin@pmopassport.co.uk">Talk to us</a>
+      <a class="btn-secondary" href="#what-it-does">See how it works</a>
+    </div>
+  </div>
+</section>
+
+<section class="band alt" id="what-it-does">
+  <div class="wrap">
+    <h2 class="section-title">What StageForge Health does</h2>
+    <p class="section-lead">
+      Built for teams delivering hospital estates projects under real regulatory pressure — where
+      inconsistent PM skill, complex overlapping regulations, and no shared system across projects
+      is the actual, everyday problem.
+    </p>
+    <div class="grid3">
+      <div class="card">
+        <div class="num">1</div>
+        <h3>A template library, not a blank page</h3>
+        <p>Every project starts from a discipline-specific template — Boiler, UPS, Water Systems,
+          Fire Detection and more — each mapped from real RIBA/SHTM/HTM-aligned source documents, so
+          consistency doesn't depend on which PM happens to be running it.</p>
+      </div>
+      <div class="card">
+        <div class="num">2</div>
+        <h3>Compliance runs with delivery, not after it</h3>
+        <p>Compliance items sit alongside the deliverables they belong to, with tiered override
+          authority for anything carrying legal weight — a named specialist (Fire Officer, an
+          Authorised Person, Clinical Safety Officer) is an exact-match requirement even the SRO
+          doesn't bypass.</p>
+      </div>
+      <div class="card">
+        <div class="num">3</div>
+        <h3>Nothing closes without evidence and sign-off</h3>
+        <p>A gate can't move forward without uploaded evidence and a Sponsor's sign-off against it
+          — a real audit trail, not a status someone typed into a tracker.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <blockquote class="quote-block">
+      The problem isn't a lack of process — it's no control or consistency across projects, layered
+      with complex regulation and variable PM skill. A template library that already encodes the
+      right stages, deliverables and compliance checks is the answer.
+    </blockquote>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <h2 class="section-title">Built for</h2>
+    <div class="built-for">
+      <div class="col">
+        <h3>Initial focus</h3>
+        <p>Hard FM maintenance in hospitals — starting with a single NHS Scotland Trust programme,
+          SHTM/HTM-aligned from day one.</p>
+      </div>
+      <div class="col">
+        <h3>Who it's for</h3>
+        <p>FM Contractors and NHS Trust teams who both need visibility into the same live
+          projects — with each side seeing only what their role allows.</p>
+      </div>
+      <div class="col">
+        <h3>Where it goes next</h3>
+        <p>Built to re-skin for other regulated Hard FM sectors — defence, justice, transport —
+          once the Health version is proven.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2 class="section-title">Two ways to run it</h2>
+    <p class="section-lead">
+      Same template library and project builder either way — the difference is whether
+      governance is actually enforced, or you're just trying the tool out.
+    </p>
+    <div class="grid2">
+      <div class="version-card cloud">
+        <span class="tag">Cloud platform</span>
+        <h3>Full governance, multi-party</h3>
+        <ul>
+          <li><strong>Role-based access</strong> across FM Contractor and NHS Trust teams on the same live projects — each side sees only what their role allows.</li>
+          <li><strong>Independently enforced sign-off</strong> — a gate closes only when the person actually holding that authority approves it, not whoever's logged in.</li>
+          <li><strong>Full compliance module</strong>, tiered override authority, and a real audit trail.</li>
+        </ul>
+      </div>
+      <div class="version-card desktop">
+        <span class="tag">Desktop trial &middot; Microsoft Store</span>
+        <h3>Single-user preview, no governance</h3>
+        <ul>
+          <li><strong>Builds real projects</strong> from the same template library, running entirely on your own machine.</li>
+          <li><strong>Shows what every role requires</strong> — compliance, Authorised Person, SRO/Sponsor sign-off — but doesn't let one person act as them. Nothing here is a workaround for real sign-off.</li>
+          <li>For trying out the tool and its templates, not for live multi-party delivery with real governance.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>&copy; 2026 Transition Insight Partners Ltd. All rights reserved.</div>
+    <div><a href="/privacy">Privacy Policy</a> &middot; <a href="mailto:support@pmopassport.co.uk">support@pmopassport.co.uk</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

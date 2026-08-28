@@ -7,6 +7,8 @@
 // guessed), then converted against Regulation Conversion_England_Scotland.docx's
 // per-system and "Key Conversion Notes" tables.
 import type { PrismaClient } from "@prisma/client";
+import { instantiateStage } from "./instantiation";
+import { effectiveComplianceTags } from "./cdm";
 
 export const ENGLAND_SECTOR_VARIANT_KEY = "health_england";
 export const ENGLAND_RULE_SET_KEY = "compliance.health_england.core";
@@ -114,7 +116,7 @@ export const ENGLAND_RULE_OVERRIDES: Record<string, { label?: string; descriptio
   comp_haiscribe_review: {
     label: "IPC / ICRA risk assessment reviewed for infection-control impact",
     description:
-      "Infection Control Risk Assessment (ICRA) process — mitigates healthcare-associated infection risk from construction/refurbishment/maintenance activity, in place of Scotland's HAI-SCRIBE where no direct HTM equivalent exists.",
+      "Infection Control Risk Assessment (ICRA) process — mitigates healthcare-associated infection risk from construction/refurbishment/maintenance activity, following local Trust IPC procedures.",
     ruleRef: "Local Trust IPC risk assessment (ICRA-style) / HTM 00",
   },
   comp_legionella_water_safety: {
@@ -153,13 +155,14 @@ function ruleOverrideKey(ruleKey: string): string {
  * DeliverableTemplate [gateTemplateId,key], ComplianceRuleSet.key,
  * ComplianceRuleTemplate [ruleSetId,key]).
  *
- * Deliberately leaves the new Templates' matchKeywords empty (same
- * "invisible until needed" trick the retired Cold Water Storage template
- * uses) -- listMatchableTemplates (provisioning.ts) only offers
- * templates with matchKeywords set, so this never appears in the
- * current single-tenant (Scotland) demo's project-creation dropdown
- * until a real England tenant is onboarded and someone deliberately
- * populates them.
+ * Copies each Template's matchKeywords straight from its Scotland
+ * source (same system-type keywords work in either jurisdiction) --
+ * update: {} used to leave them empty on purpose, "invisible until a
+ * real England tenant needs them" (listMatchableTemplates in
+ * provisioning.ts only offers templates with matchKeywords set). That
+ * tenant now exists (seedEnglandDemo below), so a re-run of this
+ * function also repairs matchKeywords on any England templates from
+ * before this changed, not just newly-created ones.
  */
 export async function generateEnglandVariant(
   db: PrismaClient
@@ -186,12 +189,12 @@ export async function generateEnglandVariant(
   for (const t of scotlandTemplates) {
     const englandTemplate = await db.template.upsert({
       where: { key: t.key.replace("template.health.", "template.health_england.") },
-      update: {},
+      update: { matchKeywords: t.matchKeywords },
       create: {
         key: t.key.replace("template.health.", "template.health_england."),
         name: t.name,
         description: t.description,
-        matchKeywords: [], // invisible until a real England tenant needs it
+        matchKeywords: t.matchKeywords, // same system-type keywords as Scotland — jurisdiction-neutral
         sectorVariantId: england.id,
       },
     });
@@ -200,7 +203,7 @@ export async function generateEnglandVariant(
     for (const st of t.stageTemplates) {
       const englandStage = await db.stageTemplate.upsert({
         where: { templateId_key: { templateId: englandTemplate.id, key: st.key } },
-        update: {},
+        update: { name: st.name, order: st.order },
         create: { templateId: englandTemplate.id, key: st.key, name: st.name, order: st.order },
       });
 
@@ -208,20 +211,22 @@ export async function generateEnglandVariant(
       const gt = st.gateTemplate;
       const englandGate = await db.gateTemplate.upsert({
         where: { stageTemplateId: englandStage.id },
-        update: {},
+        update: { key: gt.key, name: gt.name },
         create: { stageTemplateId: englandStage.id, key: gt.key, name: gt.name },
       });
 
       for (const dt of gt.deliverableTemplates) {
+        const label = convertGuidanceText(dt.label);
+        const description = convertGuidanceText(dt.description);
         await db.deliverableTemplate.upsert({
           where: { gateTemplateId_key: { gateTemplateId: englandGate.id, key: dt.key } },
-          update: {},
+          update: { label, description },
           create: {
             gateTemplateId: englandGate.id,
             key: dt.key,
             order: dt.order,
-            label: convertGuidanceText(dt.label),
-            description: convertGuidanceText(dt.description),
+            label,
+            description,
             minFiles: dt.minFiles,
             blocksGate: dt.blocksGate,
             bypassAuthority: dt.bypassAuthority,
@@ -245,15 +250,18 @@ export async function generateEnglandVariant(
   let rulesCreated = 0;
   for (const r of scotlandRuleSet.rules) {
     const override = ENGLAND_RULE_OVERRIDES[ruleOverrideKey(r.key)];
+    const label = override?.label ?? convertGuidanceText(r.label);
+    const description = override?.description ?? convertGuidanceText(r.description);
+    const ruleRef = override?.ruleRef ?? convertGuidanceText(r.ruleRef);
     await db.complianceRuleTemplate.upsert({
       where: { ruleSetId_key: { ruleSetId: englandRuleSet.id, key: r.key } },
-      update: {},
+      update: { label, description, ruleRef },
       create: {
         ruleSetId: englandRuleSet.id,
         key: r.key,
-        label: override?.label ?? convertGuidanceText(r.label),
-        description: override?.description ?? convertGuidanceText(r.description),
-        ruleRef: override?.ruleRef ?? convertGuidanceText(r.ruleRef),
+        label,
+        description,
+        ruleRef,
         evidenceType: r.evidenceType,
         minFiles: r.minFiles,
         blocksGate: r.blocksGate,
@@ -267,4 +275,153 @@ export async function generateEnglandVariant(
   }
 
   return { sectorVariantId: england.id, templatesCreated, rulesCreated };
+}
+
+/**
+ * Seeds the England demo tenant itself (28 Aug 2026, Kevin's explicit
+ * call) -- new Companies/Departments/Users/Project, entirely separate
+ * from the Scotland demo's branding and personas. Not idempotent (plain
+ * `create`, matching how every Scotland demo project in prisma/seed.ts
+ * is seeded) -- meant to run once, same as those. Callers: prisma/seed.ts
+ * (fresh install) and scripts/seed-england-demo.ts (the live DB, once).
+ *
+ * Every seeded User's name is its role name(s) from the start (joined
+ * with " · " for a user holding more than one role) -- the same
+ * convention scripts/anonymize-local-demo-names.ts applies after the
+ * fact for the desktop build, just applied at creation time here since
+ * this tenant should never have shown an invented person's name to
+ * begin with.
+ */
+export async function seedEnglandDemo(db: PrismaClient): Promise<{ projectNumber: string }> {
+  const england = await db.sectorVariant.findUniqueOrThrow({ where: { key: ENGLAND_SECTOR_VARIANT_KEY } });
+  const template = await db.template.findUniqueOrThrow({
+    where: { key: "template.health_england.domestic_hot_cold_water_replacement" },
+    include: {
+      stageTemplates: {
+        orderBy: { order: "asc" },
+        include: { gateTemplate: { include: { deliverableTemplates: true } } },
+      },
+    },
+  });
+
+  const roleKeys = [
+    "PM",
+    "FM_CONTRACTOR",
+    "SPONSOR",
+    "CLIENT_AUTHORITY",
+    "COMPLIANCE_OFFICER",
+    "SRO",
+    "FINANCE",
+    "PRINCIPAL_DESIGNER",
+    "AUTHORISED_PERSON_WATER",
+  ] as const;
+  const roleRows = await db.role.findMany({ where: { key: { in: [...roleKeys] } } });
+  const roles = Object.fromEntries(roleRows.map((r) => [r.key, r])) as Record<(typeof roleKeys)[number], (typeof roleRows)[number]>;
+
+  // ── Companies & departments ──────────────────────────────────────
+  const fmContractor = await db.company.create({ data: { name: "Hard FM Services", type: "FM_CONTRACTOR" } });
+  const fmEstates = await db.department.create({ data: { companyId: fmContractor.id, name: "Estates & Facilities" } });
+  const fmFinance = await db.department.create({ data: { companyId: fmContractor.id, name: "Finance" } });
+
+  const clientAuthority = await db.company.create({ data: { name: "Meadowbrook NHS", type: "CLIENT_AUTHORITY" } });
+  const clientEstates = await db.department.create({ data: { companyId: clientAuthority.id, name: "Estates & Facilities" } });
+
+  // ── Users, role-name-only from creation ──────────────────────────
+  const pmUser = await db.user.create({
+    data: {
+      name: [roles.PM.name, roles.FM_CONTRACTOR.name].join(" · "),
+      email: "pm@hardfmservices.example",
+      homeDepartmentId: fmEstates.id,
+    },
+  });
+  const sponsorUser = await db.user.create({
+    data: {
+      name: [roles.SPONSOR.name, roles.CLIENT_AUTHORITY.name].join(" · "),
+      email: "sponsor@meadowbrooknhs.example",
+      homeDepartmentId: clientEstates.id,
+    },
+  });
+  const complianceUser = await db.user.create({
+    data: { name: roles.COMPLIANCE_OFFICER.name, email: "compliance@hardfmservices.example", homeDepartmentId: fmEstates.id },
+  });
+  const sroUser = await db.user.create({
+    data: { name: roles.SRO.name, email: "sro@meadowbrooknhs.example", homeDepartmentId: clientEstates.id },
+  });
+  const financeUser = await db.user.create({
+    data: { name: roles.FINANCE.name, email: "finance@hardfmservices.example", homeDepartmentId: fmFinance.id },
+  });
+  const principalDesignerUser = await db.user.create({
+    data: { name: roles.PRINCIPAL_DESIGNER.name, email: "principal.designer@hardfmservices.example", homeDepartmentId: fmEstates.id },
+  });
+  const apWaterUser = await db.user.create({
+    data: { name: roles.AUTHORISED_PERSON_WATER.name, email: "ap.water@hardfmservices.example", homeDepartmentId: fmEstates.id },
+  });
+
+  // ── Project ───────────────────────────────────────────────────────
+  const projectNumber = "40001";
+  const project = await db.project.create({
+    data: {
+      projectNumber,
+      name: "Ward 12 Calorifier & Distribution Pipework Replacement",
+      templateId: template.id,
+      includedStageKeys: template.stageTemplates.map((st) => st.key),
+      tags: ["occupied_during_works", "water_systems_affected"],
+      // Rerouting distribution pipework means new penetrations through
+      // structure/fabric — same BUILDING_MODIFICATION branch as its
+      // Scotland counterpart, so Principal Designer + planning
+      // permission both get pulled in automatically.
+      worksType: "BUILDING_MODIFICATION",
+      status: "ACTIVE",
+      createdById: pmUser.id,
+      provisioningBrief:
+        "Replace ageing calorifiers and hot water distribution pipework serving Ward 12, phased over consecutive weekends to avoid disrupting clinical services at this live acute hospital. Legionella risk needs careful management during and after the works, per HTM 04-01.",
+      provisioningMatchReasoning:
+        "Project is calorifier and hot water pipework replacement with Legionella management — matches Domestic Hot & Cold Water Systems Replacement. Site is a live acute hospital with phased weekend works around clinical services (occupied during works), and the works directly affect water systems.",
+    },
+  });
+
+  await db.projectRoleAssignment.createMany({
+    data: [
+      { projectId: project.id, departmentId: fmEstates.id, userId: pmUser.id, roleId: roles.PM.id },
+      { projectId: project.id, departmentId: fmEstates.id, userId: pmUser.id, roleId: roles.FM_CONTRACTOR.id },
+      { projectId: project.id, departmentId: clientEstates.id, userId: sponsorUser.id, roleId: roles.SPONSOR.id },
+      { projectId: project.id, departmentId: clientEstates.id, userId: sponsorUser.id, roleId: roles.CLIENT_AUTHORITY.id },
+      { projectId: project.id, departmentId: fmEstates.id, userId: complianceUser.id, roleId: roles.COMPLIANCE_OFFICER.id },
+      { projectId: project.id, departmentId: clientEstates.id, userId: sroUser.id, roleId: roles.SRO.id },
+      { projectId: project.id, departmentId: fmFinance.id, userId: financeUser.id, roleId: roles.FINANCE.id },
+      { projectId: project.id, departmentId: fmEstates.id, userId: principalDesignerUser.id, roleId: roles.PRINCIPAL_DESIGNER.id },
+      { projectId: project.id, departmentId: fmEstates.id, userId: apWaterUser.id, roleId: roles.AUTHORISED_PERSON_WATER.id },
+    ],
+  });
+
+  await db.provisioningReview.create({
+    data: { projectId: project.id, decision: "APPROVED", reviewedById: complianceUser.id },
+  });
+
+  const projectForTags = { tags: project.tags, worksType: project.worksType, notifiableUnderCdm: project.notifiableUnderCdm };
+  for (let i = 0; i < template.stageTemplates.length; i++) {
+    await instantiateStage(db, {
+      projectId: project.id,
+      projectTags: effectiveComplianceTags(projectForTags, [template.key]),
+      sectorVariantId: england.id,
+      order: i,
+      stageTemplates: [template.stageTemplates[i]!],
+    });
+  }
+
+  const spatialGate = await db.gate.findFirst({
+    where: { stage: { projectId: project.id, key: "stage.spatial_coordination" } },
+  });
+  if (spatialGate) {
+    await db.lessonLearned.create({
+      data: {
+        gateId: spatialGate.id,
+        type: "WENT_WELL",
+        text: "Circulating the coordinated riser drawings to Estates for comment before formal submission caught every spatial clash early — no rework needed after sign-off.",
+        recordedById: pmUser.id,
+      },
+    });
+  }
+
+  return { projectNumber };
 }

@@ -36,6 +36,7 @@ import { resolveWorksPackageId } from "./worksPackages";
 import { assertSameSectorVariant, constituentTemplateIds, loadConstituentTemplatesForInstantiation } from "./projectTemplates";
 import { sendScheduledReport } from "./scheduledReportSender";
 import { evidenceFolderPath, isSharePointConfigured, uploadEvidenceFile } from "./sharepoint";
+import { isLocalEvidenceStorageEnabled, localEvidenceFolderPath, saveLocalEvidenceFile } from "./localEvidenceStorage";
 
 /**
  * Admin-only "view as" -- lets a real, signed-in platform admin preview
@@ -55,6 +56,12 @@ import { evidenceFolderPath, isSharePointConfigured, uploadEvidenceFile } from "
  * to lean on for real audit-trail-sensitive actions on live Trust data.
  */
 export async function setViewAsUser(formData: FormData) {
+  // Desktop build only -- see session.ts's getCurrentUserId for why
+  // this can't be allowed to take effect there. Blocked here too
+  // (belt-and-braces alongside the read-side guard) so the cookie is
+  // never even set, not just ignored.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") return;
+
   const userId = String(formData.get("userId") ?? "");
   if (!userId) return;
 
@@ -120,12 +127,14 @@ async function fetchRoleAuthorityContext(): Promise<{
 
 /**
  * Reads the uploaded File from the form and resolves where it actually
- * lives: uploaded to the configured SharePoint site (real fileRef =
- * the Graph webUrl) when the AZURE_ and SHAREPOINT_ env vars are set, or the
- * pre-existing local dev stub otherwise. Same fallback either way keeps
- * the demo usable with zero setup, while flipping on for real the
- * moment credentials + a real site are in place — no other code change
- * needed.
+ * lives, in priority order: the configured SharePoint site (real fileRef
+ * = the Graph webUrl) when the AZURE_ and SHAREPOINT_ env vars are set;
+ * else local disk (STAGEFORGE_LOCAL_MODE — the desktop build, see
+ * localEvidenceStorage.ts) when that's on; else the inert dev stub that
+ * discards the bytes and just records a fake reference. Same fallback
+ * chain either way keeps the demo usable with zero setup, while flipping
+ * on for real the moment credentials + a real site are in place — no
+ * other code change needed.
  */
 // Multiple files in one submission (26 Aug 2026, "it covers two
 // systems... likely multiple file inputs") — a merged deliverable
@@ -152,6 +161,11 @@ async function resolveEvidenceUploads(
       const folderPath = evidenceFolderPath(project, stageName);
       const uploaded = await uploadEvidenceFile(folderPath, file.name, buffer);
       results.push({ fileName: file.name, fileRef: uploaded.webUrl });
+    } else if (isLocalEvidenceStorageEnabled()) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const folderPath = localEvidenceFolderPath(project, stageName);
+      const { servePath } = await saveLocalEvidenceFile(folderPath, file.name, buffer);
+      results.push({ fileName: file.name, fileRef: servePath });
     } else {
       results.push({ fileName: file.name, fileRef: `local://dev-upload/${file.name}` });
     }

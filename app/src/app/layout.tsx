@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getCurrentUser, getRealCurrentUserId } from "@/lib/session";
 import { setViewAsUser, clearViewAsUser, exitShareLinkView } from "@/lib/actions";
@@ -36,6 +37,20 @@ export default async function RootLayout({
   // nobody's signed in, so this only renders bare chrome for the login
   // page itself (currentUser null there) rather than the full header.
   if (!currentUser) {
+    // realUserId truthy here means auth() found a real, validly-signed
+    // session token -- but it decodes user info straight from the token
+    // itself, never re-checking the database, so a token can "look"
+    // valid forever even after its user row is gone (a local-mode
+    // database reset while an old token was still cached in the
+    // browser, an archived user, etc. -- found live, 27 Aug 2026).
+    // Left alone this is a dead end: no header, no sign-out button,
+    // nothing to click. Recovering means clearing that stale cookie,
+    // which needs a Route Handler (recover-session/route.ts) -- the
+    // same "cookies can only change in a Server Action/Route Handler"
+    // rule this file can't work around just by rendering differently.
+    if (realUserId) {
+      redirect("/api/recover-session");
+    }
     return (
       <html lang="en">
         <body className="font-sans" suppressHydrationWarning>
@@ -88,9 +103,28 @@ export default async function RootLayout({
         : Array.from(new Set(u.roleAssignments.map((a) => a.role.name))).join(" · "),
     }));
 
+  // Single-user desktop build only. Used to let the local admin "View
+  // as" any seeded role and genuinely act with its permissions -- fixed
+  // 28 Aug 2026 (session.ts's getCurrentUserId, actions.ts's
+  // setViewAsUser) since that gave away the actual reason to want the
+  // cloud version: real, enforced role separation. This banner now
+  // describes the corrected behaviour -- ordinary project work is fully
+  // usable, role-specific actions are shown (via the existing "Requires
+  // {role}" badges) but never actionable here.
+  const isLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
+
   return (
     <html lang="en">
       <body className="font-sans" suppressHydrationWarning>
+        {isLocalMode && (
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
+            <span>
+              Single-user preview — you can create and work through projects normally, but role-specific actions
+              (compliance sign-off, Authorised Person sign-off, SRO/Sponsor decisions) are shown for reference only.
+              The cloud version enforces real role separation and lets a full team actually sign off each one.
+            </span>
+          </div>
+        )}
         {isDemoViewer && (
           <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
             <span>
@@ -151,7 +185,12 @@ export default async function RootLayout({
             <a href="/whats-new" className="text-sm font-semibold text-accent hover:underline">
               What&rsquo;s new
             </a>
-            {currentUser?.isPlatformAdmin && (
+            {/* Desktop build: the whole admin surface stays hidden, not
+                just /team -- see each page's own STAGEFORGE_LOCAL_MODE
+                forbidden() guard. This build is scoped to a PM creating
+                a project from the template library and working through
+                its gates/deliverables, nothing administrative. */}
+            {currentUser?.isPlatformAdmin && !isLocalMode && (
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-l border-rule pl-5">
                 <span className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Admin</span>
                 <a href="/team" className="text-sm font-semibold text-accent hover:underline">
@@ -196,7 +235,7 @@ export default async function RootLayout({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            {realUser?.isPlatformAdmin && (
+            {realUser?.isPlatformAdmin && !isLocalMode && (
               <ActingAsSwitcher action={setViewAsUser} users={users} currentUserId={currentUser.id} />
             )}
             {isDemoViewer ? (

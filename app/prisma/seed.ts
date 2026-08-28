@@ -14,7 +14,7 @@
 import { PrismaClient } from "@prisma/client";
 import { matchingComplianceRuleTemplates } from "../src/lib/compliance";
 import { instantiateStage } from "../src/lib/instantiation";
-import { generateEnglandVariant } from "../src/lib/englandConversion";
+import { generateEnglandVariant, seedEnglandDemo } from "../src/lib/englandConversion";
 import {
   CDM_BUILDING_MODIFICATION_TAG,
   CDM_F10_NOTIFIABLE_TAG,
@@ -4269,14 +4269,18 @@ async function main() {
   // Generates the "health_england" SectorVariant (22 templates, 17
   // compliance rules) from the Scotland corpus just seeded above, via
   // the same conversion engine a live DB re-runs with `npm run
-  // england:generate` — see src/lib/englandConversion.ts. Its Templates
-  // are seeded with empty matchKeywords, so this stays invisible in the
-  // project-creation dropdown until a real England tenant needs it.
+  // england:generate` — see src/lib/englandConversion.ts.
   const englandResult = await generateEnglandVariant(db);
+
+  // The England demo tenant itself (28 Aug 2026) — its own companies,
+  // role-name-only users, and one demo project, entirely separate from
+  // the Scotland/FVRH branding above. See seedEnglandDemo's own comment;
+  // a live DB gets this via `npm run england:demo` instead.
+  const englandDemo = await seedEnglandDemo(db);
 
   console.log("Seed complete.");
   console.log(
-    `England variant: ${englandResult.templatesCreated} templates, ${englandResult.rulesCreated} compliance rules.`
+    `England variant: ${englandResult.templatesCreated} templates, ${englandResult.rulesCreated} compliance rules. Demo project #${englandDemo.projectNumber}.`
   );
   console.log("Dev users — switch between them with the header switcher:");
   console.log(`  PM:                    ${derek.name} <${derek.email}>`);

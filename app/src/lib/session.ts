@@ -43,11 +43,32 @@ export async function getCurrentUserId(): Promise<string | null> {
     return resolveShareLinkViewerUserId(shareToken);
   }
 
+  // Desktop build only (28 Aug 2026): "view as" would otherwise let the
+  // single auto-signed-in Local Admin acquire any seeded role's real
+  // permissions, not just preview their screen -- giving away the
+  // governance/compliance enforcement that's the actual reason to want
+  // the cloud version. Local Admin holds no role assignments of its own
+  // by default, so ignoring this cookie here is what makes every
+  // canX() check in permissions.ts correctly deny it, same as it would
+  // any other role-less user.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") return realUserId;
+
   const viewAsId = store.get(VIEW_AS_COOKIE_NAME)?.value;
   if (!viewAsId) return realUserId;
 
   const realUser = await db.user.findUnique({ where: { id: realUserId }, select: { isPlatformAdmin: true } });
-  return realUser?.isPlatformAdmin ? viewAsId : realUserId;
+  if (!realUser?.isPlatformAdmin) return realUserId;
+
+  // The view-as target must still exist -- a stale cookie pointing at a
+  // since-deleted/re-seeded user (found live, 27 Aug 2026, in the local
+  // desktop build after a database reset left an old view-as cookie
+  // dangling) must not silently take down the real admin's own session:
+  // getCurrentUser() would resolve to null, hiding the header entirely --
+  // including the "Stop viewing as" control that would otherwise clear
+  // this exact cookie, a dead end with no way back. Falling back to the
+  // real user here instead makes that self-healing.
+  const viewAsUserExists = await db.user.findUnique({ where: { id: viewAsId }, select: { id: true } });
+  return viewAsUserExists ? viewAsId : realUserId;
 }
 
 export async function getCurrentUser() {

@@ -1,0 +1,16 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000
+  Content-Security-Policy: default-src 'self'; style-src 'unsafe-inline'; img-src 'self'; script-src 'none'; base-uri 'self'; frame-ancestors 'none'
+
+/
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/privacy
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/favicon.png
+  Cache-Control: public, max-age=604800, immutable
