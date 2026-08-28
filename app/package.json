@@ -13,7 +13,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "sharepoint:check": "tsx scripts/sharepoint-check.ts",
-    "england:generate": "tsx scripts/generate-england-variant.ts"
+    "england:generate": "tsx scripts/generate-england-variant.ts",
+    "england:demo": "tsx scripts/seed-england-demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
