@@ -27,11 +27,27 @@ const PUBLIC_PATHS = ["/login", "/share"];
 // Demo Viewer on its own (see shareLinks.ts).
 const SHARE_VIEWER_DENYLIST = ["/projects/new", "/team", "/about", "/access-requests"];
 
+// Lets the root layout know which project (if any) the current request is
+// for, without every page having to pass it down itself -- layout.tsx reads
+// this via next/headers to scope the "view as" switcher to that project's
+// own team (28 Aug 2026: with two separate demo tenants now sharing one
+// platform-wide user list, the switcher was otherwise leaking Scotland/FVRH
+// persona names onto the England tenant's pages, and vice versa).
+// Excludes "new" -- /projects/new is the creation form, not a real
+// project's projectNumber.
+const PROJECT_PATH_RE = /^\/projects\/(?!new(?:\/|$))([^/]+)/;
+
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const projectNumber = pathname.match(PROJECT_PATH_RE)?.[1];
 
-  if (req.auth || isPublic) return;
+  if (req.auth || isPublic) {
+    if (!projectNumber) return;
+    const res = NextResponse.next();
+    res.headers.set("x-current-project-number", projectNumber);
+    return res;
+  }
 
   const shareToken = req.cookies.get(SHARE_LINK_COOKIE_NAME)?.value;
   const shareViewerId = await resolveShareLinkViewerUserId(shareToken);

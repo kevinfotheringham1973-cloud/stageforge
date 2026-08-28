@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { getCurrentUser, getRealCurrentUserId } from "@/lib/session";
 import { setViewAsUser, clearViewAsUser, exitShareLinkView } from "@/lib/actions";
@@ -74,18 +75,40 @@ export default async function RootLayout({
   const activeShareLink = isDemoViewer ? await getActiveShareLinkFromCookie() : null;
   const isViewingAs = !isDemoViewer && realUserId !== currentUser.id;
 
-  // The "view as" switcher is project-agnostic (root layout), so this
-  // is every role a user holds anywhere, deduped — not one project's
-  // view of them. ActingAsSwitcher leads with this (not the name) in
-  // the dropdown label, since an admin previewing a persona cares which
-  // role they're watching, not who Derek Gibb is (confirmed 24 Aug
-  // 2026, from back when this switcher was the entire login model).
-  // isPlatformAdmin is a standing authority outside the Role/
-  // ProjectRoleAssignment model entirely (confirmed 20 Aug 2026 —
-  // Callum Reid is deliberately outside the company/department
-  // structure), so it needs its own label here (25 Aug 2026 — showing
-  // him as "no role assigned" was actively wrong for the one person
-  // who can delete a project).
+  // The "view as" switcher used to be genuinely project-agnostic here —
+  // every role a user held anywhere, deduped, regardless of which
+  // project you were currently looking at. That stopped being safe once
+  // a second demo tenant existed on the same platform-wide user list
+  // (England/Meadowbrook NHS alongside Scotland/FVRH, 28 Aug 2026):
+  // browsing the England project still surfaced every FVRH persona's
+  // real name in the dropdown. proxy.ts now forwards the current
+  // project's number (parsed straight from the URL) as a request
+  // header when you're on a /projects/[projectNumber] route, so this
+  // can scope the list to just that project's own team -- everywhere
+  // else (dashboard, /resources) there's no project to scope to, so it
+  // still falls back to showing everyone, same as before.
+  const currentProjectNumber = (await headers()).get("x-current-project-number");
+  const currentProjectUserIds = currentProjectNumber
+    ? new Set(
+        (
+          await db.projectRoleAssignment.findMany({
+            where: { project: { projectNumber: currentProjectNumber } },
+            select: { userId: true },
+          })
+        ).map((a) => a.userId)
+      )
+    : null;
+
+  // ActingAsSwitcher leads with the role (not the name) in the dropdown
+  // label, since an admin previewing a persona cares which role they're
+  // watching, not who Derek Gibb is (confirmed 24 Aug 2026, from back
+  // when this switcher was the entire login model). isPlatformAdmin is
+  // a standing authority outside the Role/ProjectRoleAssignment model
+  // entirely (confirmed 20 Aug 2026 — Callum Reid is deliberately
+  // outside the company/department structure), so it needs its own
+  // label here (25 Aug 2026 — showing him as "no role assigned" was
+  // actively wrong for the one person who can delete a project) and
+  // always stays in the list regardless of project scoping.
   // People genuinely holding no role anywhere (an Authorised Person
   // seeded but not yet assigned to a project — see disciplineTeam.ts)
   // are filtered out of the switcher entirely (25 Aug 2026): there's
@@ -95,6 +118,12 @@ export default async function RootLayout({
   const users = usersWithRoles
     .filter((u) => !u.archivedAt)
     .filter((u) => u.isPlatformAdmin || u.roleAssignments.length > 0)
+    // currentUser.id is always kept in too, even if project-scoped and
+    // not actually on this project -- otherwise navigating onto a
+    // project outside your currently-acted-as persona's team would
+    // silently drop that persona from its own dropdown mid-preview,
+    // desyncing the <select>'s value from its own options.
+    .filter((u) => !currentProjectUserIds || u.isPlatformAdmin || currentProjectUserIds.has(u.id) || u.id === currentUser.id)
     .map((u) => ({
       id: u.id,
       name: u.name,
