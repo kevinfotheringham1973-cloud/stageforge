@@ -30,8 +30,9 @@
 //    suggesting nobody is more honest than guessing, and the gap is
 //    exactly what a human reviewing the roster is for.
 import { db } from "./db";
+import { ENGLAND_SECTOR_VARIANT_KEY } from "./englandConversion";
 
-const CANDIDATES: Record<string, string[]> = {
+const CANDIDATES_SCOTLAND: Record<string, string[]> = {
   AUTHORISED_PERSON_WATER: ["claire.duncan@buildcare.example"],
   AUTHORISED_PERSON_ELECTRICAL: ["bob.smith@buildcare.example"],
   AUTHORISED_PERSON_VENTILATION: ["fiona.wallace@buildcare.example"],
@@ -45,6 +46,21 @@ const CANDIDATES: Record<string, string[]> = {
   CLINICAL_SAFETY_OFFICER: ["sarah.chen@staldwyn.example"],
   INFORMATION_GOVERNANCE_OFFICER: ["neil.forsyth@staldwyn.example"],
   PRINCIPAL_DESIGNER: ["ross.blair@buildcare.example"],
+};
+
+// England's own named holders (28 Aug 2026, same bug/fix shape as
+// standardTeam.ts's STANDARD_TEAM split) — only the two disciplines
+// seedEnglandDemo actually named a persona for. Every other discipline
+// role has no England candidate yet, same as Scotland's own
+// AE_WATER/AE_MEDICAL_GASES gap in CANDIDATES_SCOTLAND above: no entry
+// here means suggestDisciplineTeam leaves it for a human to assign,
+// rather than guessing wrong by reusing Scotland's real names on an
+// England project (found live, 28 Aug 2026, right after the England
+// tenant's first non-seeded project pulled in Bob Smith/Dennis Kelly/
+// Ross Blair from the Scotland list below).
+const CANDIDATES_ENGLAND: Record<string, string[]> = {
+  AUTHORISED_PERSON_WATER: ["ap.water@hardfmservices.example"],
+  PRINCIPAL_DESIGNER: ["principal.designer@hardfmservices.example"],
 };
 
 // Every AP discipline's counterpart AE — real SHTM/HTM estates practice
@@ -111,8 +127,17 @@ export async function neededDisciplineRoleKeys(templateIds: string[], worksType:
 export async function suggestDisciplineTeam(projectId: string, templateIds: string[], worksType: string): Promise<void> {
   const neededRoleKeys = await neededDisciplineRoleKeys(templateIds, worksType);
 
+  // Every templateId here is already guaranteed to share one sector
+  // (assertSameSectorVariant, checked before this is ever called) — any
+  // one of them tells us which roster applies.
+  const template = await db.template.findFirstOrThrow({
+    where: { id: { in: templateIds } },
+    select: { sectorVariant: { select: { key: true } } },
+  });
+  const candidates = template.sectorVariant.key === ENGLAND_SECTOR_VARIANT_KEY ? CANDIDATES_ENGLAND : CANDIDATES_SCOTLAND;
+
   for (const roleKey of neededRoleKeys) {
-    const candidateEmails = CANDIDATES[roleKey];
+    const candidateEmails = candidates[roleKey];
     if (!candidateEmails) continue; // no known holder — leave for manual assignment
 
     const role = await db.role.findUnique({ where: { key: roleKey } });
