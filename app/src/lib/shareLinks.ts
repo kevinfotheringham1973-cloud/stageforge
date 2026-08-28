@@ -48,6 +48,34 @@ export async function resolveShareLinkViewerUserId(
 }
 
 /**
+ * Resolves a share token to the one Project it's confined to (28 Aug
+ * 2026 -- closing a real GDPR/security leak: a token used to grant a
+ * Demo Viewer session with no project boundary at all, so proxy.ts had
+ * nothing to confine navigation to and the anonymous visitor could
+ * browse to every project on the platform, real names included).
+ * proxy.ts uses this to redirect "/" to the viewer's one project and to
+ * reject any other project path. Returns null for the same invalid
+ * states resolveShareLinkViewerUserId does.
+ */
+export async function resolveShareLinkProject(
+  token: string | undefined
+): Promise<{ id: string; projectNumber: string } | null> {
+  if (!token) return null;
+
+  const link = await db.shareLink.findUnique({
+    where: { token },
+    select: {
+      revokedAt: true,
+      expiresAt: true,
+      project: { select: { id: true, projectNumber: true } },
+    },
+  });
+  if (!link || link.revokedAt || link.expiresAt <= new Date()) return null;
+
+  return link.project;
+}
+
+/**
  * The active ShareLink behind the current request's cookie, if any --
  * used only by layout.tsx to show the expiry in the read-only banner. Not
  * used for the actual authorization decision (see the two functions

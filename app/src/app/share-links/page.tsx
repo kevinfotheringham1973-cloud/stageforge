@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { createShareLink, revokeShareLink } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 import { forbidden } from "next/navigation";
+import { ENGLAND_SECTOR_VARIANT_KEY } from "@/lib/englandConversion";
 
 const EXPIRY_OPTIONS = [
   { hours: 1, label: "1 hour" },
@@ -25,7 +26,23 @@ export default async function ShareLinksPage() {
 
   const links = await db.shareLink.findMany({
     orderBy: { createdAt: "desc" },
-    include: { createdBy: { select: { name: true } } },
+    include: { createdBy: { select: { name: true } }, project: { select: { name: true, projectNumber: true } } },
+  });
+
+  // Only the England demo tenant's projects are offered here (28 Aug
+  // 2026) -- a share link is a public, no-login credential, so it must
+  // never be scopable to a project holding real people's personal data.
+  // isDemoProject (the fast-forward-gate flag) isn't the right filter: it's
+  // true on the real Scotland projects too. sectorVariant is: every
+  // England-tenant persona is a *.example address (see
+  // standardTeam.ts/disciplineTeam.ts's STANDARD_TEAM_ENGLAND/
+  // CANDIDATES_ENGLAND), so it's the only tenant safe to expose publicly.
+  // See shareLinks.ts's resolveShareLinkProject and the
+  // gdpr_sharelink_scoping memory.
+  const shareableProjects = await db.project.findMany({
+    where: { template: { sectorVariant: { key: ENGLAND_SECTOR_VARIANT_KEY } } },
+    orderBy: { projectNumber: "asc" },
+    select: { id: true, name: true, projectNumber: true },
   });
 
   const now = Date.now();
@@ -44,7 +61,31 @@ export default async function ShareLinksPage() {
 
       <div className="mb-8 rounded-lg border border-rule bg-surface p-5">
         <h2 className="mb-3 font-mono text-[10px] font-bold uppercase tracking-wide text-accent">+ Create link</h2>
+        {shareableProjects.length === 0 && (
+          <p className="mb-3 rounded border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+            No England-tenant project exists yet to link to. Share links can only point at that tenant, since every
+            other project has real people&rsquo;s names on it.
+          </p>
+        )}
         <form action={createShareLink} className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Project</label>
+            <select
+              name="projectId"
+              required
+              defaultValue=""
+              className="w-56 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+            >
+              <option value="" disabled>
+                Select a project…
+              </option>
+              {shareableProjects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  #{p.projectNumber} {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
               Label (optional)
@@ -102,8 +143,8 @@ export default async function ShareLinksPage() {
                 </span>
               </div>
               <p className="mt-0.5 truncate text-xs text-inkmuted">
-                Created by {link.createdBy.name} on {link.createdAt.toLocaleString("en-GB")} · expires{" "}
-                {link.expiresAt.toLocaleString("en-GB")}
+                #{link.project.projectNumber} {link.project.name} · created by {link.createdBy.name} on{" "}
+                {link.createdAt.toLocaleString("en-GB")} · expires {link.expiresAt.toLocaleString("en-GB")}
               </p>
               {link.status === "Active" && (
                 <p className="mt-1 truncate font-mono text-xs text-accent">

@@ -12,20 +12,30 @@
 // Server Action's own permission checks.
 import { NextResponse } from "next/server";
 import { auth } from "./lib/auth";
-import { SHARE_LINK_COOKIE_NAME, resolveShareLinkViewerUserId } from "./lib/shareLinks";
+import { SHARE_LINK_COOKIE_NAME, resolveShareLinkProject } from "./lib/shareLinks";
 
 const PUBLIC_PATHS = ["/login", "/share"];
 
 // Write-only entry points, plus the admin pages that carry real people's
-// contact details (Team, Access requests) or deployment internals (About) -- a
-// share-link viewer shouldn't even see the door to these. Compliance
-// rules and Regulatory reference are deliberately NOT here: they're pure
-// reference content, and their own page-level gate
+// contact details (Team, Access requests, Share links) or deployment
+// internals (About) -- a share-link viewer shouldn't even see the door to
+// these. Compliance rules and Regulatory reference are deliberately NOT
+// here: they're pure reference content, and their own page-level gate
 // (canViewAdminReferencePage, shareLinks.ts) already lets a demo viewer
 // read them. This list is belt-and-braces on top of the real protection
 // either way -- every write Server Action already rejects the role-less
 // Demo Viewer on its own (see shareLinks.ts).
-const SHARE_VIEWER_DENYLIST = ["/projects/new", "/team", "/about", "/access-requests"];
+const SHARE_VIEWER_DENYLIST = ["/projects/new", "/team", "/about", "/access-requests", "/share-links"];
+
+// Cross-project listing/aggregate pages (28 Aug 2026, closing a real
+// leak alongside ShareLink gaining a required projectId): every one of
+// these calls db.project.findMany with no project filter, so they list
+// every project on the platform -- exactly what let a demo viewer browse
+// off the England demo tenant and onto the real Scotland projects to see
+// real people's names (found live testing the landing page's demo link).
+// A share-link viewer is confined to their one linked project, so none
+// of these make sense for them anyway -- redirected to that project.
+const SHARE_VIEWER_CROSS_PROJECT_PATHS = ["/finance", "/resources", "/lessons-learned", "/works-packages"];
 
 // Lets the root layout know which project (if any) the current request is
 // for, without every page having to pass it down itself -- layout.tsx reads
@@ -34,8 +44,12 @@ const SHARE_VIEWER_DENYLIST = ["/projects/new", "/team", "/about", "/access-requ
 // platform-wide user list, the switcher was otherwise leaking Scotland/FVRH
 // persona names onto the England tenant's pages, and vice versa).
 // Excludes "new" -- /projects/new is the creation form, not a real
-// project's projectNumber.
-const PROJECT_PATH_RE = /^\/projects\/(?!new(?:\/|$))([^/]+)/;
+// project's projectNumber. Also matches /api/projects/<number>/... (the
+// draft-document download routes) so a share viewer is blocked from
+// requesting another project's generated draft at the proxy layer too,
+// not solely relying on each route's own canUploadEvidence check (28 Aug
+// 2026, belt-and-braces alongside the rest of this file's leak fix).
+const PROJECT_PATH_RE = /^\/(?:api\/)?projects\/(?!new(?:\/|$))([^/]+)/;
 
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
@@ -50,12 +64,27 @@ export default auth(async (req) => {
   }
 
   const shareToken = req.cookies.get(SHARE_LINK_COOKIE_NAME)?.value;
-  const shareViewerId = await resolveShareLinkViewerUserId(shareToken);
-  if (shareViewerId) {
-    if (SHARE_VIEWER_DENYLIST.some((p) => pathname.startsWith(p))) {
-      return NextResponse.redirect(new URL("/", req.nextUrl.origin));
+  const linkedProject = await resolveShareLinkProject(shareToken);
+  if (linkedProject) {
+    const home = new URL(`/projects/${linkedProject.projectNumber}`, req.nextUrl.origin);
+
+    // Confine navigation to the one project this link is for -- root,
+    // any other project's number, the denylist, and every cross-project
+    // listing page all bounce back to it rather than "/", which used to
+    // be (and without this would still be) the platform-wide portfolio.
+    if (
+      pathname === "/" ||
+      SHARE_VIEWER_DENYLIST.some((p) => pathname.startsWith(p)) ||
+      SHARE_VIEWER_CROSS_PROJECT_PATHS.some((p) => pathname.startsWith(p)) ||
+      (projectNumber && projectNumber !== linkedProject.projectNumber)
+    ) {
+      return NextResponse.redirect(home);
     }
-    return;
+
+    if (!projectNumber) return;
+    const res = NextResponse.next();
+    res.headers.set("x-current-project-number", projectNumber);
+    return res;
   }
 
   return NextResponse.redirect(new URL("/login", req.nextUrl.origin));

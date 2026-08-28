@@ -2153,6 +2153,13 @@ export async function createShareLink(formData: FormData) {
   if (!Number.isFinite(hours) || hours <= 0 || hours > SHARE_LINK_MAX_HOURS) {
     throw new Error(`expiresInHours must be between 1 and ${SHARE_LINK_MAX_HOURS}.`);
   }
+  // Required (28 Aug 2026, closing a real leak) -- a link with no project
+  // boundary let the Demo Viewer browse every project on the platform,
+  // real people's names included. See proxy.ts and shareLinks.ts's
+  // resolveShareLinkProject.
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  if (!projectId) throw new Error("A share link must be scoped to one project.");
+  await db.project.findUniqueOrThrow({ where: { id: projectId } });
 
   const token = crypto.randomBytes(24).toString("base64url");
   const created = await db.shareLink.create({
@@ -2160,6 +2167,7 @@ export async function createShareLink(formData: FormData) {
       token,
       label,
       createdById: actorId,
+      projectId,
       expiresAt: new Date(Date.now() + hours * 60 * 60 * 1000),
     },
   });
