@@ -580,6 +580,14 @@ model ProjectAdditionalTemplate {
 model Project {
   id                         String                      @id @default(cuid())
   projectNumber              String                      @unique
+  // Gates the "fast-forward this gate" demo action (28 Aug 2026, see
+  // actions.ts's fastForwardGateForDemo) — fabricates evidence/
+  // sign-offs to show a customer what a passed gate looks like without
+  // the real upload/sign-off flow. Defaults false so a genuinely new
+  // project (a real customer's, once StageForge has any) never gets
+  // this capability by accident; every existing seeded project sets it
+  // true explicitly in seed.ts/englandConversion.ts.
+  isDemoProject              Boolean                     @default(false)
   name                       String
   templateId                 String
   template                   Template                    @relation(fields: [templateId], references: [id])

@@ -3696,6 +3696,7 @@ async function main() {
   const project = await db.project.create({
     data: {
       projectNumber: "20456",
+      isDemoProject: true,
       name: "UPS Systems Replacement – 4 Main Systems (12 units)",
       templateId: meTemplate.id,
       includedStageKeys: stageDefs.slice(0, 7).map((s) => s.key), // all but use
@@ -3918,6 +3919,7 @@ async function main() {
   const waterProject = await db.project.create({
     data: {
       projectNumber: "20777",
+      isDemoProject: true,
       name: "Ward 6-8 Calorifier Replacement",
       templateId: waterTemplate.id,
       includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8
@@ -4012,6 +4014,7 @@ async function main() {
   const drainageProject = await db.project.create({
     data: {
       projectNumber: "55998",
+      isDemoProject: true,
       name: "Main Kitchen Drainage Replacement",
       templateId: drainageTemplate.id,
       includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8
@@ -4086,6 +4089,7 @@ async function main() {
   const coldWaterProject = await db.project.create({
     data: {
       projectNumber: "30001",
+      isDemoProject: true,
       name: "Main Water Tank Replacement for the Entire Hospital",
       templateId: coldWaterTemplate.id,
       includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8
@@ -4154,6 +4158,7 @@ async function main() {
   const lightingProject = await db.project.create({
     data: {
       projectNumber: "30002",
+      isDemoProject: true,
       name: "LED Upgrade Throughout Hospital Corridors and Avenues",
       templateId: lightingTemplate.id,
       includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8

@@ -362,6 +362,7 @@ export async function seedEnglandDemo(db: PrismaClient): Promise<{ projectNumber
   const project = await db.project.create({
     data: {
       projectNumber,
+      isDemoProject: true,
       name: "Ward 12 Calorifier & Distribution Pipework Replacement",
       templateId: template.id,
       includedStageKeys: template.stageTemplates.map((st) => st.key),

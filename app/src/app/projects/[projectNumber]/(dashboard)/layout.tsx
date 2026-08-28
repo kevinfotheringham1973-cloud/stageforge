@@ -9,8 +9,10 @@ import {
   type GateTimelineStatus,
 } from "@/lib/permissions";
 import { getCurrentUser, getCurrentUserRoleKeysForProject } from "@/lib/session";
+import { setProjectDemoFlag } from "@/lib/actions";
 import { GateRail } from "@/components/GateRail";
 import { DeleteProjectForm } from "@/components/DeleteProjectForm";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const APPROVAL_BUCKET_LABELS: Record<string, string> = {
   LIFECYCLE_REPLACEMENT: "Lifecycle replacement",
@@ -86,6 +88,10 @@ export default async function ProjectDashboardLayout({
   ]);
   const worksPackageSiblings = project.worksPackage?.projects.filter((p) => p.projectNumber !== projectNumber) ?? [];
   const isPlatformAdmin = currentUser?.isPlatformAdmin ?? false;
+  // Desktop build: no demo-project tooling at all (the fast-forward
+  // action itself refuses in local mode too — this just keeps the
+  // toggle from ever appearing there in the first place).
+  const isLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
 
   const contractorAssignment = project.roleAssignments.find((a) => a.role.key === "FM_CONTRACTOR");
   const authorityAssignment = project.roleAssignments.find((a) => a.role.key === "CLIENT_AUTHORITY");
@@ -291,6 +297,31 @@ export default async function ProjectDashboardLayout({
               )}
             </div>
           </details>
+        )}
+
+        {isPlatformAdmin && !isLocalMode && (
+          <div className="rounded-lg border border-dashed border-flag bg-flag/5 p-4">
+            <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-flag">Demo tools &middot; platform admin</h2>
+            <p className="mb-3 text-sm text-inkmuted">
+              A demo project unlocks a &ldquo;Fast-forward this gate&rdquo; button on every gate page —
+              fabricates evidence and sign-off to show what a passed gate looks like, without the real
+              upload/sign-off flow. Never enable this on a real customer&rsquo;s project.
+            </p>
+            <form action={setProjectDemoFlag.bind(null, project.id, project.projectNumber)} className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  name="isDemoProject"
+                  defaultChecked={project.isDemoProject}
+                  className="h-4 w-4"
+                />
+                This is a demo project
+              </label>
+              <SubmitButton pendingText="Saving…" className="rounded border border-rule px-2.5 py-1 text-xs font-semibold text-accent hover:bg-surface2">
+                Save
+              </SubmitButton>
+            </form>
+          </div>
         )}
 
         {isPlatformAdmin && (
