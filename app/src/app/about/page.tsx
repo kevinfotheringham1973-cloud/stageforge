@@ -11,6 +11,8 @@ import { getBuildInfo } from "@/lib/buildInfo";
 export default async function AboutPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser?.isPlatformAdmin) forbidden();
+  // Desktop build only -- see layout.tsx's admin-nav block for why.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") forbidden();
 
   const info = getBuildInfo();
   const rows: { label: string; value: string }[] = [

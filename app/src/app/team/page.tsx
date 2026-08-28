@@ -17,6 +17,12 @@ import { ROLE_CATEGORY_LABEL, ROLE_CATEGORY_ORDER, groupRolesByCategory } from "
 export default async function TeamPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser?.isPlatformAdmin) forbidden();
+  // Desktop build only (28 Aug 2026) -- there's only one real person
+  // using it, so there's no team to assign names/roles to. See
+  // layout.tsx's admin-nav block for the same guard on the other admin
+  // pages, and session.ts's getCurrentUserId for why "view as" no
+  // longer offers a way around this either.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") forbidden();
 
   const [usersRaw, departments, companies, projects, roles] = await Promise.all([
     db.user.findMany({

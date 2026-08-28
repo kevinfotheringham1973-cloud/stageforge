@@ -18,6 +18,10 @@ const PROVIDER_LABEL: Record<string, string> = {
 export default async function AccessRequestsPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser?.isPlatformAdmin) forbidden();
+  // Desktop build only -- no real access-control decisions to make when
+  // there's only one real person using it. See layout.tsx's admin-nav
+  // block and team/page.tsx for the same guard.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") forbidden();
 
   const [attempts, members] = await Promise.all([
     db.rejectedSignInAttempt.findMany({

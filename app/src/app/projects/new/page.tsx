@@ -1,5 +1,5 @@
 import { peekNextProjectNumber } from "@/lib/projectNumber";
-import { listMatchableTemplates } from "@/lib/provisioning";
+import { isAiTaggingConfigured, listMatchableTemplates } from "@/lib/provisioning";
 import { listWorksPackages } from "@/lib/worksPackages";
 import { db } from "@/lib/db";
 import { NewProjectForm } from "./NewProjectForm";
@@ -43,9 +43,11 @@ export default async function NewProjectPage({
         Project No. {nextProjectNumber} &middot; assigned automatically
       </div>
       <p className="mb-4 text-sm text-inkmuted">
-        Pick the system this project covers and describe the works. StageForge proposes compliance
-        tags from the description, plus the deliverables checklist and compliance requirements for
-        the selected system.
+        Pick the system this project covers and describe the works. StageForge builds the deliverables
+        checklist and compliance requirements for the selected system
+        {isAiTaggingConfigured()
+          ? ", and proposes compliance tags from the description."
+          : " — add any compliance tags by hand on the review step."}
       </p>
 
       <div className="mb-8 rounded-lg border border-dashed border-flag bg-accentsoft/40 px-4 py-3 text-sm">

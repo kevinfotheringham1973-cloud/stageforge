@@ -19,6 +19,8 @@ import { canViewAdminReferencePage } from "@/lib/shareLinks";
 export default async function ComplianceRulesPage() {
   const currentUser = await getCurrentUser();
   if (!canViewAdminReferencePage(currentUser)) forbidden();
+  // Desktop build only -- see layout.tsx's admin-nav block for why.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") forbidden();
 
   const [ruleSets, roles] = await Promise.all([
     db.complianceRuleSet.findMany({

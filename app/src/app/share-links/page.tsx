@@ -20,6 +20,8 @@ const EXPIRY_OPTIONS = [
 export default async function ShareLinksPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser?.isPlatformAdmin) forbidden();
+  // Desktop build only -- see layout.tsx's admin-nav block for why.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") forbidden();
 
   const links = await db.shareLink.findMany({
     orderBy: { createdAt: "desc" },

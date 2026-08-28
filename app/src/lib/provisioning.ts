@@ -35,7 +35,23 @@ export async function listMatchableTemplates(db: PrismaClient) {
   });
 }
 
+export function isAiTaggingConfigured(): boolean {
+  return Boolean(process.env.ANTHROPIC_API_KEY);
+}
+
+/**
+ * No ANTHROPIC_API_KEY (the desktop build deliberately never has one —
+ * there's no sane way to ship or meter API credits inside a distributed
+ * installer) degrades to zero proposed tags rather than failing the
+ * whole draft: the review page's "Tags (comma-separated)" override
+ * field (provisioning/page.tsx) already exists for a Compliance Officer
+ * to add them by hand, so nothing else has to change.
+ */
 export async function matchComplianceTags(db: PrismaClient, templateId: string, brief: string): Promise<ProvisioningMatch> {
+  if (!isAiTaggingConfigured()) {
+    return { tags: [], reasoning: "AI tag suggestions aren't available in this build — add compliance tags manually on the review page." };
+  }
+
   const template = await db.template.findUniqueOrThrow({
     where: { id: templateId },
     select: { name: true, description: true, matchKeywords: true },
