@@ -32,6 +32,7 @@ export async function listMatchableTemplates(db: PrismaClient) {
   return db.template.findMany({
     where: { matchKeywords: { isEmpty: false } },
     orderBy: { name: "asc" },
+    include: { sectorVariant: { select: { key: true, name: true } } },
   });
 }
 
