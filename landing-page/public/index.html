@@ -54,7 +54,7 @@
     line-height: 0.95;
     font-family: Georgia, "Times New Roman", serif;
     font-weight: 700;
-    font-size: 22px;
+    font-size: 28px;
   }
   .wordmark .sf { color: var(--blue); }
   .wordmark .h { color: var(--teal); }
@@ -70,21 +70,57 @@
   .nav a.cta:hover { background: var(--accentsoft); }
 
   .hero {
-    padding: 72px 0 56px;
+    padding: 80px 0 72px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(40,101,155,0.16) 0%, rgba(45,154,156,0.22) 50%, var(--bg) 90%);
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -180px;
+    right: -160px;
+    width: 620px;
+    height: 620px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(45,154,156,0.35) 0%, rgba(40,101,155,0.18) 55%, transparent 75%);
+    pointer-events: none;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 40px;
+    align-items: center;
+    position: relative;
   }
   .hero h1 {
-    font-size: 40px;
-    line-height: 1.15;
+    font-size: 44px;
+    line-height: 1.12;
     margin: 0 0 20px;
-    max-width: 720px;
+    letter-spacing: -0.01em;
   }
   .hero p.lead {
-    font-size: 18px;
+    font-size: 18.5px;
     color: var(--ink-muted);
-    max-width: 620px;
     margin: 0 0 28px;
   }
   .hero .buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-visual { position: relative; }
+  .hero-visual::before {
+    content: "";
+    position: absolute;
+    inset: -30px -20px auto -20px;
+    height: 90%;
+    background: radial-gradient(ellipse at center, rgba(45,154,156,0.30) 0%, rgba(40,101,155,0.0) 70%);
+    filter: blur(10px);
+    z-index: 0;
+  }
+  .hero-visual .browser-frame {
+    position: relative;
+    z-index: 1;
+    transform: rotate(-1.2deg);
+    box-shadow: 0 40px 70px -20px rgba(26,31,38,0.35), 0 10px 24px rgba(40,101,155,0.18);
+  }
   .btn-primary {
     background: var(--blue);
     color: #fff;
@@ -132,10 +168,45 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 24px;
   }
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-visual { order: -1; }
+    .hero-visual .browser-frame { transform: none; }
+  }
   @media (max-width: 760px) {
     .grid3, .grid2 { grid-template-columns: 1fr; }
     .hero h1 { font-size: 30px; }
   }
+
+  .browser-frame {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .browser-frame .chrome-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: #e9edf1;
+    border-bottom: 1px solid var(--rule);
+  }
+  .browser-frame .chrome-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .browser-frame .chrome-dot.red { background: #ff5f57; }
+  .browser-frame .chrome-dot.amber { background: #febc2e; }
+  .browser-frame .chrome-dot.green { background: #28c840; }
+  .browser-frame .chrome-url {
+    margin-left: 10px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 3px 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .browser-frame img { display: block; width: 100%; height: auto; }
   .version-card {
     background: var(--surface);
     border: 1px solid var(--rule);
@@ -206,9 +277,16 @@
     grid-template-columns: 1fr;
     gap: 28px;
   }
-  .shots figure { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
-  .shots img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--rule); }
-  .shots figcaption { padding: 14px 18px; font-size: 15px; color: var(--ink-muted); }
+  .shots figure { margin: 0; }
+  .shots .browser-frame {
+    box-shadow: 0 20px 45px -18px rgba(26,31,38,0.28), 0 4px 14px rgba(26,31,38,0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .shots .browser-frame:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 28px 55px -16px rgba(26,31,38,0.34), 0 8px 18px rgba(40,101,155,0.14);
+  }
+  .shots figcaption { padding: 14px 4px 0; font-size: 15px; color: var(--ink-muted); }
 
   footer {
     padding: 40px 0;
@@ -235,17 +313,30 @@
 </header>
 
 <section class="hero">
-  <div class="wrap">
-    <h1>One system of record for stage-gate delivery and compliance in regulated Hard&nbsp;FM.</h1>
-    <p class="lead">
-      Every stage carries a deliverables checklist. Every deliverable needs uploaded evidence.
-      A gate can't close without a Sponsor's sign-off against that evidence — and compliance runs
-      alongside delivery as a concurrent, config-driven module, not a separate spreadsheet nobody
-      trusts.
-    </p>
-    <div class="buttons">
-      <a class="btn-primary" href="mailto:kevin@pmopassport.co.uk">Talk to us</a>
-      <a class="btn-secondary" href="#what-it-does">See how it works</a>
+  <div class="wrap hero-grid">
+    <div class="hero-text">
+      <h1>One system of record for stage-gate delivery and compliance in regulated Hard&nbsp;FM.</h1>
+      <p class="lead">
+        Every stage carries a deliverables checklist. Every deliverable needs uploaded evidence.
+        A gate can't close without a Sponsor's sign-off against that evidence — and compliance runs
+        alongside delivery as a concurrent, config-driven module, not a separate spreadsheet nobody
+        trusts.
+      </p>
+      <div class="buttons">
+        <a class="btn-primary" href="mailto:kevin@pmopassport.co.uk">Talk to us</a>
+        <a class="btn-secondary" href="#what-it-does">See how it works</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="browser-frame">
+        <div class="chrome-bar">
+          <span class="chrome-dot red"></span>
+          <span class="chrome-dot amber"></span>
+          <span class="chrome-dot green"></span>
+          <span class="chrome-url">stageforge.pmopassport.co.uk</span>
+        </div>
+        <img src="/screenshots/dashboard.png" alt="StageForge project dashboard showing gate activity, cost, and a full 8-gate timeline" />
+      </div>
     </div>
   </div>
 </section>
@@ -321,40 +412,88 @@
   <div class="wrap">
     <h2 class="section-title">See it in action</h2>
     <p class="section-lead">
-      A live project running through StageForge Health — from the portfolio dashboard down to a single
-      gate's evidence checklist.
+      A live project running through StageForge Health's cloud platform — from the portfolio dashboard
+      down to a single gate's evidence checklist, with every role's authority enforced, not just shown.
     </p>
     <div class="shots">
       <figure class="wide">
-        <img src="/screenshots/dashboard.png" alt="StageForge project dashboard showing gate activity, cost, and a full 8-gate timeline" loading="lazy" />
+        <div class="browser-frame">
+          <div class="chrome-bar">
+            <span class="chrome-dot red"></span><span class="chrome-dot amber"></span><span class="chrome-dot green"></span>
+            <span class="chrome-url">stageforge.pmopassport.co.uk/projects/40001</span>
+          </div>
+          <img src="/screenshots/dashboard.png" alt="StageForge project dashboard showing gate activity, cost, and a full 8-gate timeline" loading="lazy" />
+        </div>
         <figcaption>Every project's full stage-gate timeline, cost, and team on one screen.</figcaption>
       </figure>
       <figure>
-        <img src="/screenshots/gate-timeline.png" alt="A signed-off gate with its target and actual dates" loading="lazy" />
+        <div class="browser-frame">
+          <div class="chrome-bar">
+            <span class="chrome-dot red"></span><span class="chrome-dot amber"></span><span class="chrome-dot green"></span>
+            <span class="chrome-url">stageforge.pmopassport.co.uk/projects/40001/gates/…</span>
+          </div>
+          <img src="/screenshots/gate-timeline.png" alt="A signed-off gate with its target and actual dates" loading="lazy" />
+        </div>
         <figcaption>Each gate tracked against target vs. actual dates — nothing closes silently.</figcaption>
       </figure>
       <figure>
-        <img src="/screenshots/deliverables-checklist.png" alt="Deliverables checklist for a gate, each item citing its HTM regulatory source" loading="lazy" />
+        <div class="browser-frame">
+          <div class="chrome-bar">
+            <span class="chrome-dot red"></span><span class="chrome-dot amber"></span><span class="chrome-dot green"></span>
+            <span class="chrome-url">stageforge.pmopassport.co.uk/projects/40001/gates/…</span>
+          </div>
+          <img src="/screenshots/deliverables-checklist.png" alt="Deliverables checklist for a gate, each item citing its HTM regulatory source" loading="lazy" />
+        </div>
         <figcaption>Every deliverable traced to its real regulatory citation, with evidence attached.</figcaption>
       </figure>
       <figure>
-        <img src="/screenshots/technical-design-package.png" alt="A gate's full technical design deliverables package, each item citing its HTM or British Standard source" loading="lazy" />
+        <div class="browser-frame">
+          <div class="chrome-bar">
+            <span class="chrome-dot red"></span><span class="chrome-dot amber"></span><span class="chrome-dot green"></span>
+            <span class="chrome-url">stageforge.pmopassport.co.uk/projects/40001/gates/…</span>
+          </div>
+          <img src="/screenshots/technical-design-package.png" alt="A gate's full technical design deliverables package, each item citing its HTM or British Standard source" loading="lazy" />
+        </div>
         <figcaption>A real discipline-specific checklist, not a generic task list — every item still outstanding is exactly what's left to do.</figcaption>
       </figure>
       <figure>
-        <img src="/screenshots/hold-points.png" alt="Gate deliverables requiring sign-off from a Compliance Officer and a Senior Responsible Owner before the project can proceed" loading="lazy" />
+        <div class="browser-frame">
+          <div class="chrome-bar">
+            <span class="chrome-dot red"></span><span class="chrome-dot amber"></span><span class="chrome-dot green"></span>
+            <span class="chrome-url">stageforge.pmopassport.co.uk/projects/40001/gates/…</span>
+          </div>
+          <img src="/screenshots/hold-points.png" alt="Gate deliverables requiring sign-off from a Compliance Officer and a Senior Responsible Owner before the project can proceed" loading="lazy" />
+        </div>
         <figcaption>Hold points that actually hold — a gate can't proceed past one until the named authority signs off.</figcaption>
       </figure>
       <figure>
-        <img src="/screenshots/compliance-rules.png" alt="Compliance rule configuration showing override authority and required co-sign-off roles" loading="lazy" />
+        <div class="browser-frame">
+          <div class="chrome-bar">
+            <span class="chrome-dot red"></span><span class="chrome-dot amber"></span><span class="chrome-dot green"></span>
+            <span class="chrome-url">stageforge.pmopassport.co.uk/compliance-rules</span>
+          </div>
+          <img src="/screenshots/compliance-rules.png" alt="Compliance rule configuration showing override authority and required co-sign-off roles" loading="lazy" />
+        </div>
         <figcaption>Override authority and multi-party sign-off, configured per rule.</figcaption>
       </figure>
       <figure>
-        <img src="/screenshots/regulatory-reference.png" alt="Regulatory reference table mapping Scotland SHTM guidance to England HTM equivalents" loading="lazy" />
+        <div class="browser-frame">
+          <div class="chrome-bar">
+            <span class="chrome-dot red"></span><span class="chrome-dot amber"></span><span class="chrome-dot green"></span>
+            <span class="chrome-url">stageforge.pmopassport.co.uk/regulatory-reference</span>
+          </div>
+          <img src="/screenshots/regulatory-reference.png" alt="Regulatory reference table mapping Scotland SHTM guidance to England HTM equivalents" loading="lazy" />
+        </div>
         <figcaption>Built once, mapped to every jurisdiction — Scotland (SHTM) and England (HTM) today.</figcaption>
       </figure>
       <figure>
-        <img src="/screenshots/conversion-notes.png" alt="Key conversion notes summarising the biggest differences between Scotland and England guidance" loading="lazy" />
+        <div class="browser-frame">
+          <div class="chrome-bar">
+            <span class="chrome-dot red"></span><span class="chrome-dot amber"></span><span class="chrome-dot green"></span>
+            <span class="chrome-url">stageforge.pmopassport.co.uk/regulatory-reference</span>
+          </div>
+          <img src="/screenshots/conversion-notes.png" alt="Key conversion notes summarising the biggest differences between Scotland and England guidance" loading="lazy" />
+        </div>
         <figcaption>The differences that actually matter, called out — not just a find-and-replace.</figcaption>
       </figure>
     </div>
