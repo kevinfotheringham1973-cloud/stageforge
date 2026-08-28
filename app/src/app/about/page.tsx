@@ -16,6 +16,12 @@ export default async function AboutPage() {
   const rows: { label: string; value: string }[] = [
     { label: "Commit", value: info.commitSha },
     { label: "Commit date", value: info.commitDate === "unknown" ? "unknown" : new Date(info.commitDate).toLocaleString("en-GB") },
+    // Desktop build only -- see buildInfo.ts. Absent (and skipped) for
+    // the live server, which always reads its commit straight from .git
+    // instead of a baked-in snapshot.
+    ...(info.packagedAt
+      ? [{ label: "Desktop build packaged", value: new Date(info.packagedAt).toLocaleString("en-GB") }]
+      : []),
     { label: "Node.js", value: info.nodeVersion },
     { label: "Next.js", value: info.nextVersion },
     { label: "React", value: info.reactVersion },
