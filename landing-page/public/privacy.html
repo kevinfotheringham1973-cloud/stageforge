@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy Policy — StageForge Health</title>
+<meta name="description" content="Privacy policy for StageForge Health and pmopassport.co.uk, operated by Transition Insight Partners Ltd." />
+<style>
+  :root {
+    --blue: #28659B;
+    --teal: #2D9A9C;
+    --ink: #1a1f26;
+    --ink-muted: #5b6472;
+    --rule: #e4e8ec;
+    --surface: #ffffff;
+    --bg: #f7f8fa;
+    --accentsoft: #eef4f8;
+    --warn-bg: #fff8e6;
+    --warn-border: #e8c766;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    max-width: 760px;
+    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .wordmark {
+    display: flex;
+    flex-direction: column;
+    line-height: 0.95;
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-size: 22px;
+    text-decoration: none;
+  }
+  .wordmark .sf { color: var(--blue); }
+  .wordmark .h { color: var(--teal); }
+  .nav a.back {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--blue);
+    text-decoration: none;
+  }
+  .nav a.back:hover { text-decoration: underline; }
+
+  main { padding: 48px 0 72px; }
+  h1 { font-size: 30px; margin: 0 0 8px; }
+  .updated { color: var(--ink-muted); font-size: 14px; margin: 0 0 32px; }
+
+  .draft-notice {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 14.5px;
+    margin-bottom: 36px;
+  }
+  .draft-notice strong { display: block; margin-bottom: 4px; }
+
+  h2 { font-size: 19px; margin: 36px 0 12px; }
+  p { font-size: 15.5px; color: var(--ink); margin: 0 0 14px; }
+  ul { margin: 0 0 14px; padding-left: 22px; }
+  li { font-size: 15.5px; margin-bottom: 6px; }
+  a { color: var(--blue); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+  }
+  .card h3 { font-size: 16px; margin: 0 0 6px; }
+  .card p { margin: 0; font-size: 14.5px; color: var(--ink-muted); }
+
+  footer {
+    padding: 32px 0;
+    border-top: 1px solid var(--rule);
+    font-size: 13.5px;
+    color: var(--ink-muted);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a class="wordmark" href="/"><span class="sf">StageForge</span><span class="h">Health</span></a>
+    <a class="back" href="/">&larr; Back to home</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: 28 August 2026</p>
+
+  <div class="draft-notice">
+    <strong>Draft — not yet legally reviewed.</strong>
+    This is a working placeholder covering what StageForge Health and this website actually do today.
+    It hasn't been checked by a solicitor and shouldn't be relied on as a final legal document — treat
+    it as a starting point to refine before any public NHS/Trust deployment or Store submission that
+    depends on it.
+  </div>
+
+  <p>
+    This policy covers two related things: this website (<strong>pmopassport.co.uk</strong>), and the
+    StageForge Health application itself. The data controller for both is <strong>Transition Insight
+    Partners Ltd</strong>. Any question about this policy or your data can be sent to
+    <a href="mailto:kevin@pmopassport.co.uk">kevin@pmopassport.co.uk</a>.
+  </p>
+
+  <h2>This website</h2>
+  <p>
+    This site is a small set of static pages — there are no sign-up forms, no cookies set by us, and
+    no third-party analytics or advertising scripts embedded in it. The only data involved is whatever
+    your browser or network already sends to reach any website (e.g. your IP address, handled at
+    Cloudflare's edge as our hosting provider) and anything you choose to send by emailing the address
+    above.
+  </p>
+
+  <h2>The StageForge Health application</h2>
+  <p>
+    StageForge Health is a project delivery and compliance tracking tool for regulated Hard FM
+    programmes, used by an FM Contractor and an NHS Trust team on the same live projects. It comes in
+    two forms with different data handling:
+  </p>
+
+  <div class="card">
+    <h3>Cloud-hosted version</h3>
+    <p>
+      Project, compliance, and evidence data is stored in a database operated for the deployment.
+      Sign-in is via either your organisation's Microsoft Entra ID account, or a passwordless magic
+      link emailed to an address a platform admin has already added — no password is ever created,
+      hashed, or stored. Uploaded evidence files are stored either locally on the server or in a
+      connected SharePoint site (Microsoft Graph, restricted to that one site), depending on how the
+      deployment is configured. Nothing is sold or shared with third parties for advertising.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Desktop trial build</h3>
+    <p>
+      The Windows desktop version runs entirely on your own machine — a bundled local database, no
+      network calls to any cloud service, no Entra ID or email sign-in (it signs you in as a fixed
+      local admin identity), and no data ever leaves the device it's installed on. Uninstalling it
+      removes the local data with it.
+    </p>
+  </div>
+
+  <h2>What we don't do</h2>
+  <ul>
+    <li>We don't sell personal data.</li>
+    <li>We don't use advertising trackers or third-party analytics pixels.</li>
+    <li>We don't use uploaded project or compliance evidence for anything other than the deployment it was uploaded to.</li>
+  </ul>
+
+  <h2>Your rights</h2>
+  <p>
+    If you're a user of a StageForge Health deployment, you can ask the platform admin for that
+    deployment (or contact us directly) about what data is held about you, and request its correction
+    or removal, subject to the deployment's own record-keeping requirements as a regulated Hard FM
+    programme.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Transition Insight Partners Ltd &mdash;
+    <a href="mailto:kevin@pmopassport.co.uk">kevin@pmopassport.co.uk</a>
+  </p>
+</main>
+
+<footer>
+  <div class="wrap">&copy; 2026 Transition Insight Partners Ltd.</div>
+</footer>
+
+</body>
+</html>
