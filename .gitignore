@@ -2,6 +2,14 @@
 .claude/settings.local.json
 .DS_Store
 
+# Electron desktop shell
+electron/node_modules/
+electron/dist/
+build-resources/
+# Vendored/unused dependency tree, not read by prepare-resources.js
+# (which stages from electron/node_modules instead) -- never commit
+electron/pg-deps/
+
 # Local DB backups (pg_dump) — may contain real/demo data, never commit
 backups/
 
