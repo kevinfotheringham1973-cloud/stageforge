@@ -4,25 +4,47 @@ import { useState } from "react";
 import { createProvisioningDraft } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
 
+// Every one of Scotland's 21 systems has an identically-named England
+// (HTM) equivalent (generateEnglandVariant) -- with no region filter
+// here, both the primary picker and the bundle checklist below used to
+// list all 42 with no way to tell which was which (found live, 28 Aug
+// 2026, right after the England demo tenant existed alongside Scotland
+// for the first time). Hardcoded labels, not SectorVariant.name (just
+// "Health" / "Health (England)" -- not distinctive enough on their own
+// for a picker), matching the "SHTM"/"HTM" language already used
+// throughout englandConversion.ts and /regulatory-reference.
+const SECTOR_LABEL: Record<string, string> = {
+  health: "Scotland (SHTM)",
+  health_england: "England (HTM)",
+};
+
 /**
  * Client component only because the bundling checkboxes need to react
  * live to the primary System/Template pick (22 Aug 2026: seeing
  * the system you just selected as primary also listed as something you
  * could "additionally" bundle in is confusing, especially for less
  * menu-confident users — it can't mean anything since a project can't
- * ride along with itself). Everything else here is a plain form same
- * as before; only the template select's value needs to live in React
- * state so the checkbox list below can filter it out as it changes.
+ * ride along with itself) and, since 28 Aug 2026, to the region pick
+ * (both lists need to re-filter the instant it changes). Everything
+ * else here is a plain form same as before; only the template select's
+ * value and the region need to live in React state.
  */
 export function NewProjectForm({
   templates,
   preselectedWorksPackage,
 }: {
-  templates: { id: string; name: string }[];
+  templates: { id: string; name: string; sectorVariant: { key: string; name: string } }[];
   preselectedWorksPackage?: { id: string; name: string };
 }) {
+  const sectorKeys = Array.from(new Set(templates.map((t) => t.sectorVariant.key))).sort();
+  // "health" (Scotland) first if present -- the platform's original/
+  // primary sector, and the sensible default for whoever hasn't
+  // deliberately picked England.
+  const [sectorKey, setSectorKey] = useState(sectorKeys.includes("health") ? "health" : (sectorKeys[0] ?? ""));
+  const sectorTemplates = templates.filter((t) => t.sectorVariant.key === sectorKey);
+
   const [templateId, setTemplateId] = useState("");
-  const bundleableTemplates = templates.filter((t) => t.id !== templateId);
+  const bundleableTemplates = sectorTemplates.filter((t) => t.id !== templateId);
 
   return (
     <form action={createProvisioningDraft} className="flex flex-col gap-5">
@@ -38,6 +60,32 @@ export function NewProjectForm({
           className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
         />
       </div>
+      {sectorKeys.length > 1 && (
+        <div>
+          <label htmlFor="new-project-sector" className="mb-1 block font-mono text-xs uppercase tracking-wide text-inkmuted">
+            Region
+          </label>
+          <select
+            id="new-project-sector"
+            value={sectorKey}
+            onChange={(e) => {
+              setSectorKey(e.target.value);
+              // A template picked under the old region has no meaning
+              // under the new one -- every system name exists in both,
+              // so leaving the old id selected would silently submit
+              // the wrong region's template.
+              setTemplateId("");
+            }}
+            className="w-full rounded border border-inkmuted bg-bg px-3 py-2 text-sm"
+          >
+            {sectorKeys.map((key) => (
+              <option key={key} value={key}>
+                {SECTOR_LABEL[key] ?? key}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label htmlFor="new-project-template" className="mb-1 block font-mono text-xs uppercase tracking-wide text-inkmuted">
           System / Template
@@ -53,7 +101,7 @@ export function NewProjectForm({
           <option value="" disabled>
             Select the system this project covers&hellip;
           </option>
-          {templates.map((t) => (
+          {sectorTemplates.map((t) => (
             <option key={t.id} value={t.id}>
               {t.name}
             </option>
