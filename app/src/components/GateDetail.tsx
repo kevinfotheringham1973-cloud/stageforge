@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
+import { getCurrentUser, getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { evidenceFolderPath } from "@/lib/sharepoint";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/lib/permissions";
 import {
   approveGate,
+  fastForwardGateForDemo,
   approveSpend,
   bypassDeliverable,
   deleteSpendRecord,
@@ -211,11 +212,19 @@ export async function GateDetail({
   });
   if (!gate || gate.stage.project.projectNumber !== projectNumber) notFound();
 
-  const [roleKeys, globalRoleKeys, allRoles] = await Promise.all([
+  const [roleKeys, globalRoleKeys, allRoles, currentUser] = await Promise.all([
     getCurrentUserRoleKeysForProject(gate.stage.projectId),
     getCurrentUserGlobalRoleKeys(),
     db.role.findMany(),
+    getCurrentUser(),
   ]);
+  // Cloud only, platform-admin only, demo-flagged projects only — see
+  // fastForwardGateForDemo's own comment for the full rationale.
+  const canFastForwardForDemo =
+    currentUser?.isPlatformAdmin === true &&
+    process.env.STAGEFORGE_LOCAL_MODE !== "1" &&
+    gate.stage.project.isDemoProject &&
+    gate.status !== "SIGNED_OFF";
   // Real lookups, not guesses — bypassAuthority/overrideAuthority are
   // open Role.key strings now (23 Aug 2026, "fully dynamic authority
   // roles"), so both the display name and "does SRO inherit into this"
@@ -1466,6 +1475,21 @@ export async function GateDetail({
           <span className="text-sm font-semibold text-ok">
             Signed off by {gate.signOffs.find((s) => s.decision === "APPROVED")?.signedOffBy.name}
           </span>
+        )}
+
+        {canFastForwardForDemo && (
+          <form
+            action={fastForwardGateForDemo.bind(null, gateId, projectNumber)}
+            className="ml-4"
+            title="Fabricates evidence and sign-off for every outstanding item on this gate, then closes it — for showing a customer what a passed gate looks like. Never real evidence."
+          >
+            <SubmitButton
+              pendingText="Fast-forwarding…"
+              className="rounded-md border border-dashed border-flag px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-flag hover:bg-flag/10"
+            >
+              ⚡ Fast-forward this gate (demo)
+            </SubmitButton>
+          </form>
         )}
       </div>
 

@@ -5,8 +5,9 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import { RoleCategory } from "@prisma/client";
+import { Prisma, RoleCategory } from "@prisma/client";
 import {
+  getCurrentUser,
   getCurrentUserGlobalRoleKeys,
   getCurrentUserId,
   getCurrentUserRoleKeysForProject,
@@ -866,6 +867,146 @@ export async function approveGate(gateId: string, projectNumber: string) {
 export async function rejectGate(gateId: string, projectNumber: string, formData: FormData) {
   const reason = String(formData.get("reason") ?? "").trim();
   await decide(gateId, projectNumber, "REJECTED", reason);
+}
+
+/**
+ * Fabricates evidence, compliance sign-off, and a Sponsor approval for
+ * every outstanding item on a gate, then closes it — a sales-demo
+ * shortcut ("show a customer what a passed gate looks like") that
+ * bypasses the real upload/sign-off flow entirely (28 Aug 2026).
+ * Platform-admin only, refuses outright unless the project is flagged
+ * isDemoProject (schema.prisma's own comment has the full rationale —
+ * this must never be reachable against a real customer's actual
+ * compliance evidence), and not available in the desktop build at all
+ * (fabricated evidence has no place in the product people are meant to
+ * trial for real). Every fabricated record is prefixed "[DEMO]" and
+ * logged under its own distinct audit action, so it's unambiguous in
+ * the trail if anyone ever looks. Fully bespoke transaction rather than
+ * reusing recordEvidenceStub/bypassDeliverable/overrideCompliance/
+ * decide — those all expect a real signed-in actor performing one real
+ * action; this performs many, attributed to whichever real role-holder
+ * already exists on the project (falling back to the admin who clicked
+ * the button if a role has nobody assigned), in one shot.
+ */
+export async function fastForwardGateForDemo(gateId: string, projectNumber: string) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser?.isPlatformAdmin) throw new Error("Only a platform admin can fast-forward a gate.");
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") {
+    throw new Error("Not available in the desktop build.");
+  }
+
+  const gate = await db.gate.findUniqueOrThrow({
+    where: { id: gateId },
+    include: {
+      stage: { include: { project: { include: { roleAssignments: { include: { role: true } } } } } },
+      deliverables: true,
+      complianceRequirements: { include: { coSignOffs: true } },
+      spendRecords: true,
+    },
+  });
+  if (gate.stage.project.projectNumber !== projectNumber) throw new Error("Gate/project mismatch.");
+  if (!gate.stage.project.isDemoProject) {
+    throw new Error("This project isn't flagged as a demo project — turn that on first (project page, platform admin) if you really want to fast-forward a gate here.");
+  }
+  if (gate.status === "SIGNED_OFF") {
+    throw new Error("This gate is already signed off.");
+  }
+
+  const roleHolder = (roleKey: string): string =>
+    gate.stage.project.roleAssignments.find((a) => a.role.key === roleKey)?.userId ?? currentUser.id;
+  const DEMO_REASON = "[DEMO] Fast-forwarded for demonstration — not real evidence or sign-off.";
+  const now = new Date();
+  const ops: Prisma.PrismaPromise<unknown>[] = [];
+
+  for (const d of gate.deliverables) {
+    if (d.status !== "PENDING") continue;
+    ops.push(
+      db.evidenceFile.create({
+        data: {
+          deliverableId: d.id,
+          fileName: `[DEMO] ${d.label}.pdf`,
+          fileRef: `demo://fast-forward/${d.id}`,
+          uploadedById: roleHolder("PM"),
+        },
+      }),
+      db.deliverable.update({ where: { id: d.id }, data: { status: "EVIDENCED" } })
+    );
+  }
+
+  for (const c of gate.complianceRequirements) {
+    if (c.status === "PENDING") {
+      ops.push(
+        db.complianceEvidenceFile.create({
+          data: {
+            complianceRequirementId: c.id,
+            fileName: `[DEMO] ${c.label}.pdf`,
+            fileRef: `demo://fast-forward/${c.id}`,
+            uploadedById: roleHolder("COMPLIANCE_OFFICER"),
+          },
+        }),
+        db.complianceRequirement.update({ where: { id: c.id }, data: { status: "EVIDENCED" } })
+      );
+    }
+    // additionalApproverRoleKeys must co-sign regardless of how the
+    // requirement itself got cleared (isComplianceRequirementClear,
+    // permissions.ts) — including one that was already EVIDENCED/
+    // OVERRIDDEN before this ran, so this loop is outside the PENDING
+    // check above.
+    const alreadySigned = new Set(c.coSignOffs.map((s) => s.roleKey));
+    for (const roleKey of c.additionalApproverRoleKeys) {
+      if (alreadySigned.has(roleKey)) continue;
+      ops.push(
+        db.complianceCoSignOff.create({
+          data: { complianceRequirementId: c.id, roleKey, signedOffById: roleHolder(roleKey), reason: DEMO_REASON },
+        })
+      );
+    }
+  }
+
+  for (const s of gate.spendRecords) {
+    if (s.status !== "PENDING") continue;
+    ops.push(
+      db.spendApproval.create({
+        data: { spendRecordId: s.id, decision: "APPROVED", approvedById: roleHolder("FINANCE"), reason: DEMO_REASON },
+      }),
+      db.spendRecord.update({ where: { id: s.id }, data: { status: "APPROVED" } })
+    );
+  }
+
+  ops.push(
+    db.gateSignOff.create({
+      data: { gateId, decision: "APPROVED", signedOffById: roleHolder("SPONSOR"), reason: DEMO_REASON },
+    }),
+    db.gate.update({
+      where: { id: gateId },
+      data: { status: "SIGNED_OFF", actualStartDate: gate.actualStartDate ?? now, actualEndDate: now },
+    }),
+    db.auditLogEntry.create({
+      data: { actorId: currentUser.id, action: "gate.demo_fast_forwarded", gateId, entityType: "Gate", entityId: gateId },
+    })
+  );
+
+  await db.$transaction(ops);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
+ * The opt-in gate for fastForwardGateForDemo above — platform-admin
+ * only, same as that action. Deliberately a separate, one-off toggle
+ * rather than something set once at project creation: a project might
+ * start as a real customer's (or look ambiguous) and only later get
+ * earmarked for demo use, or vice versa.
+ */
+export async function setProjectDemoFlag(projectId: string, projectNumber: string, formData: FormData) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser?.isPlatformAdmin) throw new Error("Only a platform admin can change this.");
+
+  const isDemoProject = formData.get("isDemoProject") === "on";
+  await db.project.update({ where: { id: projectId }, data: { isDemoProject } });
+
+  revalidatePath(`/projects/${projectNumber}`);
 }
 
 /**
