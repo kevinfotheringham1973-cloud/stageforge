@@ -1,0 +1,24 @@
+{
+  "name": "stageforge-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron shell for StageForge — wraps the existing Next.js app for a local Windows desktop trial.",
+  "author": "Transition Insight Partners Ltd",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "predist": "node prepare-resources.js",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "embedded-postgres": "16.14.0-beta.17"
+  },
+  "allowScripts": {
+    "@embedded-postgres/windows-x64@16.14.0-beta.17": true,
+    "electron@33.4.11": true
+  }
+}
