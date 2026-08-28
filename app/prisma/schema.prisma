@@ -189,13 +189,14 @@ model ProjectRoleAssignment {
 // ── Delivery ─────────────────────────────────────────────────────────
 
 model SectorVariant {
-  id                 String              @id @default(cuid())
-  key                String              @unique // e.g. "health"
-  name               String
-  brandName          String
-  templates          Template[]
-  roles              Role[]
-  complianceRuleSets ComplianceRuleSet[]
+  id                   String                @id @default(cuid())
+  key                  String                @unique // e.g. "health"
+  name                 String
+  brandName            String
+  templates            Template[]
+  roles                Role[]
+  complianceRuleSets   ComplianceRuleSet[]
+  projectNumberCounter ProjectNumberCounter?
 }
 
 // The named template a Project is built from, e.g.
@@ -485,18 +486,29 @@ model ComplianceOverride {
 // A managed, incrementing project-number sequence (confirmed
 // 19 Aug 2026 — replacing the old free-text "type your own project
 // number" field, which had no collision/typo protection beyond the DB
-// unique constraint). Single-row counter rather than a Postgres
-// SEQUENCE object so it's visible/resettable through the same Prisma
-// migrations and seed.ts as everything else. Starts a fresh block at
-// 30001 — deliberately unrelated to the pre-existing ad-hoc numbers
-// (20456, 20777, 55998) already in the seed data, so newly-issued
-// numbers are visibly distinct from those legacy ones. Issuing a
-// number is an atomic `UPDATE ... SET value = value + 1 RETURNING
-// value` (via Prisma's `increment`), safe under concurrent creates —
-// see issueNextProjectNumber in lib/actions.ts.
+// unique constraint). Row-per-SectorVariant (not a single global row)
+// since 28 Aug 2026: with a second demo tenant (England) sharing this
+// platform, a single shared counter meant a brand-new England project
+// would get issued the next number out of Scotland's own 30000s block
+// -- indistinguishable from a real Scotland project, defeating the
+// point of the two tenants looking separate. Postgres SEQUENCE objects
+// weren't used for the same reason as before: staying visible/
+// resettable through the same Prisma migrations and seed.ts as
+// everything else. Scotland's row starts a fresh block at 30001 --
+// deliberately unrelated to the pre-existing ad-hoc numbers (20456,
+// 20777, 55998) already in the seed data. England's row starts at
+// 40001, matching the fixed number seedEnglandDemo already gives its
+// own seeded project (issued directly via db.project.create, not this
+// counter, so this table's starting value has to already account for
+// that number being taken). Issuing a number is an atomic
+// `UPDATE ... SET value = value + 1 RETURNING value` (via Prisma's
+// `increment`), safe under concurrent creates against the same
+// sectorVariantId — see issueNextProjectNumber in lib/projectNumber.ts.
 model ProjectNumberCounter {
-  id    Int @id @default(1)
-  value Int
+  id              Int           @id @default(autoincrement())
+  sectorVariantId String        @unique
+  sectorVariant   SectorVariant @relation(fields: [sectorVariantId], references: [id])
+  value           Int
 }
 
 // AI-assisted provisioning (ProvisioningModel.html §04). Every existing/
