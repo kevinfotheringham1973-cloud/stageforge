@@ -14,24 +14,29 @@
 // on what the project actually is (electrical vs. water vs. building
 // modification) and stay a manual per-project decision.
 //
-// If a second hospital/site is ever added, this needs to become a
-// per-site standing roster rather than one hardcoded list — this is
-// the minimal version for "there's currently only one hospital."
+// If a third hospital/site/region is ever added, this needs to become
+// a proper per-site standing roster lookup rather than a two-way
+// if/else — this is the minimal version for "there are currently
+// exactly two" (28 Aug 2026, once the England demo tenant existed
+// alongside Scotland and a project created under an England template
+// was still getting Scotland's Derek Gibb/Gary Grant/etc. assigned to
+// it, found live right after the two tenants first coexisted).
 
 import { db } from "./db";
+import { ENGLAND_SECTOR_VARIANT_KEY } from "./englandConversion";
 
-// PM is deliberately NOT in this list (26 Aug 2026) — it's assigned
-// below from the project's own createdById instead, which is what
-// "as a PM, [whoever created it] should have an auto role" actually
-// needs, and is immune to the exact bug this comment is next to: a
-// hardcoded email going stale the moment that person's contact
+// PM is deliberately NOT in either list below (26 Aug 2026) — it's
+// assigned below from the project's own createdById instead, which is
+// what "as a PM, [whoever created it] should have an auto role"
+// actually needs, and is immune to the exact bug this comment is next
+// to: a hardcoded email going stale the moment that person's contact
 // details are edited (see updateUser, #98) is a silent, easy-to-miss
 // failure mode -- Derek Gibb's PM/FM_CONTRACTOR entries here quietly
 // stopped resolving the moment his seed .example address was changed
 // to a real inbox, and every project created since then got no PM at
 // all with no error anywhere. createdById is a real foreign key, not
 // a string that can drift out of sync with itself.
-const STANDARD_TEAM: { email: string; roleKey: string }[] = [
+const STANDARD_TEAM_SCOTLAND: { email: string; roleKey: string }[] = [
   { email: "derek.g999@outlook.com", roleKey: "FM_CONTRACTOR" },
   // Real address (not .example) — see prisma/seed.ts, David is the one
   // demo persona pointed at a real inbox so scheduled-report emails
@@ -45,6 +50,22 @@ const STANDARD_TEAM: { email: string; roleKey: string }[] = [
   // this standing team — not discipline-specific like AP/AE/Principal
   // Designer, which stay a manual per-project decision (see comment above).
   { email: "alan.mcgeachie@staldwyn.example", roleKey: "FIRE_OFFICER" },
+];
+
+// England's own standing roster (28 Aug 2026) — the same cast
+// seedEnglandDemo assigns directly to its one seeded project, reused
+// here so every OTHER England-template project gets it too. No
+// FIRE_OFFICER entry: seedEnglandDemo never created a dedicated
+// England fire-safety persona, so this role is simply left unassigned
+// on an England project until one exists, same graceful no-op
+// assignOne already does for any role with nobody to assign.
+const STANDARD_TEAM_ENGLAND: { email: string; roleKey: string }[] = [
+  { email: "pm@hardfmservices.example", roleKey: "FM_CONTRACTOR" },
+  { email: "sponsor@meadowbrooknhs.example", roleKey: "SPONSOR" },
+  { email: "sponsor@meadowbrooknhs.example", roleKey: "CLIENT_AUTHORITY" },
+  { email: "compliance@hardfmservices.example", roleKey: "COMPLIANCE_OFFICER" },
+  { email: "sro@meadowbrooknhs.example", roleKey: "SRO" },
+  { email: "finance@hardfmservices.example", roleKey: "FINANCE" },
 ];
 
 async function assignOne(projectId: string, userId: string, roleKey: string, context: string): Promise<void> {
@@ -76,7 +97,15 @@ async function assignOne(projectId: string, userId: string, roleKey: string, con
  */
 export async function assignStandardTeam(projectId: string, createdByUserId: string): Promise<void> {
   await assignOne(projectId, createdByUserId, "PM", "project creator");
-  for (const member of STANDARD_TEAM) {
+
+  const project = await db.project.findUniqueOrThrow({
+    where: { id: projectId },
+    select: { template: { select: { sectorVariant: { select: { key: true } } } } },
+  });
+  const standardTeam =
+    project.template.sectorVariant.key === ENGLAND_SECTOR_VARIANT_KEY ? STANDARD_TEAM_ENGLAND : STANDARD_TEAM_SCOTLAND;
+
+  for (const member of standardTeam) {
     const user = await db.user.findUnique({ where: { email: member.email } });
     if (!user) {
       console.error(`[standardTeam] could not assign ${member.roleKey} on project ${projectId}: no user with email ${member.email}`);
