@@ -314,6 +314,7 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
   }
+  .shots-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
   @media (max-width: 760px) {
     .shots-grid { grid-template-columns: 1fr; }
   }
@@ -519,7 +520,7 @@
             <p>What's configured underneath — override authority and jurisdiction-specific rules.</p>
           </div>
         </div>
-        <div class="shots-grid">
+        <div class="shots-grid cols-2">
           <figure>
             <div class="browser-frame">
               <div class="chrome-bar">
@@ -537,15 +538,6 @@
               <img src="/screenshots/regulatory-reference.png" alt="Regulatory reference table mapping Scotland SHTM guidance to England HTM equivalents" loading="lazy" />
             </div>
             <figcaption>Built once, mapped to every jurisdiction — Scotland (SHTM) and England (HTM) today.</figcaption>
-          </figure>
-          <figure>
-            <div class="browser-frame">
-              <div class="chrome-bar">
-                <span class="label">Key Conversion Notes</span>
-              </div>
-              <img src="/screenshots/conversion-notes.png" alt="Key conversion notes summarising the biggest differences between Scotland and England guidance" loading="lazy" />
-            </div>
-            <figcaption>The differences that actually matter, called out — not just a find-and-replace.</figcaption>
           </figure>
         </div>
       </div>
