@@ -113,7 +113,7 @@ fs.mkdirSync(STAGE_DIR, { recursive: true });
 const standaloneSrc = path.join(nextappSrc, ".next", "standalone");
 if (!fs.existsSync(standaloneSrc)) {
   console.error(
-    `[prepare-resources] missing ${standaloneSrc} -- run "npm run build" in app/ first (next.config.ts's output: "standalone" is what produces this folder).`
+    `[prepare-resources] missing ${standaloneSrc} -- run STAGEFORGE_DESKTOP_BUILD=1 npm run build in app/ first (next.config.ts only sets output: "standalone", which produces this folder, when that env var is set -- see next.config.ts's own comment for why a plain build won't produce it).`
   );
   process.exit(1);
 }
