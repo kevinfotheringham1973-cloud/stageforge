@@ -2,13 +2,18 @@
 //
 // Spawns a bundled local Postgres (localDb.js), runs the app's existing
 // migrations against it, builds/starts the Next.js server in production
-// mode (next build + next start, not next dev) pointed at that instance
-// instead of any cloud/docker database, and blanks every optional cloud
-// credential (runtimeEnv below). Combined with STAGEFORGE_LOCAL_MODE
-// (auth.ts) skipping Entra ID / Resend and localEvidenceStorage.ts
-// replacing SharePoint, this needs no external setup and makes no
-// outbound network call at all — no Docker, no login, no internet
-// (verified live: zero non-loopback connections in any state, 27 Aug 2026).
+// mode pointed at that instance instead of any cloud/docker database,
+// and blanks every optional cloud credential (runtimeEnv below). A
+// source checkout does this via `next build` + `next start` (not `next
+// dev`); a packaged install instead runs the pre-built .next/standalone
+// server.js directly (see startServer, and prepare-resources.js for why
+// -- shrinks the installed footprint by not shipping the full `next`
+// CLI + devDependencies nothing at runtime needs). Combined with
+// STAGEFORGE_LOCAL_MODE (auth.ts) skipping Entra ID / Resend and
+// localEvidenceStorage.ts replacing SharePoint, this needs no external
+// setup and makes no outbound network call at all — no Docker, no
+// login, no internet (verified live: zero non-loopback connections in
+// any state, 27 Aug 2026).
 //
 // Packaged into a real distributable installer via electron-builder
 // (electron-builder.yml) — see APP_DIR and needsBuild()'s comments for
@@ -162,7 +167,11 @@ function sleep(ms) {
 function packagedResourceCanaries(pgModulesDir) {
   return [
     path.join(APP_DIR, "package.json"),
-    path.join(APP_DIR, "node_modules", "next", "dist", "bin", "next"),
+    // Packaged builds ship .next/standalone's own trace, not the full
+    // `next` package -- the CLI (dist/bin/next) isn't part of that
+    // trace, so this checks a core runtime file server.js itself
+    // depends on instead (see prepare-resources.js and startServer).
+    path.join(APP_DIR, "node_modules", "next", "dist", "server", "next-server.js"),
     path.join(APP_DIR, "node_modules", "prisma", "build", "index.js"),
     path.join(APP_DIR, "node_modules", "tsx", "dist", "cli.mjs"),
     path.join(pgModulesDir, "embedded-postgres", "dist", "index.js"),
@@ -188,11 +197,26 @@ async function waitForResources(pgModulesDir, retriesLeft = 480) {
 }
 
 function startServer(env) {
-  serverProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT)], {
-    cwd: APP_DIR,
-    stdio: "inherit",
-    env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
-  });
+  // Packaged builds ship .next/standalone's own server.js (see
+  // prepare-resources.js) instead of the full `next` CLI + full
+  // node_modules, so this launches that directly rather than `next
+  // start` -- the standalone trace doesn't include the CLI bin at all
+  // (see packagedResourceCanaries' comment). A source checkout (not
+  // packaged) has no standalone folder to run, so keeps using `next
+  // start` against the full node_modules it already has.
+  if (app.isPackaged) {
+    serverProcess = spawn(process.execPath, [path.join(APP_DIR, "server.js")], {
+      cwd: APP_DIR,
+      stdio: "inherit",
+      env: { ...env, ELECTRON_RUN_AS_NODE: "1", PORT: String(PORT) },
+    });
+  } else {
+    serverProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT)], {
+      cwd: APP_DIR,
+      stdio: "inherit",
+      env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
+    });
+  }
 
   serverProcess.on("error", (err) => {
     console.error("[electron] failed to start Next.js server:", err);

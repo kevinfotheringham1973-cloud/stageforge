@@ -87,6 +87,12 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  # See build/installer.nsh's header comment -- overrides
+  # electron-builder's default "is the app running?" check, which is too
+  # weak (non-forceful, no child-process reach, short retry budget) for
+  # this app's multi-process-under-one-exe-name shape and can block
+  # uninstall with "still running" even after the app window is closed.
+  include: build/installer.nsh
 # Sidesteps the Smart App Control block entirely (see this file's header
 # and main.js's header comment, 27 Aug 2026) -- a portable build never
 # writes anything into a protected system install location

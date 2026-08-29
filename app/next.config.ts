@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Desktop packaging (electron/prepare-resources.js) stages this
+  // output instead of the whole app + full node_modules -- traces the
+  // real runtime import graph down to just what next start actually
+  // needs, instead of shipping devDependencies (typescript, eslint,
+  // tailwindcss...) and the full untrimmed node_modules tree. Doesn't
+  // affect normal `next dev`/`next start` usage on the live server.
+  output: "standalone",
   // The floating dev-tools indicator (bottom-left "N" badge) is
   // dev-mode-only chrome, not app UI — with the app now shared
   // externally via the Cloudflare tunnel, it reads as a visual bug
