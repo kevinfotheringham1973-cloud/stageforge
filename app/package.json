@@ -14,7 +14,8 @@
     "db:studio": "prisma studio",
     "sharepoint:check": "tsx scripts/sharepoint-check.ts",
     "england:generate": "tsx scripts/generate-england-variant.ts",
-    "england:demo": "tsx scripts/seed-england-demo.ts"
+    "england:demo": "tsx scripts/seed-england-demo.ts",
+    "test:desktop": "playwright test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",
@@ -31,6 +32,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@prisma/config": "^6.19.3",
     "@types/node": "^22.10.0",
     "@types/node-cron": "^3.0.11",

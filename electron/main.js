@@ -64,7 +64,7 @@ let serverProcess;
 let mainWindow;
 let pgProcess;
 
-function runtimeEnv(databaseUrl, evidenceDir, authSecret) {
+function runtimeEnv(databaseUrl, evidenceDir, authSecret, logDir) {
   return {
     ...process.env,
     // See auth.ts — skips Entra ID / Resend, auto-signs in as the
@@ -85,6 +85,11 @@ function runtimeEnv(databaseUrl, evidenceDir, authSecret) {
     // See localEvidenceStorage.ts — replaces SharePoint with a folder
     // under this OS's per-user app-data directory.
     STAGEFORGE_EVIDENCE_DIR: evidenceDir,
+    // See instrumentation.ts's onRequestError — a real server error's
+    // full message/stack, otherwise unrecoverable once React's
+    // production error stripping and this app's lack of a visible
+    // terminal both apply.
+    STAGEFORGE_LOG_DIR: logDir,
     // Every optional cloud credential, explicitly blanked rather than
     // just left unset — whoever's .env this app loads (Next reads it
     // regardless of who spawns the process) may well have real keys
@@ -388,7 +393,15 @@ app.whenReady().then(async () => {
     await migrateAndSeed(APP_DIR, databaseUrl, needsSeed, seedMarkerPath);
     const evidenceDir = path.join(app.getPath("userData"), "evidence");
     const authSecret = getOrCreateAuthSecret(app.getPath("userData"));
-    const env = runtimeEnv(databaseUrl, evidenceDir, authSecret);
+    // instrumentation.ts's onRequestError writes here — production React
+    // deliberately strips the real message from errors like #441 (an RSC
+    // render threw), leaving only an opaque digest on screen, and this
+    // packaged app has no visible terminal for stdio: "inherit" to reach
+    // once launched normally (found live, 29 Aug 2026: a real "new
+    // project" crash left nothing usable behind to diagnose it from).
+    const logDir = path.join(app.getPath("userData"), "logs");
+    fs.mkdirSync(logDir, { recursive: true });
+    const env = runtimeEnv(databaseUrl, evidenceDir, authSecret, logDir);
     if (buildNeeded) await buildApp(env);
     startServer(env);
     await waitForServer();
