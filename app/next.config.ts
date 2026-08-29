@@ -3,11 +3,25 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Desktop packaging (electron/prepare-resources.js) stages this
   // output instead of the whole app + full node_modules -- traces the
-  // real runtime import graph down to just what next start actually
-  // needs, instead of shipping devDependencies (typescript, eslint,
-  // tailwindcss...) and the full untrimmed node_modules tree. Doesn't
-  // affect normal `next dev`/`next start` usage on the live server.
-  output: "standalone",
+  // real runtime import graph down to just what the standalone
+  // server.js actually needs, instead of shipping devDependencies
+  // (typescript, eslint, tailwindcss...) and the full untrimmed
+  // node_modules tree.
+  //
+  // Gated behind an env var, NOT unconditional -- this file is shared
+  // by the live tunnel-hosted server too (this app/ directory IS the
+  // live-serving directory, see the deploy-topology notes), which runs
+  // plain `next start`, and Next's own warning is not a bluff: "next
+  // start does not work with output: standalone" broke Auth.js's
+  // verify-request action specifically (the "check your email" page
+  // after requesting a magic link) -- found live, 29 Aug 2026, as a
+  // real user-facing "can't log in" report, some hours after this was
+  // unconditionally turned on for the desktop build. Set
+  // STAGEFORGE_DESKTOP_BUILD=1 when running `npm run build` here for a
+  // desktop packaging pass (see electron/prepare-resources.js's own
+  // check for this output existing); plain `npm run build` for the
+  // live server must NOT set it.
+  output: process.env.STAGEFORGE_DESKTOP_BUILD === "1" ? "standalone" : undefined,
   // The floating dev-tools indicator (bottom-left "N" badge) is
   // dev-mode-only chrome, not app UI — with the app now shared
   // externally via the Cloudflare tunnel, it reads as a visual bug
