@@ -363,13 +363,29 @@ app.whenReady().then(async () => {
     const dbResult = await startLocalDatabase(databaseDir, pgModulesDir);
     pgProcess = dbResult.pgProcess;
     const { databaseUrl, isFirstRun } = dbResult;
+    // Deliberately NOT the same thing as isFirstRun above (which only
+    // asks "does a Postgres cluster already exist in this userData
+    // folder") -- found live, 29 Aug 2026, on a real Microsoft
+    // Store-path install: seeding got interrupted partway (the process
+    // killed mid-run), leaving a database with some rows but not all of
+    // them. isFirstRun was already false on every later launch (the
+    // cluster genuinely did exist), so seeding was never retried --
+    // permanently half-seeded, no error, no way to recover short of a
+    // manual folder deletion. This marker file is written by
+    // migrateAndSeed ONLY after seed.ts and the anonymize script have
+    // both actually finished (see its own comment), so its absence is a
+    // trustworthy "seeding never completed" signal on its own, decoupled
+    // from whatever state the Postgres cluster itself happens to be in.
+    const seedMarkerPath = path.join(app.getPath("userData"), "seed-complete.marker");
+    const needsSeed = !fs.existsSync(seedMarkerPath);
     const buildNeeded = needsBuild();
-    // First run and/or a missing build: initialising the cluster +
-    // applying 35 migrations + seeding demo data + (on this dev-machine
-    // testing path only, see needsBuild's comment) building the app can
-    // take a while — worth a visible wait state rather than looking frozen.
-    if (isFirstRun || buildNeeded) ensureSplashWindow();
-    await migrateAndSeed(APP_DIR, databaseUrl, isFirstRun);
+    // First run, seeding needed, and/or a missing build: initialising
+    // the cluster + applying migrations + seeding demo data + (on this
+    // dev-machine testing path only, see needsBuild's comment) building
+    // the app can take a while — worth a visible wait state rather than
+    // looking frozen.
+    if (isFirstRun || needsSeed || buildNeeded) ensureSplashWindow();
+    await migrateAndSeed(APP_DIR, databaseUrl, needsSeed, seedMarkerPath);
     const evidenceDir = path.join(app.getPath("userData"), "evidence");
     const authSecret = getOrCreateAuthSecret(app.getPath("userData"));
     const env = runtimeEnv(databaseUrl, evidenceDir, authSecret);

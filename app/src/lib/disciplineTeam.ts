@@ -32,20 +32,25 @@
 import { db } from "./db";
 import { ENGLAND_SECTOR_VARIANT_KEY } from "./englandConversion";
 
+// Keyed by User.seedKey, not email -- see that field's own schema
+// comment: the desktop build's anonymize-local-demo-names.ts rewrites
+// every seeded user's email to an anonymized value, which broke every
+// one of these lookups when they were still keyed off the real .example
+// addresses (found live, 29 Aug 2026).
 const CANDIDATES_SCOTLAND: Record<string, string[]> = {
-  AUTHORISED_PERSON_WATER: ["claire.duncan@buildcare.example"],
-  AUTHORISED_PERSON_ELECTRICAL: ["bob.smith@buildcare.example"],
-  AUTHORISED_PERSON_VENTILATION: ["fiona.wallace@buildcare.example"],
-  AUTHORISED_PERSON_MEDICAL_GASES: ["graeme.paterson@buildcare.example"],
-  AUTHORISING_ENGINEER_ELECTRICAL: ["dennis.kelly@independent.example"],
+  AUTHORISED_PERSON_WATER: ["ap_water_scotland"],
+  AUTHORISED_PERSON_ELECTRICAL: ["ap_electrical_scotland"],
+  AUTHORISED_PERSON_VENTILATION: ["ap_ae_ventilation_scotland"],
+  AUTHORISED_PERSON_MEDICAL_GASES: ["ap_medical_gases_scotland"],
+  AUTHORISING_ENGINEER_ELECTRICAL: ["ae_electrical_scotland"],
   // Fiona Wallace holds both the AP and AE appointments for Heating &
   // Ventilation (confirmed 26 Aug 2026) — previously only her AP entry
   // was here, so a project needing both showed AE as "still needs
   // assignment" even though the same person already covers it.
-  AUTHORISING_ENGINEER_VENTILATION: ["fiona.wallace@buildcare.example"],
-  CLINICAL_SAFETY_OFFICER: ["sarah.chen@staldwyn.example"],
-  INFORMATION_GOVERNANCE_OFFICER: ["neil.forsyth@staldwyn.example"],
-  PRINCIPAL_DESIGNER: ["ross.blair@buildcare.example"],
+  AUTHORISING_ENGINEER_VENTILATION: ["ap_ae_ventilation_scotland"],
+  CLINICAL_SAFETY_OFFICER: ["clinical_safety_officer_scotland"],
+  INFORMATION_GOVERNANCE_OFFICER: ["information_governance_officer_scotland"],
+  PRINCIPAL_DESIGNER: ["principal_designer_scotland"],
 };
 
 // England's own named holders (28 Aug 2026, same bug/fix shape as
@@ -59,8 +64,8 @@ const CANDIDATES_SCOTLAND: Record<string, string[]> = {
 // tenant's first non-seeded project pulled in Bob Smith/Dennis Kelly/
 // Ross Blair from the Scotland list below).
 const CANDIDATES_ENGLAND: Record<string, string[]> = {
-  AUTHORISED_PERSON_WATER: ["ap.water@hardfmservices.example"],
-  PRINCIPAL_DESIGNER: ["principal.designer@hardfmservices.example"],
+  AUTHORISED_PERSON_WATER: ["ap_water_england"],
+  PRINCIPAL_DESIGNER: ["principal_designer_england"],
 };
 
 // Every AP discipline's counterpart AE — real SHTM/HTM estates practice
@@ -137,14 +142,14 @@ export async function suggestDisciplineTeam(projectId: string, templateIds: stri
   const candidates = template.sectorVariant.key === ENGLAND_SECTOR_VARIANT_KEY ? CANDIDATES_ENGLAND : CANDIDATES_SCOTLAND;
 
   for (const roleKey of neededRoleKeys) {
-    const candidateEmails = candidates[roleKey];
-    if (!candidateEmails) continue; // no known holder — leave for manual assignment
+    const candidateSeedKeys = candidates[roleKey];
+    if (!candidateSeedKeys) continue; // no known holder — leave for manual assignment
 
     const role = await db.role.findUnique({ where: { key: roleKey } });
     if (!role) continue;
 
-    for (const email of candidateEmails) {
-      const user = await db.user.findUnique({ where: { email } });
+    for (const seedKey of candidateSeedKeys) {
+      const user = await db.user.findUnique({ where: { seedKey } });
       if (!user || !user.homeDepartmentId) continue;
       await db.projectRoleAssignment.upsert({
         where: { projectId_userId_roleId: { projectId, userId: user.id, roleId: role.id } },

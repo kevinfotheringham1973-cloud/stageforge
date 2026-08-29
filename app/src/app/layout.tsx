@@ -146,14 +146,17 @@ export default async function RootLayout({
         : Array.from(new Set(u.roleAssignments.map((a) => a.role.name))).join(" · "),
     }));
 
-  // Single-user desktop build only. Used to let the local admin "View
-  // as" any seeded role and genuinely act with its permissions -- fixed
-  // 28 Aug 2026 (session.ts's getCurrentUserId, actions.ts's
-  // setViewAsUser) since that gave away the actual reason to want the
-  // cloud version: real, enforced role separation. This banner now
-  // describes the corrected behaviour -- ordinary project work is fully
-  // usable, role-specific actions are shown (via the existing "Requires
-  // {role}" badges) but never actionable here.
+  // Single-user desktop build only. Briefly (28 Aug 2026) made
+  // role-specific actions non-actionable here entirely, to preserve the
+  // cloud version's real, enforced role separation as a reason to want
+  // it -- reversed 29 Aug 2026 (session.ts's getCurrentUserRoleKeysForProject/
+  // getCurrentUserGlobalRoleKeys) after that left a real single-user
+  // trial permanently stuck on a sign-off nobody else on the machine
+  // could ever give. This banner now describes that corrected
+  // behaviour: the Local Admin can act as every role so nothing gets
+  // stuck, but every "Requires {role}" badge stays exactly as visible
+  // as it always was, so it's still obvious which of those approvals
+  // would be a named specialist's call in real use.
   const isLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
 
   return (
@@ -162,9 +165,10 @@ export default async function RootLayout({
         {isLocalMode && (
           <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
             <span>
-              Single-user preview — you can create and work through projects normally, but role-specific actions
-              (compliance sign-off, Authorised Person sign-off, SRO/Sponsor decisions) are shown for reference only.
-              The cloud version enforces real role separation and lets a full team actually sign off each one.
+              Single-user preview — you can create and work through a project's full lifecycle, including
+              role-specific decisions (compliance sign-off, Authorised Person sign-off, SRO/Sponsor decisions) that a
+              named specialist would give in real use — every "Requires {"{role}"}" badge still shows who that would
+              be. The cloud version enforces that separation for real, with a full team each signing off their own.
             </span>
           </div>
         )}
