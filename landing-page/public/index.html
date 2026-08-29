@@ -335,6 +335,11 @@
     font-size: 13.5px;
     color: var(--ink-muted);
   }
+  footer .foot-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   footer a { color: var(--ink-muted); }
 
   .hero-badge {
@@ -669,7 +674,10 @@
 
 <footer>
   <div class="wrap foot-grid">
-    <div>&copy; 2026 Transition Insight Partners Ltd. All rights reserved.</div>
+    <div class="foot-brand">
+      <img src="/tip-logo.png" alt="" width="30" height="30" />
+      <span>&copy; 2026 Transition Insight Partners Ltd. All rights reserved.</span>
+    </div>
     <div><a href="/privacy">Privacy Policy</a> &middot; <a href="mailto:support@pmopassport.co.uk">support@pmopassport.co.uk</a></div>
   </div>
 </footer>
