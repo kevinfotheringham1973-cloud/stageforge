@@ -216,29 +216,6 @@
     border-radius: 8px;
     box-shadow: 0 30px 70px rgba(0,0,0,0.5);
   }
-  .version-card {
-    background: var(--surface);
-    border: 1px solid var(--rule);
-    border-radius: 10px;
-    padding: 28px;
-  }
-  .version-card .tag {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 4px 10px;
-    border-radius: 999px;
-    margin-bottom: 14px;
-  }
-  .version-card.cloud .tag { background: var(--accentsoft); color: var(--blue); }
-  .version-card.desktop .tag { background: #fdf1e0; color: #a5670f; }
-  .version-card h3 { font-size: 19px; margin: 0 0 10px; }
-  .version-card ul { margin: 0; padding-left: 20px; }
-  .version-card li { font-size: 14.5px; color: var(--ink-muted); margin-bottom: 8px; }
-  .version-card li strong { color: var(--ink); }
-  .version-card .demo-link { display: inline-block; margin-top: 8px; font-size: 14px; padding: 9px 16px; }
   .card {
     background: var(--surface);
     border: 1px solid var(--rule);
@@ -260,6 +237,23 @@
   }
   .card h3 { font-size: 17px; margin: 0 0 8px; }
   .card p { font-size: 14.5px; color: var(--ink-muted); margin: 0; }
+  .card p strong { color: var(--ink); }
+  .card.highlight {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 1px var(--teal), 0 14px 30px -16px rgba(45,154,156,0.45);
+  }
+  .card .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--teal);
+    background: #e5f4f4;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
 
   .quote-block {
     border-left: 3px solid var(--teal);
@@ -342,6 +336,85 @@
     color: var(--ink-muted);
   }
   footer a { color: var(--ink-muted); }
+
+  .hero-badge {
+    position: absolute;
+    left: 24px;
+    bottom: -22px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 10px 16px;
+    box-shadow: 0 14px 30px -12px rgba(26,31,38,0.28);
+  }
+  .hero-badge .icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--accentsoft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .hero-badge .icon svg { width: 16px; height: 16px; }
+  .hero-badge .text { display: flex; flex-direction: column; }
+  .hero-badge .label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+  }
+  .hero-badge .value { font-size: 14px; font-weight: 700; color: var(--teal); }
+  @media (max-width: 900px) {
+    .hero-badge { left: 16px; bottom: -18px; padding: 8px 12px; }
+  }
+
+  .deploy-head { text-align: center; max-width: 620px; margin: 0 auto 40px; }
+  .deploy-head .section-title { margin-bottom: 10px; }
+  .deploy-head .section-lead { margin: 0 auto; }
+  .deploy-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 28px;
+  }
+  .deploy-card.recommended { border: 2px solid var(--teal); }
+  .deploy-card .ribbon {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    background: var(--teal);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 5px 12px;
+    border-radius: 0 9px 0 8px;
+  }
+  .deploy-card h3 { font-size: 19px; margin: 0 0 10px; }
+  .deploy-card > p { font-size: 14.5px; color: var(--ink-muted); margin: 0 0 20px; }
+  .deploy-card ul { list-style: none; margin: 0 0 22px; padding: 0; }
+  .deploy-card li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14.5px;
+    padding: 7px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .deploy-card li:first-child { border-top: none; }
+  .deploy-card li.no { color: var(--ink-muted); }
+  .deploy-card li .mark { flex-shrink: 0; font-weight: 700; }
+  .deploy-card li.yes .mark { color: var(--teal); }
+  .deploy-card li.no .mark { color: #b7bec7; }
 </style>
 </head>
 <body>
@@ -375,6 +448,15 @@
         </div>
         <img src="/screenshots/dashboard.png" alt="StageForge project dashboard showing gate activity, cost, and a full 8-gate timeline" />
       </div>
+      <div class="hero-badge">
+        <span class="icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12.5l5 5L20 6.5" stroke="#28659B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="text">
+          <span class="label">Sign-off status</span>
+          <span class="value">Enforced by role</span>
+        </span>
+      </div>
     </div>
   </div>
 </section>
@@ -395,19 +477,21 @@
           Fire Detection and more — each mapped from real RIBA/SHTM/HTM-aligned source documents, so
           consistency doesn't depend on which PM happens to be running it.</p>
       </div>
-      <div class="card">
+      <div class="card highlight">
         <div class="num">2</div>
+        <div class="badge">Who has the final say</div>
         <h3>Compliance runs with delivery, not after it</h3>
         <p>Compliance items sit alongside the deliverables they belong to, with tiered override
           authority for anything carrying legal weight — a named specialist (Fire Officer, an
-          Authorised Person, Clinical Safety Officer) is an exact-match requirement even the SRO
-          doesn't bypass.</p>
+          Authorised Person, Clinical Safety Officer) is an exact-match requirement that
+          <strong>even the SRO doesn't bypass</strong>.</p>
       </div>
       <div class="card">
         <div class="num">3</div>
         <h3>Nothing closes without evidence and sign-off</h3>
         <p>A gate can't move forward without uploaded evidence and a Sponsor's sign-off against it
-          — a real audit trail, not a status someone typed into a tracker.</p>
+          — a real audit trail, not a status someone typed into a tracker. By Gate 4, a cost request
+          is backed by real scope and quotes — not a guess made before the work was even understood.</p>
       </div>
     </div>
   </div>
@@ -533,7 +617,7 @@
           <figure>
             <div class="browser-frame">
               <div class="chrome-bar">
-                <span class="label">Regulatory Reference — Scotland &rarr; England</span>
+                <span class="label">Regulatory Reference</span>
               </div>
               <img src="/screenshots/regulatory-reference.png" alt="Regulatory reference table mapping Scotland SHTM guidance to England HTM equivalents" loading="lazy" />
             </div>
@@ -547,30 +631,37 @@
 
 <section class="band">
   <div class="wrap">
-    <h2 class="section-title">Two ways to run it</h2>
-    <p class="section-lead">
-      Same template library and project builder either way — the difference is whether
-      governance is actually enforced, or you're just trying the tool out.
-    </p>
+    <div class="deploy-head">
+      <h2 class="section-title">Choose your deployment model</h2>
+      <p class="section-lead">From single-user template exploration to full multi-party governance —
+        same template library and project builder either way.</p>
+    </div>
     <div class="grid2">
-      <div class="version-card cloud">
-        <span class="tag">Cloud platform</span>
-        <h3>Full governance, multi-party</h3>
+      <div class="deploy-card">
+        <h3>Single-user Desktop Preview</h3>
+        <p>Explore the template library and standard workflows on your own machine — for trying the
+          tool out, not for live multi-party delivery.</p>
         <ul>
-          <li><strong>Role-based access</strong> across FM Contractor and NHS Trust teams on the same live projects — each side sees only what their role allows.</li>
-          <li><strong>Independently enforced sign-off</strong> — a gate closes only when the person actually holding that authority approves it, not whoever's logged in.</li>
-          <li><strong>Full compliance module</strong>, tiered override authority, and a real audit trail.</li>
+          <li class="yes"><span class="mark">&check;</span> Full template library, same as Cloud</li>
+          <li class="yes"><span class="mark">&check;</span> Runs entirely on your own machine — nothing leaves it</li>
+          <li class="yes"><span class="mark">&check;</span> Shows every role's sign-off requirement</li>
+          <li class="no"><span class="mark">&cross;</span> Multi-party enforced sign-off</li>
+          <li class="no"><span class="mark">&cross;</span> Role-based access across teams</li>
+          <li class="no"><span class="mark">&cross;</span> Shared audit trail across a live project</li>
+        </ul>
+      </div>
+      <div class="deploy-card recommended">
+        <span class="ribbon">Recommended</span>
+        <h3>Full Governance Cloud Platform</h3>
+        <p>Multi-party, independently enforced sign-off with a real audit trail — the actual system
+          of record for live delivery.</p>
+        <ul>
+          <li class="yes"><span class="mark">&check;</span> <span><strong>Role-based access</strong> across FM Contractor and NHS Trust teams on the same live projects</span></li>
+          <li class="yes"><span class="mark">&check;</span> <span><strong>Independently enforced sign-off</strong> — a gate closes only when the person actually holding that authority approves it</span></li>
+          <li class="yes"><span class="mark">&check;</span> <span><strong>Full compliance module</strong>, tiered override authority</span></li>
+          <li class="yes"><span class="mark">&check;</span> Real, shared audit trail</li>
         </ul>
         <a class="btn-secondary demo-link" href="https://stageforge.pmopassport.co.uk/share/V-tFTI_eGJ18BD7MhWOeRe0RkfKiBsd1">View a live demo &rarr;</a>
-      </div>
-      <div class="version-card desktop">
-        <span class="tag">Desktop version &middot; Microsoft Store</span>
-        <h3>Single-user preview, no governance</h3>
-        <ul>
-          <li><strong>Builds real projects</strong> from the same template library, running entirely on your own machine.</li>
-          <li><strong>Shows what every role requires</strong> — compliance, Authorised Person, SRO/Sponsor sign-off — but doesn't let one person act as them. Nothing here is a workaround for real sign-off.</li>
-          <li>For trying out the tool and its templates, not for live multi-party delivery with real governance.</li>
-        </ul>
       </div>
     </div>
   </div>
