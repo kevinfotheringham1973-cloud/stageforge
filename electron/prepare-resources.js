@@ -22,24 +22,65 @@ const ELECTRON_DIR = __dirname;
 const REPO_ROOT = path.join(ELECTRON_DIR, "..");
 const STAGE_DIR = path.join(REPO_ROOT, "build-resources");
 
-const PG_PACKAGES = [
+// Walks a package-lock.json's real dependency graph starting from
+// `roots`, breadth-first, and returns every package name that needs to
+// physically exist in node_modules for those roots to run: regular
+// `dependencies` edges always, plus `optionalDependencies` edges but
+// ONLY when the name looks like this target's platform variant (e.g.
+// @embedded-postgres/windows-x64, @esbuild/win32-x64) -- never
+// devDependencies or peerDependencies, so e.g. prisma's peerDependency
+// on `typescript` correctly stays out, and never some *other*
+// platform's variant (darwin-arm64, linux-x64, ...).
+//
+// Replaces three hand-maintained lists that used to live here. Found
+// live (29 Aug 2026): the hand-picked prisma CLI list missed
+// @prisma/debug and ~25 other transitive packages (chokidar, jiti,
+// giget, nypm, ...) -- invisible until an installed build actually
+// tried to run `prisma migrate deploy` and hit `Cannot find module
+// '@prisma/debug'`. Fixing that by computing the closure from the
+// lockfile instead of guessing then immediately hit the same shape of
+// bug again one level down -- tsx's own `esbuild` dependency was in the
+// computed closure, but esbuild's platform-specific binary package
+// (an optionalDependency of esbuild itself, same relationship
+// @embedded-postgres/windows-x64 has to embedded-postgres) wasn't,
+// crashing prisma/seed.ts's first tsx invocation with "package
+// @esbuild/win32-x64 could not be found". A hand-picked list silently
+// goes stale the moment any dependency changes; computing it -- for
+// both regular and platform-optional edges -- from the lockfile that's
+// already the source of truth can't drift out of sync the same way.
+const WINDOWS_X64_VARIANT = /(^|\/)(win32-x64|windows-x64)$/;
+
+function resolveDependencyClosure(lockfilePath, roots) {
+  const lock = JSON.parse(fs.readFileSync(lockfilePath, "utf8"));
+  const pkgs = lock.packages || {};
+  const seen = new Set();
+  const queue = [...roots];
+  while (queue.length) {
+    const name = queue.shift();
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const p = pkgs["node_modules/" + name];
+    if (!p) {
+      console.error(`[prepare-resources] ${name} not found in ${lockfilePath}`);
+      process.exit(1);
+    }
+    for (const dep of Object.keys(p.dependencies || {})) {
+      if (!seen.has(dep)) queue.push(dep);
+    }
+    for (const dep of Object.keys(p.optionalDependencies || {})) {
+      if (!seen.has(dep) && WINDOWS_X64_VARIANT.test(dep)) queue.push(dep);
+    }
+  }
+  return [...seen].sort();
+}
+
+const nextappSrc = path.join(REPO_ROOT, "app");
+const nextappDest = path.join(STAGE_DIR, "nextapp");
+
+const PG_PACKAGES = resolveDependencyClosure(path.join(ELECTRON_DIR, "package-lock.json"), [
   "embedded-postgres",
-  "@embedded-postgres",
   "async-exit-hook",
-  "pg",
-  "pg-connection-string",
-  "pg-pool",
-  "pg-protocol",
-  "pg-types",
-  "pg-int8",
-  "postgres-array",
-  "postgres-bytea",
-  "postgres-date",
-  "postgres-interval",
-  "xtend",
-  "pgpass",
-  "split2",
-];
+]);
 
 // Postgres's own translated-message catalogs -- not needed for a
 // single-user local instance (English is fine), hundreds of small
@@ -55,27 +96,19 @@ const PG_LOCALE_DIR = path.join("@embedded-postgres", "windows-x64", "native", "
 // as CLIs by localDb.js's migrateAndSeed (prisma migrate deploy, tsx
 // running prisma/seed.ts + scripts/anonymize-local-demo-names.ts) --
 // nothing *imports* them, so the trace never finds them, and they need
-// the same explicit-list treatment as PG_PACKAGES above.
-const CLI_ONLY_PACKAGES = [
+// the same computed-closure treatment as PG_PACKAGES above.
+const CLI_ONLY_PACKAGES = resolveDependencyClosure(path.join(nextappSrc, "package-lock.json"), [
   "prisma",
   "@prisma/config",
   "@prisma/engines",
   "tsx",
-  "esbuild", // tsx's own transform engine
   "dotenv", // scripts/anonymize-local-demo-names.ts does `import "dotenv/config"`
-  // @prisma/config's own dependency closure (not traced -- see above)
-  "c12",
-  "deepmerge-ts",
-  "effect",
-  "empathic",
-];
+]);
 
 fs.rmSync(STAGE_DIR, { recursive: true, force: true });
 fs.mkdirSync(STAGE_DIR, { recursive: true });
 
 // -- nextapp: the Next.js app itself (was extraResources `from: ../app`) --
-const nextappSrc = path.join(REPO_ROOT, "app");
-const nextappDest = path.join(STAGE_DIR, "nextapp");
 
 const standaloneSrc = path.join(nextappSrc, ".next", "standalone");
 if (!fs.existsSync(standaloneSrc)) {

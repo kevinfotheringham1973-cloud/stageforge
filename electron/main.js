@@ -306,15 +306,43 @@ async function shutdown() {
   killProcessTree(pgProcess);
 }
 
+// embedded-postgres chmods its own bundled postgres.exe on every start --
+// found live, 29 Aug 2026: an "all users" NSIS install lands in
+// C:\Program Files\..., the app itself then runs unelevated (as it
+// should), and that chmod fails with EPERM inside a directory a normal
+// user can't write to, crashing with "Postgres worker process exited
+// with code 1 before its port came up". app.getPath("userData") is
+// always writable by the current user regardless of where the app
+// itself is installed (per-machine or per-user), so the pg runtime is
+// copied there once and always executed from that copy -- makes this
+// robust to install location instead of relying on whoever's installing
+// it to pick "just me" and never being able to enforce that choice.
+function pgRuntimeReady(pgRuntimeDir) {
+  return fs.existsSync(path.join(pgRuntimeDir, "embedded-postgres", "dist", "index.js"));
+}
+
+async function ensureWritablePgRuntime(pgSourceDir, pgRuntimeDir) {
+  if (pgRuntimeReady(pgRuntimeDir)) return;
+  fs.rmSync(pgRuntimeDir, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(pgRuntimeDir), { recursive: true });
+  fs.cpSync(pgSourceDir, pgRuntimeDir, { recursive: true });
+}
+
 app.whenReady().then(async () => {
   try {
     const databaseDir = path.join(app.getPath("userData"), "pgdata");
     // Deliberately NOT under APP_DIR/resources/app -- see localDb.js and
     // electron-builder.yml for why embedded-postgres lives in its own
     // extraResources copy instead.
-    const pgModulesDir = app.isPackaged
+    const pgSourceDir = app.isPackaged
       ? path.join(process.resourcesPath, "pg", "node_modules")
       : path.join(__dirname, "node_modules");
+    // Only the packaged path needs its own writable copy -- a source
+    // checkout's node_modules is already wherever npm put it, always
+    // writable by whoever's running it.
+    const pgModulesDir = app.isPackaged
+      ? path.join(app.getPath("userData"), "pg-runtime", "node_modules")
+      : pgSourceDir;
 
     // Packaged only -- a source checkout's files are just there, nothing
     // to extract. See packagedResourceCanaries' comment: the portable
@@ -322,9 +350,14 @@ app.whenReady().then(async () => {
     // in the background at this point, and starting the DB/server
     // against a half-copied APP_DIR is exactly what produced an
     // intermittent "Internal Server Error" live, 28 Aug 2026.
-    if (app.isPackaged && !resourcesReady(pgModulesDir)) {
+    if (app.isPackaged && !resourcesReady(pgSourceDir)) {
       ensureSplashWindow();
-      await waitForResources(pgModulesDir);
+      await waitForResources(pgSourceDir);
+    }
+
+    if (app.isPackaged && !pgRuntimeReady(pgModulesDir)) {
+      ensureSplashWindow();
+      await ensureWritablePgRuntime(pgSourceDir, pgModulesDir);
     }
 
     const dbResult = await startLocalDatabase(databaseDir, pgModulesDir);

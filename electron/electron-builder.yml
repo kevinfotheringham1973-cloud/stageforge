@@ -87,6 +87,19 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  # Explicit, not left to NSIS's own default -- found live, 29 Aug 2026:
+  # a silent (/S) run of the installer landed in C:\Program Files\StageForge
+  # (needs elevation to write) instead of the per-user
+  # %LOCALAPPDATA%\Programs location every other design choice in this
+  # file already assumes (see the Smart App Control comment below).
+  # embedded-postgres chmods its own bundled postgres.exe on every
+  # startup -- the *app* itself then runs unelevated, as it should, and
+  # that chmod fails with EPERM inside Program Files, crashing with
+  # "Postgres worker process exited with code 1 before its port came
+  # up". perMachine: false forces the per-user location unconditionally,
+  # regardless of how the installer is invoked or what a user picks on
+  # the all-users/just-me page.
+  perMachine: false
   # See build/installer.nsh's header comment -- overrides
   # electron-builder's default "is the app running?" check, which is too
   # weak (non-forceful, no child-process reach, short retry budget) for

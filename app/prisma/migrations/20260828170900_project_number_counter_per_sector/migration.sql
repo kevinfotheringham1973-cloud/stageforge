@@ -11,7 +11,17 @@
 CREATE SEQUENCE IF NOT EXISTS "ProjectNumberCounter_id_seq";
 ALTER SEQUENCE "ProjectNumberCounter_id_seq" OWNED BY "ProjectNumberCounter"."id";
 ALTER TABLE "ProjectNumberCounter" ALTER COLUMN "id" SET DEFAULT nextval('"ProjectNumberCounter_id_seq"');
-SELECT setval('"ProjectNumberCounter_id_seq"', (SELECT COALESCE(MAX(id), 0) FROM "ProjectNumberCounter"));
+-- setval's 2-arg form (is_called defaults true) requires the value be
+-- >= the sequence's minvalue (1) -- fails outright on a brand-new empty
+-- database (found live, 29 Aug 2026, packaging the desktop build: this
+-- migration is the first to ever run against a fresh DB with zero rows
+-- here, so MAX(id) is NULL and COALESCE gave 0). The 3-arg form's
+-- is_called=false is Postgres's documented case for "sequence not yet
+-- used" and explicitly allows minvalue-1 (0) -- next nextval() then
+-- correctly returns 1. For a table that already has rows (every
+-- previously-migrated database, this one included), MAX(id) is not
+-- null and behavior is unchanged from before: setval(seq, 1, true).
+SELECT setval('"ProjectNumberCounter_id_seq"', COALESCE(MAX(id), 1), MAX(id) IS NOT NULL) FROM "ProjectNumberCounter";
 
 -- 2. Add the column nullable first -- the existing row has to be
 --    backfilled before it can become NOT NULL.
