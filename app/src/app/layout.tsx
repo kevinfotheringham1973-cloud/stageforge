@@ -13,6 +13,19 @@ export const metadata: Metadata = {
   title: "StageForge Health",
 };
 
+// Ownership attribution, not access control -- this is the one piece of
+// UI that renders identically on every page, cloud or desktop build,
+// signed in or not (see both return branches below), so it's the one
+// place guaranteed to reach every viewer regardless of role.
+function CompanyFooter() {
+  return (
+    <footer className="flex items-center justify-center gap-2 border-t border-rule px-4 py-4 text-xs text-inkmuted">
+      <img src="/tip-logo.png" alt="" className="h-5 w-5" />
+      <span>StageForge Health is built and owned by Transition Insight Partners Ltd</span>
+    </footer>
+  );
+}
+
 export default async function RootLayout({
   children,
 }: {
@@ -54,8 +67,9 @@ export default async function RootLayout({
     }
     return (
       <html lang="en">
-        <body className="font-sans" suppressHydrationWarning>
-          <main>{children}</main>
+        <body className="flex min-h-screen flex-col font-sans" suppressHydrationWarning>
+          <main className="flex-1">{children}</main>
+          <CompanyFooter />
         </body>
       </html>
     );
@@ -144,7 +158,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className="font-sans" suppressHydrationWarning>
+      <body className="flex min-h-screen flex-col font-sans" suppressHydrationWarning>
         {isLocalMode && (
           <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
             <span>
@@ -287,7 +301,8 @@ export default async function RootLayout({
             )}
           </div>
         </header>
-        <main>{children}</main>
+        <main className="flex-1">{children}</main>
+        <CompanyFooter />
       </body>
     </html>
   );

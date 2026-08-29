@@ -4,7 +4,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=31536000
-  Content-Security-Policy: default-src 'self'; style-src 'unsafe-inline'; img-src 'self'; script-src 'none'; base-uri 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; style-src 'unsafe-inline'; img-src 'self'; script-src 'self'; base-uri 'self'; frame-ancestors 'none'
 
 /
   Cache-Control: public, max-age=3600, must-revalidate

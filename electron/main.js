@@ -2,13 +2,18 @@
 //
 // Spawns a bundled local Postgres (localDb.js), runs the app's existing
 // migrations against it, builds/starts the Next.js server in production
-// mode (next build + next start, not next dev) pointed at that instance
-// instead of any cloud/docker database, and blanks every optional cloud
-// credential (runtimeEnv below). Combined with STAGEFORGE_LOCAL_MODE
-// (auth.ts) skipping Entra ID / Resend and localEvidenceStorage.ts
-// replacing SharePoint, this needs no external setup and makes no
-// outbound network call at all — no Docker, no login, no internet
-// (verified live: zero non-loopback connections in any state, 27 Aug 2026).
+// mode pointed at that instance instead of any cloud/docker database,
+// and blanks every optional cloud credential (runtimeEnv below). A
+// source checkout does this via `next build` + `next start` (not `next
+// dev`); a packaged install instead runs the pre-built .next/standalone
+// server.js directly (see startServer, and prepare-resources.js for why
+// -- shrinks the installed footprint by not shipping the full `next`
+// CLI + devDependencies nothing at runtime needs). Combined with
+// STAGEFORGE_LOCAL_MODE (auth.ts) skipping Entra ID / Resend and
+// localEvidenceStorage.ts replacing SharePoint, this needs no external
+// setup and makes no outbound network call at all — no Docker, no
+// login, no internet (verified live: zero non-loopback connections in
+// any state, 27 Aug 2026).
 //
 // Packaged into a real distributable installer via electron-builder
 // (electron-builder.yml) — see APP_DIR and needsBuild()'s comments for
@@ -162,7 +167,11 @@ function sleep(ms) {
 function packagedResourceCanaries(pgModulesDir) {
   return [
     path.join(APP_DIR, "package.json"),
-    path.join(APP_DIR, "node_modules", "next", "dist", "bin", "next"),
+    // Packaged builds ship .next/standalone's own trace, not the full
+    // `next` package -- the CLI (dist/bin/next) isn't part of that
+    // trace, so this checks a core runtime file server.js itself
+    // depends on instead (see prepare-resources.js and startServer).
+    path.join(APP_DIR, "node_modules", "next", "dist", "server", "next-server.js"),
     path.join(APP_DIR, "node_modules", "prisma", "build", "index.js"),
     path.join(APP_DIR, "node_modules", "tsx", "dist", "cli.mjs"),
     path.join(pgModulesDir, "embedded-postgres", "dist", "index.js"),
@@ -188,11 +197,26 @@ async function waitForResources(pgModulesDir, retriesLeft = 480) {
 }
 
 function startServer(env) {
-  serverProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT)], {
-    cwd: APP_DIR,
-    stdio: "inherit",
-    env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
-  });
+  // Packaged builds ship .next/standalone's own server.js (see
+  // prepare-resources.js) instead of the full `next` CLI + full
+  // node_modules, so this launches that directly rather than `next
+  // start` -- the standalone trace doesn't include the CLI bin at all
+  // (see packagedResourceCanaries' comment). A source checkout (not
+  // packaged) has no standalone folder to run, so keeps using `next
+  // start` against the full node_modules it already has.
+  if (app.isPackaged) {
+    serverProcess = spawn(process.execPath, [path.join(APP_DIR, "server.js")], {
+      cwd: APP_DIR,
+      stdio: "inherit",
+      env: { ...env, ELECTRON_RUN_AS_NODE: "1", PORT: String(PORT) },
+    });
+  } else {
+    serverProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT)], {
+      cwd: APP_DIR,
+      stdio: "inherit",
+      env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
+    });
+  }
 
   serverProcess.on("error", (err) => {
     console.error("[electron] failed to start Next.js server:", err);
@@ -282,15 +306,43 @@ async function shutdown() {
   killProcessTree(pgProcess);
 }
 
+// embedded-postgres chmods its own bundled postgres.exe on every start --
+// found live, 29 Aug 2026: an "all users" NSIS install lands in
+// C:\Program Files\..., the app itself then runs unelevated (as it
+// should), and that chmod fails with EPERM inside a directory a normal
+// user can't write to, crashing with "Postgres worker process exited
+// with code 1 before its port came up". app.getPath("userData") is
+// always writable by the current user regardless of where the app
+// itself is installed (per-machine or per-user), so the pg runtime is
+// copied there once and always executed from that copy -- makes this
+// robust to install location instead of relying on whoever's installing
+// it to pick "just me" and never being able to enforce that choice.
+function pgRuntimeReady(pgRuntimeDir) {
+  return fs.existsSync(path.join(pgRuntimeDir, "embedded-postgres", "dist", "index.js"));
+}
+
+async function ensureWritablePgRuntime(pgSourceDir, pgRuntimeDir) {
+  if (pgRuntimeReady(pgRuntimeDir)) return;
+  fs.rmSync(pgRuntimeDir, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(pgRuntimeDir), { recursive: true });
+  fs.cpSync(pgSourceDir, pgRuntimeDir, { recursive: true });
+}
+
 app.whenReady().then(async () => {
   try {
     const databaseDir = path.join(app.getPath("userData"), "pgdata");
     // Deliberately NOT under APP_DIR/resources/app -- see localDb.js and
     // electron-builder.yml for why embedded-postgres lives in its own
     // extraResources copy instead.
-    const pgModulesDir = app.isPackaged
+    const pgSourceDir = app.isPackaged
       ? path.join(process.resourcesPath, "pg", "node_modules")
       : path.join(__dirname, "node_modules");
+    // Only the packaged path needs its own writable copy -- a source
+    // checkout's node_modules is already wherever npm put it, always
+    // writable by whoever's running it.
+    const pgModulesDir = app.isPackaged
+      ? path.join(app.getPath("userData"), "pg-runtime", "node_modules")
+      : pgSourceDir;
 
     // Packaged only -- a source checkout's files are just there, nothing
     // to extract. See packagedResourceCanaries' comment: the portable
@@ -298,9 +350,14 @@ app.whenReady().then(async () => {
     // in the background at this point, and starting the DB/server
     // against a half-copied APP_DIR is exactly what produced an
     // intermittent "Internal Server Error" live, 28 Aug 2026.
-    if (app.isPackaged && !resourcesReady(pgModulesDir)) {
+    if (app.isPackaged && !resourcesReady(pgSourceDir)) {
       ensureSplashWindow();
-      await waitForResources(pgModulesDir);
+      await waitForResources(pgSourceDir);
+    }
+
+    if (app.isPackaged && !pgRuntimeReady(pgModulesDir)) {
+      ensureSplashWindow();
+      await ensureWritablePgRuntime(pgSourceDir, pgModulesDir);
     }
 
     const dbResult = await startLocalDatabase(databaseDir, pgModulesDir);

@@ -22,47 +22,162 @@ const ELECTRON_DIR = __dirname;
 const REPO_ROOT = path.join(ELECTRON_DIR, "..");
 const STAGE_DIR = path.join(REPO_ROOT, "build-resources");
 
-const PG_PACKAGES = [
+// Walks a package-lock.json's real dependency graph starting from
+// `roots`, breadth-first, and returns every package name that needs to
+// physically exist in node_modules for those roots to run: regular
+// `dependencies` edges always, plus `optionalDependencies` edges but
+// ONLY when the name looks like this target's platform variant (e.g.
+// @embedded-postgres/windows-x64, @esbuild/win32-x64) -- never
+// devDependencies or peerDependencies, so e.g. prisma's peerDependency
+// on `typescript` correctly stays out, and never some *other*
+// platform's variant (darwin-arm64, linux-x64, ...).
+//
+// Replaces three hand-maintained lists that used to live here. Found
+// live (29 Aug 2026): the hand-picked prisma CLI list missed
+// @prisma/debug and ~25 other transitive packages (chokidar, jiti,
+// giget, nypm, ...) -- invisible until an installed build actually
+// tried to run `prisma migrate deploy` and hit `Cannot find module
+// '@prisma/debug'`. Fixing that by computing the closure from the
+// lockfile instead of guessing then immediately hit the same shape of
+// bug again one level down -- tsx's own `esbuild` dependency was in the
+// computed closure, but esbuild's platform-specific binary package
+// (an optionalDependency of esbuild itself, same relationship
+// @embedded-postgres/windows-x64 has to embedded-postgres) wasn't,
+// crashing prisma/seed.ts's first tsx invocation with "package
+// @esbuild/win32-x64 could not be found". A hand-picked list silently
+// goes stale the moment any dependency changes; computing it -- for
+// both regular and platform-optional edges -- from the lockfile that's
+// already the source of truth can't drift out of sync the same way.
+const WINDOWS_X64_VARIANT = /(^|\/)(win32-x64|windows-x64)$/;
+
+function resolveDependencyClosure(lockfilePath, roots) {
+  const lock = JSON.parse(fs.readFileSync(lockfilePath, "utf8"));
+  const pkgs = lock.packages || {};
+  const seen = new Set();
+  const queue = [...roots];
+  while (queue.length) {
+    const name = queue.shift();
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const p = pkgs["node_modules/" + name];
+    if (!p) {
+      console.error(`[prepare-resources] ${name} not found in ${lockfilePath}`);
+      process.exit(1);
+    }
+    for (const dep of Object.keys(p.dependencies || {})) {
+      if (!seen.has(dep)) queue.push(dep);
+    }
+    for (const dep of Object.keys(p.optionalDependencies || {})) {
+      if (!seen.has(dep) && WINDOWS_X64_VARIANT.test(dep)) queue.push(dep);
+    }
+  }
+  return [...seen].sort();
+}
+
+const nextappSrc = path.join(REPO_ROOT, "app");
+const nextappDest = path.join(STAGE_DIR, "nextapp");
+
+const PG_PACKAGES = resolveDependencyClosure(path.join(ELECTRON_DIR, "package-lock.json"), [
   "embedded-postgres",
-  "@embedded-postgres",
   "async-exit-hook",
-  "pg",
-  "pg-connection-string",
-  "pg-pool",
-  "pg-protocol",
-  "pg-types",
-  "pg-int8",
-  "postgres-array",
-  "postgres-bytea",
-  "postgres-date",
-  "postgres-interval",
-  "xtend",
-  "pgpass",
-  "split2",
-];
+]);
 
 // Postgres's own translated-message catalogs -- not needed for a
 // single-user local instance (English is fine), hundreds of small
 // deeply-nested files for no functional benefit.
 const PG_LOCALE_DIR = path.join("@embedded-postgres", "windows-x64", "native", "share", "locale");
 
+// main.js only ever runs Next itself via the standalone server.js (see
+// startServer's packaged branch) -- everything Next's server code
+// actually imports (next, react, @prisma/client + its generated query
+// engine, docx, exceljs, node-cron, zod, ...) already lands in
+// .next/standalone/node_modules via output: "standalone" (next.config.ts)
+// tracing the real import graph. These packages are invoked separately
+// as CLIs by localDb.js's migrateAndSeed (prisma migrate deploy, tsx
+// running prisma/seed.ts + scripts/anonymize-local-demo-names.ts) --
+// nothing *imports* them, so the trace never finds them, and they need
+// the same computed-closure treatment as PG_PACKAGES above.
+const CLI_ONLY_PACKAGES = resolveDependencyClosure(path.join(nextappSrc, "package-lock.json"), [
+  "prisma",
+  "@prisma/config",
+  "@prisma/engines",
+  "tsx",
+  "dotenv", // scripts/anonymize-local-demo-names.ts does `import "dotenv/config"`
+]);
+
 fs.rmSync(STAGE_DIR, { recursive: true, force: true });
 fs.mkdirSync(STAGE_DIR, { recursive: true });
 
 // -- nextapp: the Next.js app itself (was extraResources `from: ../app`) --
-const nextappSrc = path.join(REPO_ROOT, "app");
-const nextappDest = path.join(STAGE_DIR, "nextapp");
-const NEXTAPP_EXCLUDE = [".env", ".env.example"];
-fs.cpSync(nextappSrc, nextappDest, {
+
+const standaloneSrc = path.join(nextappSrc, ".next", "standalone");
+if (!fs.existsSync(standaloneSrc)) {
+  console.error(
+    `[prepare-resources] missing ${standaloneSrc} -- run "npm run build" in app/ first (next.config.ts's output: "standalone" is what produces this folder).`
+  );
+  process.exit(1);
+}
+// The traced server + its traced node_modules (next, react, @prisma/client
+// incl. its generated query engine binary, docx, exceljs, ... -- whatever
+// the app's server code actually imports). Deliberately NOT the whole
+// app/ directory + full node_modules the old build did -- that shipped
+// devDependencies (typescript, eslint, tailwindcss...) and hundreds of MB
+// nothing at runtime ever touches.
+//
+// Next's own standalone output copies the real .env alongside server.js
+// (confirmed live, 29 Aug 2026) -- Kevin's actual ANTHROPIC_API_KEY,
+// RESEND_API_KEY, AZURE_CLIENT_SECRET, AUTH_SECRET, and production
+// DATABASE_URL, sitting in plain text inside the installed app
+// directory of every copy of this installer. runtimeEnv() below
+// already blanks/overrides all of these in the spawned server's actual
+// process.env regardless, but that doesn't stop the raw file itself
+// from shipping on disk for anyone to open -- excluded here the same
+// way the old whole-app-dir copy always excluded it.
+fs.cpSync(standaloneSrc, nextappDest, {
   recursive: true,
-  filter: (src) => {
-    const rel = path.relative(nextappSrc, src);
-    if (NEXTAPP_EXCLUDE.includes(rel)) return false;
-    if (rel.startsWith(path.join(".next", "cache"))) return false;
-    if (rel.endsWith(".tsbuildinfo")) return false;
-    return true;
-  },
+  filter: (src) => path.basename(src) !== ".env",
 });
+
+// Standalone output deliberately excludes these two (Next's own docs:
+// "not required to run the server") -- copied back in by hand, same as
+// any real deployment of a standalone build has to.
+fs.cpSync(path.join(nextappSrc, ".next", "static"), path.join(nextappDest, ".next", "static"), {
+  recursive: true,
+});
+const publicSrc = path.join(nextappSrc, "public");
+if (fs.existsSync(publicSrc)) {
+  fs.cpSync(publicSrc, path.join(nextappDest, "public"), { recursive: true });
+}
+
+// Not part of the server's import trace (read as files by the prisma
+// CLI / tsx at runtime, never `import`ed) -- see localDb.js's
+// migrateAndSeed and CLI_ONLY_PACKAGES' comment above.
+fs.cpSync(path.join(nextappSrc, "prisma"), path.join(nextappDest, "prisma"), { recursive: true });
+fs.cpSync(
+  path.join(nextappSrc, "scripts", "anonymize-local-demo-names.ts"),
+  path.join(nextappDest, "scripts", "anonymize-local-demo-names.ts")
+);
+// tsx transpiles prisma/seed.ts and anonymize-local-demo-names.ts directly
+// from source at runtime (not from the compiled .next output) -- they and
+// their own imports (src/lib/compliance, src/lib/instantiation,
+// src/lib/englandConversion, src/lib/db, ...) need the real TS source
+// present, plus tsconfig.json for the "@/..." path alias tsx resolves
+// against. Small (under 2MB total) -- not worth trying to cherry-pick the
+// exact transitive import subset.
+fs.cpSync(path.join(nextappSrc, "src"), path.join(nextappDest, "src"), { recursive: true });
+fs.cpSync(path.join(nextappSrc, "tsconfig.json"), path.join(nextappDest, "tsconfig.json"));
+fs.cpSync(path.join(nextappSrc, "prisma.config.ts"), path.join(nextappDest, "prisma.config.ts"));
+
+for (const pkg of CLI_ONLY_PACKAGES) {
+  const srcPath = path.join(nextappSrc, "node_modules", pkg);
+  if (!fs.existsSync(srcPath)) {
+    console.error(`[prepare-resources] missing: ${pkg}`);
+    process.exit(1);
+  }
+  const destPath = path.join(nextappDest, "node_modules", pkg);
+  fs.mkdirSync(path.dirname(destPath), { recursive: true });
+  fs.cpSync(srcPath, destPath, { recursive: true });
+}
 
 // -- pg: embedded-postgres + its full transitive runtime dependency closure --
 const pgSrc = path.join(ELECTRON_DIR, "node_modules");
