@@ -134,6 +134,20 @@ appx:
   publisherDisplayName: Transition Insight Partners Ltd
   applicationId: StageForgeHealth
   displayName: StageForge Health
+  # Tile images for the Start menu/taskbar/Store listing -- unlike the
+  # NSIS/portable targets above, appx does NOT auto-generate these from
+  # the top-level icon: field. Without a build/appx/ folder,
+  # electron-builder silently falls back to its own bundled generic
+  # placeholder images (found live, 30 Aug 2026: shipped completely
+  # blank -- solid white, not StageForge's icon at all -- confirmed by
+  # inspecting the built .appx directly and sampling pixels). The four
+  # PNGs in build/appx/ (StoreLogo/Square44x44Logo/Square150x150Logo/
+  # Wide310x150Logo) are generated from build/icon.png -- see
+  # scripts/generate-appx-assets.ps1. backgroundColor fills the
+  # transparent margin electron-builder leaves around the icon in each
+  # of those (white, to match the icon's own card-style rounded-square
+  # background rather than the library's dark gray default).
+  backgroundColor: "#FFFFFF"
 portable:
   artifactName: "${productName}-${version}-portable.${ext}"
   # Default is a per-BUILD uuid ("changed on each build of portable
