@@ -29,6 +29,20 @@ function buildDatabaseUrl() {
   return `postgresql://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}?schema=public`;
 }
 
+// Deliberately INSIDE databaseDir, not alongside it -- found live, 29
+// Aug 2026: with the marker as a sibling of pgdata, a user deleting
+// only the pgdata folder (the documented way to reset a broken
+// install) got a silently *unseeded* database forever after, since the
+// marker survived and the next launch's needsSeed check saw it,
+// skipped seed.ts entirely, and left a schema with zero rows (surfaced
+// as a Prisma "no record found" crash on the first page needing any
+// seeded data). Marker and data must reset together, since the
+// marker's only meaning is "this exact database has been seeded" --
+// see tests/marker-path.test.js, which asserts this invariant directly.
+function getSeedMarkerPath(databaseDir) {
+  return path.join(databaseDir, "stageforge-seed-complete.marker");
+}
+
 function waitForPort(port, child, retriesLeft = 60) {
   return new Promise((resolve, reject) => {
     let settled = false;

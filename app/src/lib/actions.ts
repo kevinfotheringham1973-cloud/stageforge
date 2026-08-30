@@ -321,6 +321,11 @@ export async function recordComplianceEvidenceStub(
     throw new Error("This gate is already signed off — evidence can't be replaced after the fact.");
   }
 
+  const requirement = await db.complianceRequirement.findUniqueOrThrow({
+    where: { id: complianceRequirementId },
+    select: { additionalApproverRoleKeys: true },
+  });
+
   const { fileName, fileRef } = await resolveEvidenceUpload(formData, gate.stage.project, gate.stage.name);
 
   const existingFiles = await db.complianceEvidenceFile.findMany({
@@ -354,11 +359,36 @@ export async function recordComplianceEvidenceStub(
         entityId: complianceRequirementId,
       },
     }),
+    ...autoCoSignForLocalMode(complianceRequirementId, requirement.additionalApproverRoleKeys, userId),
     ...startGateUpdate(gateId, gate.status),
   ]);
 
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
+ * Auto-signs every additionalApproverRoleKeys entry a compliance item
+ * asks for, at the same moment it's evidenced/overridden -- desktop
+ * build only. The co-sign requirement itself is real product behaviour
+ * (Compliance Officer and Client Authority genuinely are two separate
+ * people in real use, see isComplianceRequirementClear/
+ * canCoSignCompliance), but this build has exactly one user who already
+ * holds every role -- found live, 29 Aug 2026: overriding a fire-gated
+ * item left it sitting at "additional sign-off required" with a second,
+ * easy-to-miss button, reading indistinguishable from a genuine dead
+ * end to someone who (correctly) has no one else to hand it to. Safe to
+ * create unconditionally: recordComplianceCoSignOff only ever lets a
+ * requirement collect co-signs once EVIDENCED/OVERRIDDEN, so nothing
+ * here can already exist yet.
+ */
+function autoCoSignForLocalMode(complianceRequirementId: string, additionalApproverRoleKeys: string[], userId: string) {
+  if (process.env.STAGEFORGE_LOCAL_MODE !== "1" || additionalApproverRoleKeys.length === 0) return [];
+  return additionalApproverRoleKeys.map((roleKey) =>
+    db.complianceCoSignOff.create({
+      data: { complianceRequirementId, roleKey, signedOffById: userId },
+    })
+  );
 }
 
 /**
@@ -422,6 +452,7 @@ export async function overrideCompliance(gateId: string, projectNumber: string, 
     db.auditLogEntry.create({
       data: { actorId: userId, action: "compliance.overridden", gateId, entityType: "Gate", entityId: gateId, reason },
     }),
+    ...outstanding.flatMap((c) => autoCoSignForLocalMode(c.id, c.additionalApproverRoleKeys, userId)),
     ...startGateUpdate(gateId, gate.status),
   ]);
 

@@ -380,8 +380,18 @@ app.whenReady().then(async () => {
     // migrateAndSeed ONLY after seed.ts and the anonymize script have
     // both actually finished (see its own comment), so its absence is a
     // trustworthy "seeding never completed" signal on its own, decoupled
-    // from whatever state the Postgres cluster itself happens to be in.
-    const seedMarkerPath = path.join(app.getPath("userData"), "seed-complete.marker");
+    // from Postgres's own bookkeeping (PG_VERSION / isFirstRun above).
+    // Lives INSIDE databaseDir, not alongside it -- found live, 29 Aug
+    // 2026: a user manually deleting only the pgdata folder (the
+    // documented way to reset a broken install) got a silently
+    // *unseeded* database forever after, since the marker survived in
+    // userData and the next launch's needsSeed check saw it, skipped
+    // seed.ts entirely, and left a schema with zero rows (surfaced as a
+    // Prisma "no record found" crash on the very first page needing any
+    // seeded data, e.g. /projects/new's SectorVariant lookup). Marker
+    // and data must reset together, since the marker's only meaning is
+    // "this exact database has been seeded."
+    const seedMarkerPath = path.join(databaseDir, "stageforge-seed-complete.marker");
     const needsSeed = !fs.existsSync(seedMarkerPath);
     const buildNeeded = needsBuild();
     // First run, seeding needed, and/or a missing build: initialising
