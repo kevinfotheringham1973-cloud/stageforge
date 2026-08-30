@@ -133,8 +133,21 @@ if (!fs.existsSync(standaloneSrc)) {
 // process.env regardless, but that doesn't stop the raw file itself
 // from shipping on disk for anyone to open -- excluded here the same
 // way the old whole-app-dir copy always excluded it.
+// dereference: true is required here -- Next's own output-file-tracing
+// stages some packages (found live, 30 Aug 2026: node-cron) as an NTFS
+// junction into .next/node_modules/<pkg>-<hash> pointing straight back
+// at app/node_modules/<pkg>, rather than a real copy. Without
+// dereferencing, cpSync faithfully recreates that junction inside the
+// packaged app, still pointing at this dev machine's own
+// C:\Projects\StageForge\... path -- meaningless (and MODULE_NOT_FOUND
+// at runtime if ever resolved) on a customer's machine, and outright
+// fatal for the appx target specifically: makeappx.exe refuses to pack
+// a reparse point at all ("You can't add folders or devices to the
+// package"), so the NSIS/portable builds silently shipped a landmine
+// that the MSIX build instead failed loudly on.
 fs.cpSync(standaloneSrc, nextappDest, {
   recursive: true,
+  dereference: true,
   filter: (src) => path.basename(src) !== ".env",
 });
 

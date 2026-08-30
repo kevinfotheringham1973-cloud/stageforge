@@ -376,6 +376,35 @@
     color: var(--ink-muted);
   }
   .hero-badge .value { font-size: 14px; font-weight: 700; color: var(--teal); }
+  .store-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 10px 16px;
+  }
+  .store-badge .icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--accentsoft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .store-badge .icon svg { width: 16px; height: 16px; }
+  .store-badge .text { display: flex; flex-direction: column; }
+  .store-badge .label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+  }
+  .store-badge .value { font-size: 14px; font-weight: 700; color: var(--blue); }
   @media (max-width: 900px) {
     .hero-badge { left: 16px; bottom: -18px; padding: 8px 12px; }
   }
@@ -654,6 +683,28 @@
           <li class="no"><span class="mark">&cross;</span> Role-based access across teams</li>
           <li class="no"><span class="mark">&cross;</span> Shared audit trail across a live project</li>
         </ul>
+        <!-- Not live yet -- StageForge Health is reserved in Partner Center
+             (Store ID 9N7HF1X3QJ2P) but "Not submitted" as of 30 Aug 2026,
+             and the MSIX package itself doesn't build cleanly yet. Swap
+             this span for a real link once the submission is certified and
+             published -- the identity is already reserved so the URLs
+             below are the real ones, just not live:
+               https://apps.microsoft.com/detail/9N7HF1X3QJ2P
+               ms-windows-store://pdp/?productid=9N7HF1X3QJ2P -->
+        <div class="store-badge">
+          <span class="icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="8" height="8" fill="#28659B" />
+              <rect x="13" y="3" width="8" height="8" fill="#28659B" />
+              <rect x="3" y="13" width="8" height="8" fill="#28659B" />
+              <rect x="13" y="13" width="8" height="8" fill="#28659B" />
+            </svg>
+          </span>
+          <span class="text">
+            <span class="label">Coming soon on the</span>
+            <span class="value">Microsoft Store</span>
+          </span>
+        </div>
       </div>
       <div class="deploy-card recommended">
         <span class="ribbon">Recommended</span>
