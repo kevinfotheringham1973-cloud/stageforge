@@ -221,3 +221,40 @@ fs.writeFileSync(
 );
 
 console.log(`[prepare-resources] staged nextapp/ and pg/ into ${STAGE_DIR}`);
+
+// nextappSrc (app/) is ALSO the live tunnel-hosted server's serving
+// directory (see deploy-topology notes) -- the STAGEFORGE_DESKTOP_BUILD=1
+// build staged above left app/.next configured with output: "standalone",
+// which `next start` cannot run (breaks Auth.js's verify-request action --
+// found live 29 Aug 2026, a real "can't log in, no email arrives" report
+// some hours after this was left unconditionally on; see next.config.ts's
+// own comment). Everything this script needs from that build is already
+// copied into STAGE_DIR above, so it's safe to immediately rebuild
+// app/.next as a plain (non-standalone) build here, restoring the live
+// server to a working state before electron-builder even runs -- instead
+// of relying on a human to remember to do this by hand afterward, which
+// is exactly what didn't happen 29 Aug 2026.
+console.log("[prepare-resources] restoring app/.next to a plain (non-standalone) build for the live server...");
+const restoreEnv = { ...process.env };
+delete restoreEnv.STAGEFORGE_DESKTOP_BUILD;
+try {
+  execSync("npm run build", { cwd: nextappSrc, stdio: "inherit", env: restoreEnv });
+} catch {
+  console.error(
+    "[prepare-resources] FAILED to restore a plain build in app/ -- the live server's .next is still the broken standalone build from this desktop packaging pass. Fix the build error above, then run `npm run build` in app/ by hand (no STAGEFORGE_DESKTOP_BUILD set) before doing anything else."
+  );
+  process.exit(1);
+}
+
+// Best-effort: get the live process serving the restored build right
+// away instead of leaving it broken until whatever incidental restart
+// happens to notice next. Not fatal if pm2 or this process isn't present
+// (e.g. packaging from a machine that doesn't run the live tunnel).
+try {
+  execSync("pm2 restart stageforge-tunnel --update-env", { cwd: REPO_ROOT, stdio: "inherit" });
+  console.log("[prepare-resources] restarted stageforge-tunnel with the restored build.");
+} catch {
+  console.warn(
+    "[prepare-resources] could not restart stageforge-tunnel via pm2 (not running on this machine?) -- if this IS the live-serving machine, restart it by hand before leaving things here."
+  );
+}
