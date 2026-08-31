@@ -427,3 +427,18 @@ export const GATE_TIMELINE_TEXT_CLASS: Record<GateTimelineStatus, string> = {
   COMPLETED_ON_TIME: "text-ok",
   COMPLETED_LATE: "text-risk",
 };
+
+// Matching border colour for each status, used to render the timeline
+// as a pill badge (portfolio page, 1 Sep 2026) rather than plain
+// coloured text -- kept as its own record instead of string-replacing
+// GATE_TIMELINE_TEXT_CLASS at render time, same reasoning as the other
+// per-status Records above.
+export const GATE_TIMELINE_BORDER_CLASS: Record<GateTimelineStatus, string> = {
+  NO_TARGET: "border-rule",
+  NOT_STARTED_ON_TRACK: "border-rule",
+  NOT_STARTED_OVERDUE: "border-warn",
+  IN_PROGRESS_ON_TRACK: "border-accent",
+  IN_PROGRESS_OVERDUE: "border-risk",
+  COMPLETED_ON_TIME: "border-ok",
+  COMPLETED_LATE: "border-risk",
+};

@@ -19,6 +19,10 @@ export type PortfolioRow = {
   outstandingCompliance: number;
   estimatedCompletion: Date | null;
   timeline: GateTimelineStatus;
+  // Signed-off count vs. total gates -- the portfolio table's per-row
+  // progress dots (1 Sep 2026, group layout feedback).
+  gatesSignedOff: number;
+  gatesTotal: number;
 };
 
 /**
@@ -82,6 +86,8 @@ export async function getPortfolioRows(): Promise<PortfolioRow[]> {
         outstandingCompliance,
         estimatedCompletion,
         timeline,
+        gatesSignedOff: gates.filter((g) => g.status === "SIGNED_OFF").length,
+        gatesTotal: gates.length,
       };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
