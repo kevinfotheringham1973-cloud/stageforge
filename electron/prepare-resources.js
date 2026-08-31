@@ -192,6 +192,49 @@ for (const pkg of CLI_ONLY_PACKAGES) {
   fs.cpSync(srcPath, destPath, { recursive: true });
 }
 
+// Read by main.js's ensureWritableCliRuntime (31 Aug 2026) -- migrate
+// deploy/seed/anonymize all run the CLI packages above in place, inside
+// APP_DIR. That's fine for NSIS/portable (a writable per-user install
+// dir either way), but the appx target's install location is read-only
+// by Windows' own design with no opt-out (unlike NSIS's perMachine
+// escape hatch above) -- Prisma writes into its own node_modules at
+// runtime regardless (a jiti/c12 config-load cache for prisma.config.ts,
+// and a query-engine binary copy), so running the CLI in place there hit
+// EPERM and crashed the app on first launch, confirmed live 31 Aug 2026
+// testing the actual submitted appx. The fix is the same shape as
+// ensureWritablePgRuntime below: copy just what the CLI needs into a
+// writable userData folder once, and always invoke it from there. This
+// manifest is that "just what it needs" list, computed here from the
+// same lockfile-derived closure as the copy loop above so it can't drift
+// out of sync with what's actually staged.
+fs.writeFileSync(
+  path.join(nextappDest, "cli-runtime-manifest.json"),
+  JSON.stringify(
+    {
+      // @prisma/client and its generated .prisma/client (the actual
+      // query engine, ~20MB) aren't part of CLI_ONLY_PACKAGES -- they're
+      // already covered by Next's own standalone trace for the server's
+      // own use, which is why prepare-resources.js never had to copy
+      // them separately above. seed.ts imports @prisma/client directly
+      // though, and once it's running from its own isolated cli-runtime
+      // copy (not APP_DIR) rather than in place, that copy needs its own
+      // node_modules/@prisma/client -- confirmed live, 31 Aug 2026,
+      // testing the actual fix: migrate deploy started working, seed.ts
+      // then failed with Cannot find module '@prisma/client'. Sourced
+      // from nextappDest (both already land there via the standalone
+      // trace), not copied specially -- just listed here so
+      // ensureWritableCliRuntime knows to bring them along too.
+      packages: [...CLI_ONLY_PACKAGES, "@prisma/client", ".prisma/client"],
+      // Everything else migrate/seed/anonymize touch by relative path --
+      // see localDb.js's migrateAndSeed and the copies just above this
+      // one for why each is here.
+      paths: ["prisma", "scripts", "src", "tsconfig.json", "prisma.config.ts", "package.json"],
+    },
+    null,
+    2
+  )
+);
+
 // -- pg: embedded-postgres + its full transitive runtime dependency closure --
 const pgSrc = path.join(ELECTRON_DIR, "node_modules");
 const pgDest = path.join(STAGE_DIR, "pg", "node_modules");

@@ -333,6 +333,40 @@ async function ensureWritablePgRuntime(pgSourceDir, pgRuntimeDir) {
   fs.cpSync(pgSourceDir, pgRuntimeDir, { recursive: true });
 }
 
+// Same shape, same reason, as pgRuntimeReady/ensureWritablePgRuntime
+// above -- but for the CLI packages migrateAndSeed runs (prisma migrate
+// deploy, tsx running seed.ts + the anonymize script), not embedded
+// Postgres. Confirmed live, 31 Aug 2026, testing the actual .appx
+// submitted to the Store: running `prisma migrate deploy` in place
+// inside APP_DIR crashed the app on first launch with EPERM (a
+// jiti/c12 config-load cache under node_modules/.cache/prisma, then a
+// query-engine binary copy under node_modules/@prisma/engines) -- the
+// appx install location is read-only with no per-install-location
+// escape hatch the way NSIS's perMachine:false is, so this can't be
+// fixed by choosing an install location; it needs its own writable copy
+// the same way the pg runtime already gets one. cli-runtime-manifest.json
+// (written by prepare-resources.js from the same lockfile-derived
+// closure CLI_ONLY_PACKAGES uses) is the "what to copy" list, so this
+// can't drift out of sync with what prepare-resources.js actually staged.
+function cliRuntimeReady(cliRuntimeDir) {
+  return fs.existsSync(path.join(cliRuntimeDir, "node_modules", "prisma", "build", "index.js"));
+}
+
+async function ensureWritableCliRuntime(cliSourceDir, cliRuntimeDir) {
+  if (cliRuntimeReady(cliRuntimeDir)) return;
+  const manifest = JSON.parse(fs.readFileSync(path.join(cliSourceDir, "cli-runtime-manifest.json"), "utf8"));
+  fs.rmSync(cliRuntimeDir, { recursive: true, force: true });
+  fs.mkdirSync(cliRuntimeDir, { recursive: true });
+  for (const relPath of manifest.paths) {
+    fs.cpSync(path.join(cliSourceDir, relPath), path.join(cliRuntimeDir, relPath), { recursive: true });
+  }
+  for (const pkg of manifest.packages) {
+    const destPath = path.join(cliRuntimeDir, "node_modules", pkg);
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.cpSync(path.join(cliSourceDir, "node_modules", pkg), destPath, { recursive: true });
+  }
+}
+
 app.whenReady().then(async () => {
   try {
     const databaseDir = path.join(app.getPath("userData"), "pgdata");
@@ -400,7 +434,16 @@ app.whenReady().then(async () => {
     // the app can take a while — worth a visible wait state rather than
     // looking frozen.
     if (isFirstRun || needsSeed || buildNeeded) ensureSplashWindow();
-    await migrateAndSeed(APP_DIR, databaseUrl, needsSeed, seedMarkerPath);
+    // Writable copy of just the CLI packages, same reason and same
+    // pattern as pgModulesDir above -- see ensureWritableCliRuntime's
+    // comment. A source checkout's APP_DIR is already writable, so it
+    // runs the CLI in place unchanged, same as the pg case.
+    const cliRuntimeDir = app.isPackaged ? path.join(app.getPath("userData"), "cli-runtime") : APP_DIR;
+    if (app.isPackaged && !cliRuntimeReady(cliRuntimeDir)) {
+      ensureSplashWindow();
+      await ensureWritableCliRuntime(APP_DIR, cliRuntimeDir);
+    }
+    await migrateAndSeed(cliRuntimeDir, databaseUrl, needsSeed, seedMarkerPath);
     const evidenceDir = path.join(app.getPath("userData"), "evidence");
     const authSecret = getOrCreateAuthSecret(app.getPath("userData"));
     // instrumentation.ts's onRequestError writes here — production React
