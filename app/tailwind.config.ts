@@ -31,6 +31,13 @@ export default {
         ok: "#3F7D5C",
         warn: "#976E23",
         risk: "#B0473C",
+        // App-wide sidebar nav (31 Aug 2026, group layout feedback) --
+        // a darkened wordmarkBlue, not an arbitrary navy, so the
+        // sidebar reads as "the same brand, dark" rather than a
+        // mismatched color dropped next to the light-themed content.
+        sidebar: "#122B40",
+        sidebarHover: "#1B3B57",
+        sidebarActive: "#2D9A9C",
       },
     },
   },

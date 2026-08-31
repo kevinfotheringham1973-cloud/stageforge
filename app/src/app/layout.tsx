@@ -7,6 +7,7 @@ import { getCurrentUser, getRealCurrentUserId } from "@/lib/session";
 import { setViewAsUser, clearViewAsUser, exitShareLinkView } from "@/lib/actions";
 import { signOut } from "@/lib/auth";
 import { ActingAsSwitcher } from "@/components/ActingAsSwitcher";
+import { Sidebar } from "@/components/Sidebar";
 import { isShareLinkViewerEmail, getActiveShareLinkFromCookie } from "@/lib/shareLinks";
 
 export const metadata: Metadata = {
@@ -102,16 +103,24 @@ export default async function RootLayout({
   // else (dashboard, /resources) there's no project to scope to, so it
   // still falls back to showing everyone, same as before.
   const currentProjectNumber = (await headers()).get("x-current-project-number");
-  const currentProjectUserIds = currentProjectNumber
-    ? new Set(
-        (
-          await db.projectRoleAssignment.findMany({
+  const [currentProjectUserIds, currentProject] = await Promise.all([
+    currentProjectNumber
+      ? db.projectRoleAssignment
+          .findMany({
             where: { project: { projectNumber: currentProjectNumber } },
             select: { userId: true },
           })
-        ).map((a) => a.userId)
-      )
-    : null;
+          .then((rows) => new Set(rows.map((a) => a.userId)))
+      : Promise.resolve(null),
+    // Shown in the top bar (31 Aug 2026, sidebar redesign) -- with
+    // primary nav moved into the sidebar, the top bar had nothing
+    // saying which project you're actually looking at once you're a
+    // few clicks deep (a gate page, Approvals, ...), where the page's
+    // own <h1> is the project name only on the project's own overview.
+    currentProjectNumber
+      ? db.project.findUnique({ where: { projectNumber: currentProjectNumber }, select: { name: true } })
+      : Promise.resolve(null),
+  ]);
 
   // ActingAsSwitcher leads with the role (not the name) in the dropdown
   // label, since an admin previewing a persona cares which role they're
@@ -159,129 +168,102 @@ export default async function RootLayout({
   // would be a named specialist's call in real use.
   const isLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
 
+  // Desktop build: the whole admin surface stays hidden, not just
+  // /team -- see each page's own STAGEFORGE_LOCAL_MODE forbidden()
+  // guard. This build is scoped to a PM creating a project from the
+  // template library and working through its gates/deliverables,
+  // nothing administrative.
+  const adminLinks =
+    currentUser?.isPlatformAdmin && !isLocalMode
+      ? [
+          { href: "/team", label: "Team" },
+          { href: "/access-requests", label: "Access requests" },
+          { href: "/compliance-rules", label: "Compliance rules" },
+          { href: "/regulatory-reference", label: "Regulatory reference" },
+          { href: "/about", label: "About" },
+          { href: "/share-links", label: "Share links" },
+        ]
+      : [];
+  const demoViewerLinks = isDemoViewer
+    ? [
+        { href: "/compliance-rules", label: "Compliance rules" },
+        { href: "/regulatory-reference", label: "Regulatory reference" },
+      ]
+    : [];
+
   return (
     <html lang="en">
-      <body className="flex min-h-screen flex-col font-sans" suppressHydrationWarning>
-        {isLocalMode && (
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
-            <span>
-              Single-user preview — you can create and work through a project's full lifecycle, including
-              role-specific decisions (compliance sign-off, Authorised Person sign-off, SRO/Sponsor decisions) that a
-              named specialist would give in real use — every "Requires {"{role}"}" badge still shows who that would
-              be. The cloud version enforces that separation for real, with a full team each signing off their own.
-            </span>
-          </div>
-        )}
-        {isDemoViewer && (
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
-            <span>
-              Read-only demo view
-              {activeShareLink?.expiresAt && ` — expires ${activeShareLink.expiresAt.toLocaleString("en-GB")}`}.
-            </span>
-            <form action={exitShareLinkView}>
-              <button type="submit" className="font-semibold underline">
-                Exit demo view
-              </button>
-            </form>
-          </div>
-        )}
-        {isViewingAs && (
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-warn/15 px-4 py-2 text-xs text-warn sm:px-6 md:px-10">
-            <span>
-              Viewing as <strong>{currentUser.name}</strong> — you&rsquo;re really signed in as {realUser?.name}.
-            </span>
-            <form action={clearViewAsUser}>
-              <button type="submit" className="font-semibold underline">
-                Stop viewing as
-              </button>
-            </form>
-          </div>
-        )}
-        {accessRequestCount > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-2 bg-danger/15 px-4 py-2 text-xs text-danger sm:px-6 md:px-10">
-            <span>
-              ⚠ {accessRequestCount} {accessRequestCount === 1 ? "person" : "people"} tried to sign in without
-              access.
-            </span>
-            <a href="/access-requests" className="font-semibold underline">
-              Review access requests
-            </a>
-          </div>
-        )}
-        <header className="flex flex-col gap-3 border-b border-rule bg-surface px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between md:px-10">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <a href="/" className="flex flex-col items-center leading-[0.95]">
-              <span className="font-serif text-xl font-bold text-wordmarkBlue">StageForge</span>
-              <span className="font-serif text-xl font-bold text-wordmarkTeal">Health</span>
-            </a>
-            <a href="/projects/new" className="text-sm font-semibold text-accent hover:underline">
-              + New project
-            </a>
-            <a href="/resources" className="text-sm font-semibold text-accent hover:underline">
-              Resources
-            </a>
-            <a href="/finance" className="text-sm font-semibold text-accent hover:underline">
-              Finance
-            </a>
-            <a href="/lessons-learned" className="text-sm font-semibold text-accent hover:underline">
-              Lessons learned
-            </a>
-            <a href="/document-templates" className="text-sm font-semibold text-accent hover:underline">
-              Document templates
-            </a>
-            <a href="/whats-new" className="text-sm font-semibold text-accent hover:underline">
-              What&rsquo;s new
-            </a>
-            {/* Desktop build: the whole admin surface stays hidden, not
-                just /team -- see each page's own STAGEFORGE_LOCAL_MODE
-                forbidden() guard. This build is scoped to a PM creating
-                a project from the template library and working through
-                its gates/deliverables, nothing administrative. */}
-            {currentUser?.isPlatformAdmin && !isLocalMode && (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-l border-rule pl-5">
-                <span className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Admin</span>
-                <a href="/team" className="text-sm font-semibold text-accent hover:underline">
-                  Team
-                </a>
-                <a
-                  href="/access-requests"
-                  className={`flex items-center gap-1 text-sm font-semibold hover:underline ${
-                    accessRequestCount > 0 ? "text-danger" : "text-accent"
-                  }`}
-                >
-                  Access requests
-                  {accessRequestCount > 0 && (
-                    <span className="rounded-full bg-danger px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-                      {accessRequestCount}
-                    </span>
-                  )}
-                </a>
-                <a href="/compliance-rules" className="text-sm font-semibold text-accent hover:underline">
-                  Compliance rules
-                </a>
-                <a href="/regulatory-reference" className="text-sm font-semibold text-accent hover:underline">
-                  Regulatory reference
-                </a>
-                <a href="/about" className="text-sm font-semibold text-accent hover:underline">
-                  About
-                </a>
-                <a href="/share-links" className="text-sm font-semibold text-accent hover:underline">
-                  Share links
-                </a>
-              </div>
-            )}
-            {isDemoViewer && (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-l border-rule pl-5">
-                <a href="/compliance-rules" className="text-sm font-semibold text-accent hover:underline">
-                  Compliance rules
-                </a>
-                <a href="/regulatory-reference" className="text-sm font-semibold text-accent hover:underline">
-                  Regulatory reference
-                </a>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
+      <body className="flex min-h-screen flex-col font-sans md:flex-row" suppressHydrationWarning>
+        <Sidebar
+          primaryLinks={[
+            { href: "/", label: "Dashboard" },
+            { href: "/resources", label: "Resources" },
+            { href: "/finance", label: "Finance" },
+            { href: "/lessons-learned", label: "Lessons learned" },
+            { href: "/document-templates", label: "Document templates" },
+            { href: "/whats-new", label: "What's new" },
+          ]}
+          adminLinks={adminLinks}
+          demoViewerLinks={demoViewerLinks}
+          accessRequestCount={accessRequestCount}
+        />
+        <div className="flex min-h-screen flex-1 flex-col">
+          {isLocalMode && (
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
+              <span>
+                Single-user preview — you can create and work through a project's full lifecycle, including
+                role-specific decisions (compliance sign-off, Authorised Person sign-off, SRO/Sponsor decisions) that a
+                named specialist would give in real use — every "Requires {"{role}"}" badge still shows who that would
+                be. The cloud version enforces that separation for real, with a full team each signing off their own.
+              </span>
+            </div>
+          )}
+          {isDemoViewer && (
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-accentsoft px-4 py-2 text-xs text-accent sm:px-6 md:px-10">
+              <span>
+                Read-only demo view
+                {activeShareLink?.expiresAt && ` — expires ${activeShareLink.expiresAt.toLocaleString("en-GB")}`}.
+              </span>
+              <form action={exitShareLinkView}>
+                <button type="submit" className="font-semibold underline">
+                  Exit demo view
+                </button>
+              </form>
+            </div>
+          )}
+          {isViewingAs && (
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-warn/15 px-4 py-2 text-xs text-warn sm:px-6 md:px-10">
+              <span>
+                Viewing as <strong>{currentUser.name}</strong> — you&rsquo;re really signed in as {realUser?.name}.
+              </span>
+              <form action={clearViewAsUser}>
+                <button type="submit" className="font-semibold underline">
+                  Stop viewing as
+                </button>
+              </form>
+            </div>
+          )}
+          {accessRequestCount > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-risk/15 px-4 py-2 text-xs text-risk sm:px-6 md:px-10">
+              <span>
+                ⚠ {accessRequestCount} {accessRequestCount === 1 ? "person" : "people"} tried to sign in without
+                access.
+              </span>
+              <a href="/access-requests" className="font-semibold underline">
+                Review access requests
+              </a>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-rule bg-surface px-4 py-3 sm:px-6 md:px-10">
+            <div className="text-sm font-semibold text-inkmuted">
+              {currentProject && (
+                <>
+                  <span className="text-ink">{currentProject.name}</span>{" "}
+                  <span className="font-mono text-xs">#{currentProjectNumber}</span>
+                </>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-4">
             {realUser?.isPlatformAdmin && !isLocalMode && (
               <ActingAsSwitcher action={setViewAsUser} users={users} currentUserId={currentUser.id} />
             )}
@@ -303,10 +285,11 @@ export default async function RootLayout({
                 </button>
               </form>
             )}
+            </div>
           </div>
-        </header>
-        <main className="flex-1">{children}</main>
-        <CompanyFooter />
+          <main className="flex-1">{children}</main>
+          <CompanyFooter />
+        </div>
       </body>
     </html>
   );
