@@ -230,32 +230,6 @@ export default async function ProjectDashboardLayout({
           </div>
         )}
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold">{project.name}</h1>
-            {gates.length > 0 && (
-              <span
-                className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide ${timelineHeadlineClass} ${timelineBorderClass} bg-surface`}
-              >
-                {timelineHeadline}
-              </span>
-            )}
-            {project.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" && (
-              <span
-                className="rounded-full bg-flag px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white"
-                title={
-                  project.worksType === "BUILDING_MODIFICATION"
-                    ? "CDM 2015 applies — Principal Designer engaged, planning permission confirmed"
-                    : "CDM 2015 applies — Principal Designer engaged (multiple contractors)"
-                }
-              >
-                {project.worksType === "BUILDING_MODIFICATION" ? "Building modification" : "Multiple contractors"}{" "}
-                &middot; CDM 2015
-              </span>
-            )}
-          </div>
-          <div className="font-mono text-xs uppercase tracking-wide text-inkmuted">
-            Project No. {project.projectNumber}
-          </div>
           {project.worksPackage && (
             <div className="mt-1 text-sm text-inkmuted">
               Part of:{" "}

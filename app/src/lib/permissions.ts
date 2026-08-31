@@ -348,6 +348,51 @@ export function gateTimelineStatus(
   return gate.targetEndDate && now > gate.targetEndDate ? "IN_PROGRESS_OVERDUE" : "IN_PROGRESS_ON_TRACK";
 }
 
+/**
+ * The single most-urgent timeline fact across a whole project's gates,
+ * as a short badge (name/label + colour classes) -- shared by the
+ * project dashboard's own timeline panel and the root layout's top bar
+ * badge (31 Aug 2026, moved there so the project title only appears
+ * once instead of duplicated in both places). Priority order: an
+ * in-progress gate that's overdue beats one that should have started,
+ * which beats one that finished late, which beats an on-track upcoming
+ * gate -- worst news first, same ordering the dashboard panel used
+ * inline before this was extracted.
+ */
+export function projectTimelineHeadline(
+  gates: {
+    name: string;
+    status: GateStatus;
+    targetStartDate: Date | null;
+    targetEndDate: Date | null;
+    actualStartDate: Date | null;
+    actualEndDate: Date | null;
+  }[],
+  now: Date = new Date()
+): { headline: string; headlineClass: string; borderClass: string } {
+  const gateTimelines = gates.map((g) => ({ gate: g, status: gateTimelineStatus(g, now) }));
+  const overdue = gateTimelines.filter((g) => g.status === "IN_PROGRESS_OVERDUE");
+  const shouldHaveStarted = gateTimelines.filter((g) => g.status === "NOT_STARTED_OVERDUE");
+  const completedLate = gateTimelines.filter((g) => g.status === "COMPLETED_LATE");
+  const upcoming = gateTimelines
+    .filter((g) => g.status === "NOT_STARTED_ON_TRACK" && g.gate.targetStartDate)
+    .sort((a, b) => a.gate.targetStartDate!.getTime() - b.gate.targetStartDate!.getTime())[0];
+
+  if (overdue.length > 0) {
+    return { headline: overdue[0]!.gate.name, headlineClass: "text-risk", borderClass: "border-risk" };
+  }
+  if (shouldHaveStarted.length > 0) {
+    return { headline: shouldHaveStarted[0]!.gate.name, headlineClass: "text-warn", borderClass: "border-warn" };
+  }
+  if (completedLate.length > 0) {
+    return { headline: "Completed late", headlineClass: "text-warn", borderClass: "border-warn" };
+  }
+  if (upcoming) {
+    return { headline: upcoming.gate.name, headlineClass: "text-accent", borderClass: "border-rule" };
+  }
+  return { headline: "On track", headlineClass: "text-ok", borderClass: "border-rule" };
+}
+
 export const GATE_TIMELINE_LABELS: Record<GateTimelineStatus, string> = {
   NO_TARGET: "No target set",
   NOT_STARTED_ON_TRACK: "Not started",

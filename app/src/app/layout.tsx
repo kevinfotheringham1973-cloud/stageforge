@@ -9,6 +9,7 @@ import { signOut } from "@/lib/auth";
 import { ActingAsSwitcher } from "@/components/ActingAsSwitcher";
 import { Sidebar } from "@/components/Sidebar";
 import { isShareLinkViewerEmail, getActiveShareLinkFromCookie } from "@/lib/shareLinks";
+import { projectTimelineHeadline } from "@/lib/permissions";
 
 export const metadata: Metadata = {
   title: "StageForge Health",
@@ -115,12 +116,39 @@ export default async function RootLayout({
     // Shown in the top bar (31 Aug 2026, sidebar redesign) -- with
     // primary nav moved into the sidebar, the top bar had nothing
     // saying which project you're actually looking at once you're a
-    // few clicks deep (a gate page, Approvals, ...), where the page's
-    // own <h1> is the project name only on the project's own overview.
+    // few clicks deep (a gate page, Approvals, ...). Carries the
+    // timeline badge + CDM badge too (moved here 31 Aug 2026 from the
+    // project dashboard's own <h1>, which was now showing the same
+    // name twice on the page) -- the gate select below is deliberately
+    // narrow (just the timeline-status fields), same shape
+    // projectTimelineHeadline already expects.
     currentProjectNumber
-      ? db.project.findUnique({ where: { projectNumber: currentProjectNumber }, select: { name: true } })
+      ? db.project.findUnique({
+          where: { projectNumber: currentProjectNumber },
+          select: {
+            name: true,
+            worksType: true,
+            stages: {
+              select: {
+                gate: {
+                  select: {
+                    name: true,
+                    status: true,
+                    targetStartDate: true,
+                    targetEndDate: true,
+                    actualStartDate: true,
+                    actualEndDate: true,
+                  },
+                },
+              },
+            },
+          },
+        })
       : Promise.resolve(null),
   ]);
+  const currentProjectGates = currentProject?.stages.map((s) => s.gate).filter((g) => g !== null) ?? [];
+  const currentProjectTimeline =
+    currentProjectGates.length > 0 ? projectTimelineHeadline(currentProjectGates) : null;
 
   // ActingAsSwitcher leads with the role (not the name) in the dropdown
   // label, since an admin previewing a persona cares which role they're
@@ -255,11 +283,31 @@ export default async function RootLayout({
             </div>
           )}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-rule bg-surface px-4 py-3 sm:px-6 md:px-10">
-            <div className="text-sm font-semibold text-inkmuted">
+            <div className="flex flex-wrap items-center gap-2">
               {currentProject && (
                 <>
-                  <span className="text-ink">{currentProject.name}</span>{" "}
-                  <span className="font-mono text-xs">#{currentProjectNumber}</span>
+                  <span className="text-2xl font-bold text-ink">{currentProject.name}</span>
+                  <span className="font-mono text-sm text-inkmuted">#{currentProjectNumber}</span>
+                  {currentProjectTimeline && (
+                    <span
+                      className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide bg-surface ${currentProjectTimeline.headlineClass} ${currentProjectTimeline.borderClass}`}
+                    >
+                      {currentProjectTimeline.headline}
+                    </span>
+                  )}
+                  {currentProject.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" && (
+                    <span
+                      className="rounded-full bg-flag px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white"
+                      title={
+                        currentProject.worksType === "BUILDING_MODIFICATION"
+                          ? "CDM 2015 applies — Principal Designer engaged, planning permission confirmed"
+                          : "CDM 2015 applies — Principal Designer engaged (multiple contractors)"
+                      }
+                    >
+                      {currentProject.worksType === "BUILDING_MODIFICATION" ? "Building modification" : "Multiple contractors"}{" "}
+                      &middot; CDM 2015
+                    </span>
+                  )}
                 </>
               )}
             </div>
