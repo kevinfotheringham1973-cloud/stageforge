@@ -238,10 +238,6 @@
   .card h3 { font-size: 17px; margin: 0 0 8px; }
   .card p { font-size: 14.5px; color: var(--ink-muted); margin: 0; }
   .card p strong { color: var(--ink); }
-  .card.highlight {
-    border-color: var(--teal);
-    box-shadow: 0 0 0 1px var(--teal), 0 14px 30px -16px rgba(45,154,156,0.45);
-  }
   .card .badge {
     display: inline-block;
     font-size: 11px;
@@ -503,7 +499,7 @@
       inconsistent PM skill, complex overlapping regulations, and no shared system across projects
       is the actual, everyday problem.
     </p>
-    <div class="grid3">
+    <div class="grid2">
       <div class="card">
         <div class="num">1</div>
         <h3>A template library, not a blank page</h3>
@@ -511,7 +507,7 @@
           Fire Detection and more — each mapped from real RIBA/SHTM/HTM-aligned source documents, so
           consistency doesn't depend on which PM happens to be running it.</p>
       </div>
-      <div class="card highlight">
+      <div class="card">
         <div class="num">2</div>
         <div class="badge">Who has the final say</div>
         <h3>Compliance runs with delivery, not after it</h3>
@@ -526,6 +522,14 @@
         <p>A gate can't move forward without uploaded evidence and a Sponsor's sign-off against it
           — a real audit trail, not a status someone typed into a tracker. By Gate 4, a cost request
           is backed by real scope and quotes — not a guess made before the work was even understood.</p>
+      </div>
+      <div class="card">
+        <div class="num">4</div>
+        <h3>A standing report, not a status chase</h3>
+        <p>A weekly portfolio summary — every project's gate status, spend and outstanding risk —
+          goes out by email automatically to whoever needs it. A Trust exec gets visibility
+          <strong>without a login, a status meeting, or a PM building a deck</strong>, drawn live
+          from the same data the team is already keeping current.</p>
       </div>
     </div>
   </div>
@@ -603,18 +607,18 @@
           <figure>
             <div class="browser-frame">
               <div class="chrome-bar">
-                <span class="label">Gate 0 — Strategic Definition</span>
+                <span class="label">Gate 1 — Preparation &amp; Briefing</span>
               </div>
-              <img src="/screenshots/gate-timeline.png" alt="A signed-off gate with its target and actual dates" loading="lazy" />
+              <img src="/screenshots/gate1-deliverables.png" alt="A gate's delivery checklist and compliance requirement, each item citing its SHTM or CDM 2015 source" loading="lazy" />
             </div>
-            <figcaption>Tracked against target vs. actual dates — nothing closes silently.</figcaption>
+            <figcaption>Every deliverable and compliance item citing its own regulatory source — nothing generic.</figcaption>
           </figure>
           <figure>
             <div class="browser-frame">
               <div class="chrome-bar">
                 <span class="label">Gate 4 — Technical Design</span>
               </div>
-              <img src="/screenshots/technical-design-package.png" alt="A gate's full technical design deliverables package, each item citing its HTM or British Standard source" loading="lazy" />
+              <img src="/screenshots/gate4-deliverables.png" alt="A gate's full technical design deliverables package, each item citing its SHTM or CDM 2015 source" loading="lazy" />
             </div>
             <figcaption>A real discipline-specific checklist — every item citing its regulatory source.</figcaption>
           </figure>
