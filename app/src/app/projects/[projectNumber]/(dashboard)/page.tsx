@@ -173,23 +173,27 @@ export default async function ProjectOverviewPage({
               Still needs assignment
             </div>
             <p className="mb-2 text-xs text-inkmuted">
-              This project&rsquo;s own checklist calls for these roles, but nobody&rsquo;s assigned to them yet —
-              add a name on the{" "}
-              <a href="/team" className="text-accent hover:underline">
-                Team
-              </a>{" "}
-              page.
+              This project&rsquo;s own checklist calls for these roles, but nobody&rsquo;s assigned to them yet.
             </p>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-col gap-1.5">
               {unfilledRoles.map((role) => (
-                <span
+                <div
                   key={role.id}
-                  className="rounded bg-warn/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-warn"
+                  className="flex items-center gap-2 rounded-md border border-warn/30 bg-warn/5 px-3 py-1.5 text-sm font-semibold text-warn"
                 >
+                  <span aria-hidden className="text-warn">
+                    ⚠
+                  </span>
                   {role.name}
-                </span>
+                </div>
               ))}
             </div>
+            <a
+              href="/team"
+              className="mt-3 inline-block rounded-md border border-rule px-3 py-1.5 text-xs font-semibold text-accent hover:bg-surface2"
+            >
+              Assign Roles
+            </a>
           </div>
         )}
       </div>

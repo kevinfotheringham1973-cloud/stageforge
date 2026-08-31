@@ -232,6 +232,13 @@ export default async function ProjectDashboardLayout({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold">{project.name}</h1>
+            {gates.length > 0 && (
+              <span
+                className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide ${timelineHeadlineClass} ${timelineBorderClass} bg-surface`}
+              >
+                {timelineHeadline}
+              </span>
+            )}
             {project.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" && (
               <span
                 className="rounded-full bg-flag px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white"
