@@ -258,7 +258,7 @@ export default async function RootLayout({
               </a>
             </div>
           )}
-          <div className="flex flex-wrap items-center justify-end gap-4 border-b border-rule bg-surface px-4 py-3 sm:px-6 md:px-10">
+          <div className="flex flex-wrap items-center justify-end gap-4 bg-surface px-4 py-2 sm:px-6 md:px-10">
             {realUser?.isPlatformAdmin && !isLocalMode && (
               <ActingAsSwitcher action={setViewAsUser} users={users} currentUserId={currentUser.id} />
             )}
