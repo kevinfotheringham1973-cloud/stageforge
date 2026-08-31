@@ -8,9 +8,11 @@
   "scripts": {
     "start": "electron .",
     "predist": "node prepare-resources.js",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "test:smoke": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8"
   },

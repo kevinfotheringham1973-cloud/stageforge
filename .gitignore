@@ -5,6 +5,7 @@
 # Electron desktop shell
 electron/node_modules/
 electron/dist/
+electron/test-results/
 build-resources/
 # Vendored/unused dependency tree, not read by prepare-resources.js
 # (which stages from electron/node_modules instead) -- never commit
