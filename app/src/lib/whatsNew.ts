@@ -14,6 +14,17 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: "31 Aug 2026",
+    title: "New navigation, portfolio dashboard, sign-in email reliability",
+    highlights: [
+      "Replaced the top navigation bar with a persistent side menu, following feedback from the wider group — the project name, its status, and (for multi-contractor/CDM 2015 projects) that flag now sit together in one place at the top of every project page, instead of repeated across the page.",
+      "The portfolio view now opens with an at-a-glance summary — total live projects, total budget with how much is approved, and how many deliverables/compliance items are outstanding across everything — before you get to the project-by-project list.",
+      "That project list can now be searched by name/number and filtered by status, and each row shows a signed-off/total progress indicator for its current gate alongside a clearer status badge (e.g. \"Completed late\" now shown in red, not amber).",
+      "Sign-in emails were intermittently landing in spam for new recipients — fixed by sending a properly branded email instead of the generic default template.",
+      "The side menu now collapses to a simple \"Menu\" button on a phone-sized screen, and picks up Support and Documentation links (both placeholders for now, honestly labelled as such until there's real content behind them).",
+    ],
+  },
+  {
     date: "26 Aug 2026",
     title: "Four more safety checks, sign-in activity tracking, PPM documentation requirement",
     highlights: [
