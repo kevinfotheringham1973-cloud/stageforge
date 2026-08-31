@@ -197,7 +197,7 @@ export default async function ProjectDashboardLayout({
       */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule bg-surface px-4 py-3 sm:px-6 md:px-10">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-2xl font-bold text-ink">{project.name}</span>
+          <h1 className="text-2xl font-bold text-ink">{project.name}</h1>
           <span className="font-mono text-sm text-inkmuted">#{project.projectNumber}</span>
           {gates.length > 0 && (
             <span
