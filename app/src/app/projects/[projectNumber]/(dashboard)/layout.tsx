@@ -195,50 +195,52 @@ export default async function ProjectDashboardLayout({
         on every navigation into/out of a project, so it can't go stale
         the same way.
       */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-rule bg-surface px-4 py-3 sm:px-6 md:px-10">
-        <span className="text-2xl font-bold text-ink">{project.name}</span>
-        <span className="font-mono text-sm text-inkmuted">#{project.projectNumber}</span>
-        {gates.length > 0 && (
-          <span
-            className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide bg-surface ${timelineHeadlineClass} ${timelineBorderClass}`}
-          >
-            {timelineHeadline}
-          </span>
-        )}
-        {project.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" && (
-          <span
-            className="rounded-full bg-flag px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white"
-            title={
-              project.worksType === "BUILDING_MODIFICATION"
-                ? "CDM 2015 applies — Principal Designer engaged, planning permission confirmed"
-                : "CDM 2015 applies — Principal Designer engaged (multiple contractors)"
-            }
-          >
-            {project.worksType === "BUILDING_MODIFICATION" ? "Building modification" : "Multiple contractors"}{" "}
-            &middot; CDM 2015
-          </span>
-        )}
-      </div>
-
-      {(contractorAssignment || authorityAssignment) && (
-        <div className="flex flex-wrap items-center gap-3 border-b border-rule bg-surface2 px-4 py-4 sm:px-6 md:px-10">
-          {contractorAssignment && (
-            <div className="rounded-lg border border-rule bg-surface px-3.5 py-2">
-              <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">FM Contractor</div>
-              <div className="text-sm font-semibold">{contractorAssignment.department.company.name}</div>
-            </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule bg-surface px-4 py-3 sm:px-6 md:px-10">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-2xl font-bold text-ink">{project.name}</span>
+          <span className="font-mono text-sm text-inkmuted">#{project.projectNumber}</span>
+          {gates.length > 0 && (
+            <span
+              className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide bg-surface ${timelineHeadlineClass} ${timelineBorderClass}`}
+            >
+              {timelineHeadline}
+            </span>
           )}
-          {contractorAssignment && authorityAssignment && <span className="text-inkmuted">&rarr;</span>}
-          {authorityAssignment && (
-            <div className="rounded-lg border border-rule bg-surface px-3.5 py-2">
-              <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Client Authority</div>
-              <div className="text-sm font-semibold">
-                {authorityAssignment.department.company.name} - {authorityAssignment.department.name}
-              </div>
-            </div>
+          {project.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" && (
+            <span
+              className="rounded-full bg-flag px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white"
+              title={
+                project.worksType === "BUILDING_MODIFICATION"
+                  ? "CDM 2015 applies — Principal Designer engaged, planning permission confirmed"
+                  : "CDM 2015 applies — Principal Designer engaged (multiple contractors)"
+              }
+            >
+              {project.worksType === "BUILDING_MODIFICATION" ? "Building modification" : "Multiple contractors"}{" "}
+              &middot; CDM 2015
+            </span>
           )}
         </div>
-      )}
+
+        {(contractorAssignment || authorityAssignment) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {contractorAssignment && (
+              <div className="rounded-lg border border-rule bg-surface2 px-3 py-1.5">
+                <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">FM Contractor</div>
+                <div className="text-sm font-semibold">{contractorAssignment.department.company.name}</div>
+              </div>
+            )}
+            {contractorAssignment && authorityAssignment && <span className="text-inkmuted">&rarr;</span>}
+            {authorityAssignment && (
+              <div className="rounded-lg border border-rule bg-surface2 px-3 py-1.5">
+                <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Client Authority</div>
+                <div className="text-sm font-semibold">
+                  {authorityAssignment.department.company.name} - {authorityAssignment.department.name}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 md:px-10 md:py-8">
         {hasNoRoleHere && (
