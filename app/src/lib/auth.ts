@@ -47,6 +47,59 @@ const hasResendConfig = Boolean(process.env.RESEND_API_KEY);
 const hasLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
 export const LOCAL_ADMIN_EMAIL = "local-admin@stageforge.local";
 
+// Brand colours mirrored from tailwind.config.ts -- email clients don't
+// load Tailwind, so these are inlined by hand here.
+const WORDMARK_BLUE = "#28659B";
+const WORDMARK_TEAL = "#2D9A9C";
+const ACCENT = "#1F5C63";
+const BG = "#EEF0EC";
+const INK = "#1B2422";
+const INK_MUTED = "#56635E";
+
+function magicLinkEmailHtml(url: string): string {
+  return `
+<body style="background:${BG}; margin:0; padding:0;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background:${BG}; padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="480" border="0" cellspacing="0" cellpadding="0" style="background:#FFFFFF; border-radius:10px; max-width:480px; width:100%;">
+          <tr>
+            <td align="center" style="padding:32px 24px 8px 24px; font-family:Georgia, 'Times New Roman', serif; font-weight:bold; font-size:20px; line-height:1.1;">
+              <span style="color:${WORDMARK_BLUE};">StageForge</span> <span style="color:${WORDMARK_TEAL};">Health</span>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:16px 24px 0 24px; font-family:Helvetica, Arial, sans-serif; font-size:15px; line-height:22px; color:${INK};">
+              Click below to sign in. This link expires in 24 hours and can only be used once.
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:24px;">
+              <a href="${url}" target="_blank"
+                style="background:${ACCENT}; color:#FFFFFF; text-decoration:none; font-family:Helvetica, Arial, sans-serif; font-size:16px; font-weight:600; padding:12px 28px; border-radius:6px; display:inline-block;">
+                Sign in to StageForge Health
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px 32px 24px; border-top:1px solid #E4E7E1; font-family:Helvetica, Arial, sans-serif; font-size:12px; line-height:18px; color:${INK_MUTED};">
+              You're getting this because someone entered this email address on the StageForge Health sign-in page. If that wasn't you, no action is needed — no account changes are made until the link above is clicked.
+              <br /><br />
+              StageForge Health is provided by Transition Insight Partners Ltd.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+`;
+}
+
+function magicLinkEmailText(url: string): string {
+  return `Sign in to StageForge Health\n\n${url}\n\nThis link expires in 24 hours and can only be used once.\n\nYou're getting this because someone entered this email address on the StageForge Health sign-in page. If that wasn't you, no action is needed.\n\nStageForge Health is provided by Transition Insight Partners Ltd.\n`;
+}
+
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(db),
   // JWT session kept for simplicity. The original reason this was
@@ -86,6 +139,29 @@ export const authConfig: NextAuthConfig = {
           Resend({
             apiKey: process.env.RESEND_API_KEY,
             from: process.env.RESEND_FROM_EMAIL ?? "StageForge <onboarding@resend.dev>",
+            // Overrides Auth.js's stock "Sign in to <host>" template (31
+            // Aug 2026) -- that exact boilerplate, sent from a brand-new
+            // domain with no reputation yet, was landing in Gmail's spam
+            // folder. Real branding + a footer explaining why the email
+            // arrived are trust signals spam filters weigh; the domain
+            // still needs to build sending history over time regardless.
+            sendVerificationRequest: async ({ identifier: to, url, provider }) => {
+              const res = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${provider.apiKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  from: provider.from,
+                  to,
+                  subject: "Your StageForge Health sign-in link",
+                  html: magicLinkEmailHtml(url),
+                  text: magicLinkEmailText(url),
+                }),
+              });
+              if (!res.ok) throw new Error("Resend error: " + JSON.stringify(await res.json()));
+            },
           }),
         ]
       : []),
