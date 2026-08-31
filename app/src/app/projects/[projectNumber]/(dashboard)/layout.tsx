@@ -6,6 +6,7 @@ import {
   GATE_TIMELINE_LABELS,
   GATE_TIMELINE_TEXT_CLASS,
   gateTimelineStatus,
+  projectTimelineHeadline,
   type GateTimelineStatus,
 } from "@/lib/permissions";
 import { getCurrentUser, getCurrentUserRoleKeysForProject } from "@/lib/session";
@@ -149,32 +150,22 @@ export default async function ProjectDashboardLayout({
     (g) => g.targetStartDate || g.targetEndDate || g.actualStartDate || g.actualEndDate
   );
 
-  let timelineHeadline: string;
-  let timelineHeadlineClass: string;
+  // Headline/class/border come from the shared helper (also used by the
+  // root layout's top-bar badge, so the two can't drift to different
+  // colours for the same fact) -- sub-text stays computed here since it
+  // needs the specific gate/date/count detail the badge doesn't show.
+  const { headline: timelineHeadline, headlineClass: timelineHeadlineClass, borderClass: timelineBorderClass } =
+    projectTimelineHeadline(gates, now);
   let timelineSub: string;
-  let timelineBorderClass = "border-rule";
   if (overdue.length > 0) {
-    timelineHeadline = overdue[0]!.gate.name;
-    timelineHeadlineClass = "text-risk";
     timelineSub = `target end was ${overdue[0]!.gate.targetEndDate!.toLocaleDateString("en-GB")}`;
-    timelineBorderClass = "border-risk";
   } else if (shouldHaveStarted.length > 0) {
-    timelineHeadline = shouldHaveStarted[0]!.gate.name;
-    timelineHeadlineClass = "text-warn";
     timelineSub = `target start was ${shouldHaveStarted[0]!.gate.targetStartDate!.toLocaleDateString("en-GB")}`;
-    timelineBorderClass = "border-warn";
   } else if (completedLate.length > 0) {
-    timelineHeadline = "Completed late";
-    timelineHeadlineClass = "text-warn";
     timelineSub = `${completedLate.length} gate(s) finished after target`;
-    timelineBorderClass = "border-warn";
   } else if (upcoming) {
-    timelineHeadline = upcoming.gate.name;
-    timelineHeadlineClass = "text-accent";
     timelineSub = `next target start ${upcoming.gate.targetStartDate!.toLocaleDateString("en-GB")}`;
   } else {
-    timelineHeadline = "On track";
-    timelineHeadlineClass = "text-ok";
     timelineSub = hasAnyTimelineDates ? "no gate is overdue" : "no target dates set yet";
   }
 
@@ -193,6 +184,42 @@ export default async function ProjectDashboardLayout({
 
   return (
     <div>
+      {/*
+        Lives here, not in the root layout, on purpose: the root layout
+        is shared across every route, and the App Router doesn't
+        re-invoke a shared layout on a client-side navigation unless its
+        own segment/params changed -- a header-derived value read there
+        would still show the last project you were on after navigating
+        away to a project-less route (found live 31 Aug 2026). This
+        layout's own params genuinely change (or it unmounts entirely)
+        on every navigation into/out of a project, so it can't go stale
+        the same way.
+      */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-rule bg-surface px-4 py-3 sm:px-6 md:px-10">
+        <span className="text-2xl font-bold text-ink">{project.name}</span>
+        <span className="font-mono text-sm text-inkmuted">#{project.projectNumber}</span>
+        {gates.length > 0 && (
+          <span
+            className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide bg-surface ${timelineHeadlineClass} ${timelineBorderClass}`}
+          >
+            {timelineHeadline}
+          </span>
+        )}
+        {project.worksType !== "DIRECT_REPLACEMENT_SINGLE_CONTRACTOR" && (
+          <span
+            className="rounded-full bg-flag px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-white"
+            title={
+              project.worksType === "BUILDING_MODIFICATION"
+                ? "CDM 2015 applies — Principal Designer engaged, planning permission confirmed"
+                : "CDM 2015 applies — Principal Designer engaged (multiple contractors)"
+            }
+          >
+            {project.worksType === "BUILDING_MODIFICATION" ? "Building modification" : "Multiple contractors"}{" "}
+            &middot; CDM 2015
+          </span>
+        )}
+      </div>
+
       {(contractorAssignment || authorityAssignment) && (
         <div className="flex flex-wrap items-center gap-3 border-b border-rule bg-surface2 px-4 py-4 sm:px-6 md:px-10">
           {contractorAssignment && (

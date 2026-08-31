@@ -385,7 +385,7 @@ export function projectTimelineHeadline(
     return { headline: shouldHaveStarted[0]!.gate.name, headlineClass: "text-warn", borderClass: "border-warn" };
   }
   if (completedLate.length > 0) {
-    return { headline: "Completed late", headlineClass: "text-warn", borderClass: "border-warn" };
+    return { headline: "Completed late", headlineClass: "text-risk", borderClass: "border-risk" };
   }
   if (upcoming) {
     return { headline: upcoming.gate.name, headlineClass: "text-accent", borderClass: "border-rule" };
@@ -415,7 +415,7 @@ export const GATE_TIMELINE_BAR_CLASS: Record<GateTimelineStatus, string> = {
   IN_PROGRESS_ON_TRACK: "bg-accent",
   IN_PROGRESS_OVERDUE: "bg-risk",
   COMPLETED_ON_TIME: "bg-ok",
-  COMPLETED_LATE: "bg-warn",
+  COMPLETED_LATE: "bg-risk",
 };
 
 export const GATE_TIMELINE_TEXT_CLASS: Record<GateTimelineStatus, string> = {
@@ -425,5 +425,5 @@ export const GATE_TIMELINE_TEXT_CLASS: Record<GateTimelineStatus, string> = {
   IN_PROGRESS_ON_TRACK: "text-accent",
   IN_PROGRESS_OVERDUE: "text-risk",
   COMPLETED_ON_TIME: "text-ok",
-  COMPLETED_LATE: "text-warn",
+  COMPLETED_LATE: "text-risk",
 };
