@@ -157,6 +157,20 @@ real SharePoint evidence storage needs `AZURE_TENANT_ID` /
 `SHAREPOINT_DRIVE_ID` — everything else in the app works without
 either. Full setup steps are in [`app/README.md`](app/README.md).
 
+## First-time setup from a blank machine
+
+```bash
+git clone https://github.com/kevinfotheringham1973-cloud/stageforge.git
+cd stageforge
+```
+
+Then follow [`app/README.md`](app/README.md) → "Setup" for the actual application (Node,
+PostgreSQL, environment variables, seed data).
+
 ## License
 
 Proprietary — see [`LICENSE`](LICENSE).
+
+## Repository
+
+https://github.com/kevinfotheringham1973-cloud/stageforge (public)
