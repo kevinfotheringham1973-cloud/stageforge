@@ -14,6 +14,14 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: "3 Sep 2026",
+    title: "Desktop trial now on the Microsoft Store, sign-in fix",
+    highlights: [
+      "StageForge Health's single-user desktop preview is now available directly from the Microsoft Store, rather than a manually-shared installer — search \"StageForge Health\" or use the link on the pmopassport.co.uk homepage.",
+      "Fixed a sign-in issue affecting anyone whose email was originally entered with capital letters — they could never sign in, regardless of how they typed it themselves.",
+    ],
+  },
+  {
     date: "31 Aug 2026",
     title: "New navigation, portfolio dashboard, sign-in email reliability",
     highlights: [
