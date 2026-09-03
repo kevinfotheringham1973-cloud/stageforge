@@ -29,6 +29,20 @@ function buildDatabaseUrl() {
   return `postgresql://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}?schema=public`;
 }
 
+// Deliberately INSIDE databaseDir, not alongside it -- found live, 29
+// Aug 2026: with the marker as a sibling of pgdata, a user deleting
+// only the pgdata folder (the documented way to reset a broken
+// install) got a silently *unseeded* database forever after, since the
+// marker survived and the next launch's needsSeed check saw it,
+// skipped seed.ts entirely, and left a schema with zero rows (surfaced
+// as a Prisma "no record found" crash on the first page needing any
+// seeded data). Marker and data must reset together, since the
+// marker's only meaning is "this exact database has been seeded" --
+// see tests/marker-path.test.js, which asserts this invariant directly.
+function getSeedMarkerPath(databaseDir) {
+  return path.join(databaseDir, "stageforge-seed-complete.marker");
+}
+
 function waitForPort(port, child, retriesLeft = 60) {
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -124,7 +138,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function migrateAndSeed(appDir, databaseUrl, isFirstRun) {
+async function migrateAndSeed(appDir, databaseUrl, needsSeed, seedMarkerPath) {
   const env = {
     ...process.env,
     DATABASE_URL: databaseUrl,
@@ -155,15 +169,25 @@ async function migrateAndSeed(appDir, databaseUrl, isFirstRun) {
     }
   }
   if (lastErr) throw lastErr;
-  // Only on first run — re-seeding an existing local DB every launch
-  // would either duplicate demo data or need seed.ts to be idempotent,
-  // neither of which is worth doing for what's a one-time bootstrap.
-  if (isFirstRun) {
+  // needsSeed is main.js's own marker-file check, deliberately NOT the
+  // same thing as "is the Postgres cluster new" -- see its comment for
+  // why conflating the two used to leave real installs permanently
+  // stuck with a half-seeded database. seed.ts itself now runs its
+  // entire body inside one transaction (see that file's header), so an
+  // interrupted attempt here always leaves the database exactly as
+  // empty as it found it -- safe to unconditionally retry whenever
+  // needsSeed is true, never a partial-data conflict.
+  if (needsSeed) {
     await runNode(appDir, "tsx/dist/cli.mjs", ["prisma/seed.ts"], env);
     // Desktop-build-only, see that script's header — replaces seed.ts's
     // real-sounding demo names with role names, since this build gets
     // shown to people outside Kevin's own company.
     await runNode(appDir, "tsx/dist/cli.mjs", ["scripts/anonymize-local-demo-names.ts"], env);
+    // Written only once both steps above have actually succeeded --
+    // this file's mere existence is what main.js trusts on every future
+    // launch to mean "don't seed again", so it must never be written
+    // any earlier than this.
+    fs.writeFileSync(seedMarkerPath, new Date().toISOString());
   }
 }
 

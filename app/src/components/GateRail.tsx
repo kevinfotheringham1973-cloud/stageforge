@@ -40,14 +40,14 @@ export function GateRail({
   const approvalsHref = `/projects/${projectNumber}/approvals`;
 
   return (
-    <nav className="flex gap-1 overflow-x-auto pb-1 md:sticky md:top-6 md:flex-col md:self-start md:overflow-visible md:pb-0">
+    <nav className="flex gap-1 overflow-x-auto rounded-lg border border-rule bg-surface p-2 pb-1 md:sticky md:top-6 md:flex-col md:gap-0.5 md:self-start md:overflow-visible md:pb-2">
       <Link
         href={overviewHref}
         prefetch={false}
         className={`flex shrink-0 items-center gap-2.5 rounded-md border px-3 py-2.5 text-sm font-semibold md:shrink ${
           pathname === overviewHref
-            ? "border-accent bg-surface"
-            : "border-transparent text-ink hover:bg-accentsoft"
+            ? "border-accent bg-accentsoft text-accent"
+            : "border-transparent text-ink hover:bg-accentsoft/50"
         }`}
       >
         <span className="h-2 w-2 shrink-0 rounded-full bg-rule" />
@@ -58,14 +58,17 @@ export function GateRail({
         prefetch={false}
         className={`flex shrink-0 items-center gap-2.5 rounded-md border px-3 py-2.5 text-sm font-semibold md:shrink ${
           pathname === approvalsHref
-            ? "border-accent bg-surface"
-            : "border-transparent text-ink hover:bg-accentsoft"
+            ? "border-accent bg-accentsoft text-accent"
+            : "border-transparent text-ink hover:bg-accentsoft/50"
         }`}
       >
         <span className="h-2 w-2 shrink-0 rounded-full bg-rule" />
         Approvals
       </Link>
       <div className="mx-1 my-0 w-px shrink-0 self-stretch bg-rule md:mx-0 md:my-1.5 md:h-px md:w-auto md:self-auto" />
+      <div className="hidden shrink-0 px-3 pb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted md:block">
+        Gates
+      </div>
       {gates.map((g) => {
         const href = `/projects/${projectNumber}/gates/${g.id}`;
         const active = pathname === href;
@@ -75,7 +78,7 @@ export function GateRail({
             href={href}
             prefetch={false}
             className={`flex shrink-0 items-center gap-2.5 rounded-md border px-3 py-2.5 text-sm font-semibold md:shrink ${
-              active ? "border-accent bg-surface" : "border-transparent text-ink hover:bg-accentsoft"
+              active ? "border-accent bg-accentsoft text-accent" : "border-transparent text-ink hover:bg-accentsoft/50"
             }`}
           >
             <span className={`h-2 w-2 shrink-0 rounded-full ${DOT_CLASS[g.dot] ?? "bg-rule"}`} />

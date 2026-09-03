@@ -238,10 +238,6 @@
   .card h3 { font-size: 17px; margin: 0 0 8px; }
   .card p { font-size: 14.5px; color: var(--ink-muted); margin: 0; }
   .card p strong { color: var(--ink); }
-  .card.highlight {
-    border-color: var(--teal);
-    box-shadow: 0 0 0 1px var(--teal), 0 14px 30px -16px rgba(45,154,156,0.45);
-  }
   .card .badge {
     display: inline-block;
     font-size: 11px;
@@ -335,6 +331,11 @@
     font-size: 13.5px;
     color: var(--ink-muted);
   }
+  footer .foot-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   footer a { color: var(--ink-muted); }
 
   .hero-badge {
@@ -371,6 +372,41 @@
     color: var(--ink-muted);
   }
   .hero-badge .value { font-size: 14px; font-weight: 700; color: var(--teal); }
+  .store-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 10px 16px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .store-badge:hover {
+    border-color: var(--blue);
+    transform: translateY(-1px);
+  }
+  .store-badge .icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--accentsoft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .store-badge .icon svg { width: 16px; height: 16px; }
+  .store-badge .text { display: flex; flex-direction: column; }
+  .store-badge .label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-muted);
+  }
+  .store-badge .value { font-size: 14px; font-weight: 700; color: var(--blue); }
   @media (max-width: 900px) {
     .hero-badge { left: 16px; bottom: -18px; padding: 8px 12px; }
   }
@@ -469,7 +505,7 @@
       inconsistent PM skill, complex overlapping regulations, and no shared system across projects
       is the actual, everyday problem.
     </p>
-    <div class="grid3">
+    <div class="grid2">
       <div class="card">
         <div class="num">1</div>
         <h3>A template library, not a blank page</h3>
@@ -477,7 +513,7 @@
           Fire Detection and more — each mapped from real RIBA/SHTM/HTM-aligned source documents, so
           consistency doesn't depend on which PM happens to be running it.</p>
       </div>
-      <div class="card highlight">
+      <div class="card">
         <div class="num">2</div>
         <div class="badge">Who has the final say</div>
         <h3>Compliance runs with delivery, not after it</h3>
@@ -492,6 +528,14 @@
         <p>A gate can't move forward without uploaded evidence and a Sponsor's sign-off against it
           — a real audit trail, not a status someone typed into a tracker. By Gate 4, a cost request
           is backed by real scope and quotes — not a guess made before the work was even understood.</p>
+      </div>
+      <div class="card">
+        <div class="num">4</div>
+        <h3>A standing report, not a status chase</h3>
+        <p>A weekly portfolio summary — every project's gate status, spend and outstanding risk —
+          goes out by email automatically to whoever needs it. A Trust exec gets visibility
+          <strong>without a login, a status meeting, or a PM building a deck</strong>, drawn live
+          from the same data the team is already keeping current.</p>
       </div>
     </div>
   </div>
@@ -569,18 +613,18 @@
           <figure>
             <div class="browser-frame">
               <div class="chrome-bar">
-                <span class="label">Gate 0 — Strategic Definition</span>
+                <span class="label">Gate 1 — Preparation &amp; Briefing</span>
               </div>
-              <img src="/screenshots/gate-timeline.png" alt="A signed-off gate with its target and actual dates" loading="lazy" />
+              <img src="/screenshots/gate1-deliverables.png" alt="A gate's delivery checklist and compliance requirement, each item citing its SHTM or CDM 2015 source" loading="lazy" />
             </div>
-            <figcaption>Tracked against target vs. actual dates — nothing closes silently.</figcaption>
+            <figcaption>Every deliverable and compliance item citing its own regulatory source — nothing generic.</figcaption>
           </figure>
           <figure>
             <div class="browser-frame">
               <div class="chrome-bar">
                 <span class="label">Gate 4 — Technical Design</span>
               </div>
-              <img src="/screenshots/technical-design-package.png" alt="A gate's full technical design deliverables package, each item citing its HTM or British Standard source" loading="lazy" />
+              <img src="/screenshots/gate4-deliverables.png" alt="A gate's full technical design deliverables package, each item citing its SHTM or CDM 2015 source" loading="lazy" />
             </div>
             <figcaption>A real discipline-specific checklist — every item citing its regulatory source.</figcaption>
           </figure>
@@ -649,6 +693,20 @@
           <li class="no"><span class="mark">&cross;</span> Role-based access across teams</li>
           <li class="no"><span class="mark">&cross;</span> Shared audit trail across a live project</li>
         </ul>
+        <a class="store-badge" href="https://apps.microsoft.com/detail/9N7HF1X3QJ2P" target="_blank" rel="noopener">
+          <span class="icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="8" height="8" fill="#28659B" />
+              <rect x="13" y="3" width="8" height="8" fill="#28659B" />
+              <rect x="3" y="13" width="8" height="8" fill="#28659B" />
+              <rect x="13" y="13" width="8" height="8" fill="#28659B" />
+            </svg>
+          </span>
+          <span class="text">
+            <span class="label">Get it on the</span>
+            <span class="value">Microsoft Store</span>
+          </span>
+        </a>
       </div>
       <div class="deploy-card recommended">
         <span class="ribbon">Recommended</span>
@@ -669,7 +727,10 @@
 
 <footer>
   <div class="wrap foot-grid">
-    <div>&copy; 2026 Transition Insight Partners Ltd. All rights reserved.</div>
+    <div class="foot-brand">
+      <img src="/tip-logo.png" alt="" width="30" height="30" />
+      <span>&copy; 2026 Transition Insight Partners Ltd. All rights reserved.</span>
+    </div>
     <div><a href="/privacy">Privacy Policy</a> &middot; <a href="mailto:support@pmopassport.co.uk">support@pmopassport.co.uk</a></div>
   </div>
 </footer>

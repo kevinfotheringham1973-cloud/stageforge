@@ -20,3 +20,30 @@ export async function register() {
 
   console.log("[scheduled-report] daily cron registered (08:00 server time)");
 }
+
+/**
+ * Next.js's own error-reporting hook — the one place that still sees a
+ * server error's real message/stack in a production build, since React
+ * deliberately strips both from what actually reaches the client (see
+ * e.g. minified error #441, "An error occurred in the Server Components
+ * render... The specific message is omitted in production builds").
+ * Desktop-build only (STAGEFORGE_LOG_DIR is set only there, by
+ * electron/main.js) — this app has no visible terminal once launched
+ * normally, so without this a real crash leaves nothing to diagnose it
+ * from beyond the opaque on-screen digest (found live, 29 Aug 2026: a
+ * "new project" crash report with no way to see what actually threw).
+ * The live tunnel-hosted server already has PM2's own log capture, so
+ * this intentionally does nothing there.
+ */
+export async function onRequestError(
+  err: unknown,
+  request: { path: string; method: string },
+  context: { routerKind: string; routePath: string; routeType: string }
+) {
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  const logDir = process.env.STAGEFORGE_LOG_DIR;
+  if (!logDir) return;
+
+  const { logServerError } = await import("./instrumentation-node");
+  logServerError(logDir, err, request, context);
+}

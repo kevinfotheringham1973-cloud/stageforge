@@ -18,7 +18,7 @@
 // template-count-agnostic as long as the caller passes the union of
 // tags across every constituent template.
 
-import type { PrismaClient } from "@prisma/client";
+import type { DbClient } from "./db";
 import { matchingComplianceRuleTemplates } from "./compliance";
 
 // Regulatory citations, comma-separated (e.g. "CDM 2015, SHTM 00.") --
@@ -74,7 +74,7 @@ type StageTemplateForInstantiation = {
 };
 
 export async function instantiateStage(
-  db: PrismaClient,
+  db: DbClient,
   params: {
     projectId: string;
     projectTags: string[];

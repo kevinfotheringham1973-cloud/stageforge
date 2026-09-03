@@ -12,6 +12,7 @@
 // of exactly one entry proves nothing.
 
 import { PrismaClient } from "@prisma/client";
+import type { DbClient } from "../src/lib/db";
 import { matchingComplianceRuleTemplates } from "../src/lib/compliance";
 import { instantiateStage } from "../src/lib/instantiation";
 import { generateEnglandVariant, seedEnglandDemo } from "../src/lib/englandConversion";
@@ -25,7 +26,37 @@ import {
 
 const db = new PrismaClient();
 
+// The desktop build's first-run seed used to be able to leave a
+// database with, say, one User row and nothing else -- whatever
+// seedBody happened to have created before something interrupted it
+// (the process force-quit, the machine losing power, Windows Defender
+// killing the process mid-scan, ...). Found live (29 Aug 2026,
+// packaging the Microsoft Store submission): the app's own first-run
+// check only asks "does a Postgres cluster already exist here", not
+// "did seeding actually finish", so a half-seeded database like that
+// silently stays half-seeded forever -- every later launch sees the
+// cluster already exists and never retries. Worse, seedBody's ~200
+// `db.user.create()` / `db.template.create()` etc. calls aren't
+// idempotent, so even a deliberate retry against that same half-seeded
+// database would immediately crash again on the first already-existing
+// row it tries to recreate.
+//
+// Wrapping the entire seed in one Postgres transaction fixes the root
+// cause instead of trying to detect and repair partial states after
+// the fact: if anything interrupts seedBody -- a thrown error, or the
+// whole process (and therefore its DB connection) dying outright --
+// Postgres itself rolls the whole transaction back the moment that
+// connection drops, with no cooperation from this process required.
+// The database is left in exactly one of two states, never a third:
+// fully seeded, or exactly as empty as before seeding was attempted.
+// That in turn makes main.js's separate seed-completion marker (see
+// its own comment) always safe to act on -- if the marker's missing,
+// a retry is guaranteed to be starting from a genuinely clean slate.
 async function main() {
+  await db.$transaction((tx) => seedBody(tx), { timeout: 300_000, maxWait: 10_000 });
+}
+
+async function seedBody(db: DbClient) {
   console.log("Seeding StageForge Phase 1 dev data…");
 
   // ── Roles (global, Phase 1's core eight, plus three project-specific
@@ -169,6 +200,9 @@ async function main() {
       // into an existing persona, since he's PM on almost the whole
       // portfolio already.
       email: "derek.g999@outlook.com",
+      // Stable lookup key for standardTeam.ts's STANDARD_TEAM_SCOTLAND --
+      // not email, see User.seedKey's own schema comment for why.
+      seedKey: "fm_contractor_scotland",
       homeDepartmentId: buildCareNorth.id,
     },
   });
@@ -182,6 +216,9 @@ async function main() {
       // an unroutable .example address, so this is the one demo user
       // scheduled-report sends actually land in an inbox for.
       email: "kevinfotheringham1973@gmail.com",
+      // Stable lookup key for standardTeam.ts's STANDARD_TEAM_SCOTLAND --
+      // not email, see User.seedKey's own schema comment for why.
+      seedKey: "sponsor_client_authority_scotland",
       homeDepartmentId: stAldwynEstates.id,
       // Also Kevin's real login since real auth (24 Aug 2026) -- needs
       // platform admin so he isn't locked out of admin-only screens and
@@ -193,6 +230,7 @@ async function main() {
     data: {
       name: "Gary Grant",
       email: "gary.grant@buildcare.example",
+      seedKey: "compliance_officer_scotland",
       homeDepartmentId: buildCareCompliance.id,
     },
   });
@@ -203,6 +241,7 @@ async function main() {
       // aliased onto this persona rather than shown under their own
       // name -- Kevin's call, not something to reverse without asking.
       email: "gaz808@gmail.com",
+      seedKey: "sro_scotland",
       homeDepartmentId: stAldwynEstates.id,
     },
   });
@@ -210,6 +249,7 @@ async function main() {
     data: {
       name: "Alan McGeachie",
       email: "alan.mcgeachie@staldwyn.example",
+      seedKey: "fire_officer_scotland",
       homeDepartmentId: stAldwynEstates.id,
     },
   });
@@ -217,6 +257,7 @@ async function main() {
     data: {
       name: "Bob Smith",
       email: "bob.smith@buildcare.example",
+      seedKey: "ap_electrical_scotland",
       homeDepartmentId: buildCareNorth.id,
     },
   });
@@ -224,6 +265,7 @@ async function main() {
     data: {
       name: "Claire Duncan",
       email: "claire.duncan@buildcare.example",
+      seedKey: "ap_water_scotland",
       homeDepartmentId: buildCareNorth.id,
     },
   });
@@ -231,6 +273,7 @@ async function main() {
     data: {
       name: "Dennis Kelly",
       email: "dennis.kelly@independent.example",
+      seedKey: "ae_electrical_scotland",
       homeDepartmentId: stAldwynEstates.id,
     },
   });
@@ -254,6 +297,7 @@ async function main() {
     data: {
       name: "Ross Blair",
       email: "ross.blair@buildcare.example",
+      seedKey: "principal_designer_scotland",
       homeDepartmentId: buildCareNorth.id,
     },
   });
@@ -261,6 +305,7 @@ async function main() {
     data: {
       name: "Andrea",
       email: "andrea@buildcare.example",
+      seedKey: "finance_scotland",
       homeDepartmentId: buildCareFinance.id,
     },
   });
@@ -303,6 +348,9 @@ async function main() {
     data: {
       name: "Fiona Wallace",
       email: "fiona.wallace@buildcare.example",
+      // One user, two roles (AP and AE Ventilation) -- disciplineTeam.ts's
+      // CANDIDATES_SCOTLAND uses this same seedKey under both role keys.
+      seedKey: "ap_ae_ventilation_scotland",
       homeDepartmentId: buildCareNorth.id,
     },
   });
@@ -310,6 +358,7 @@ async function main() {
     data: {
       name: "Graeme Paterson",
       email: "graeme.paterson@buildcare.example",
+      seedKey: "ap_medical_gases_scotland",
       homeDepartmentId: buildCareNorth.id,
     },
   });
@@ -317,6 +366,7 @@ async function main() {
     data: {
       name: "Sarah Chen",
       email: "sarah.chen@staldwyn.example",
+      seedKey: "clinical_safety_officer_scotland",
       homeDepartmentId: stAldwynEstates.id,
     },
   });
@@ -324,6 +374,7 @@ async function main() {
     data: {
       name: "Neil Forsyth",
       email: "neil.forsyth@staldwyn.example",
+      seedKey: "information_governance_officer_scotland",
       homeDepartmentId: stAldwynEstates.id,
     },
   });

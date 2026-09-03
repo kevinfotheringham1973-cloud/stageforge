@@ -47,8 +47,81 @@ const hasResendConfig = Boolean(process.env.RESEND_API_KEY);
 const hasLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
 export const LOCAL_ADMIN_EMAIL = "local-admin@stageforge.local";
 
+// Brand colours mirrored from tailwind.config.ts -- email clients don't
+// load Tailwind, so these are inlined by hand here.
+const WORDMARK_BLUE = "#28659B";
+const WORDMARK_TEAL = "#2D9A9C";
+const ACCENT = "#1F5C63";
+const BG = "#EEF0EC";
+const INK = "#1B2422";
+const INK_MUTED = "#56635E";
+
+function magicLinkEmailHtml(url: string): string {
+  return `
+<body style="background:${BG}; margin:0; padding:0;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background:${BG}; padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="480" border="0" cellspacing="0" cellpadding="0" style="background:#FFFFFF; border-radius:10px; max-width:480px; width:100%;">
+          <tr>
+            <td align="center" style="padding:32px 24px 8px 24px; font-family:Georgia, 'Times New Roman', serif; font-weight:bold; font-size:20px; line-height:1.1;">
+              <span style="color:${WORDMARK_BLUE};">StageForge</span> <span style="color:${WORDMARK_TEAL};">Health</span>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:16px 24px 0 24px; font-family:Helvetica, Arial, sans-serif; font-size:15px; line-height:22px; color:${INK};">
+              Click below to sign in. This link expires in 24 hours and can only be used once.
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:24px;">
+              <a href="${url}" target="_blank"
+                style="background:${ACCENT}; color:#FFFFFF; text-decoration:none; font-family:Helvetica, Arial, sans-serif; font-size:16px; font-weight:600; padding:12px 28px; border-radius:6px; display:inline-block;">
+                Sign in to StageForge Health
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px 32px 24px; border-top:1px solid #E4E7E1; font-family:Helvetica, Arial, sans-serif; font-size:12px; line-height:18px; color:${INK_MUTED};">
+              You're getting this because someone entered this email address on the StageForge Health sign-in page. If that wasn't you, no action is needed — no account changes are made until the link above is clicked.
+              <br /><br />
+              StageForge Health is provided by Transition Insight Partners Ltd.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+`;
+}
+
+function magicLinkEmailText(url: string): string {
+  return `Sign in to StageForge Health\n\n${url}\n\nThis link expires in 24 hours and can only be used once.\n\nYou're getting this because someone entered this email address on the StageForge Health sign-in page. If that wasn't you, no action is needed.\n\nStageForge Health is provided by Transition Insight Partners Ltd.\n`;
+}
+
+// Auth.js's own internal user lookup (at magic-link click time, separate
+// from and in addition to the signIn callback below) goes through
+// adapter.getUserByEmail -- PrismaAdapter's stock implementation is a
+// case-SENSITIVE exact match. Auth.js's defaultNormalizer always
+// lowercases whatever's typed into the sign-in form before doing anything
+// else (send-token.js), so a stored email with any uppercase letter is
+// treated as a brand-new signup on every single attempt, no matter what
+// case anyone enters -- which then crashes trying to auto-create a User
+// row with no `name` (schema requires one), surfacing as a bare
+// Verification/server error with no useful message. Found live, 1 Sep
+// 2026: Dazcane13@gmail.com's stored capital-D email. createUser/
+// updateUser lowercase on write now (defense in depth for future data),
+// but relying on every write path staying disciplined forever isn't a
+// real fix -- overriding just this one method makes lookups correct
+// regardless of what case is actually stored, past or future.
+const adapter = PrismaAdapter(db);
+adapter.getUserByEmail = async (email) => {
+  return db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
+};
+
 export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(db),
+  adapter,
   // JWT session kept for simplicity. The original reason this was
   // forced (Auth.js requires JWT whenever a Credentials provider is
   // present) is gone now that Credentials has been replaced by Resend
@@ -86,6 +159,29 @@ export const authConfig: NextAuthConfig = {
           Resend({
             apiKey: process.env.RESEND_API_KEY,
             from: process.env.RESEND_FROM_EMAIL ?? "StageForge <onboarding@resend.dev>",
+            // Overrides Auth.js's stock "Sign in to <host>" template (31
+            // Aug 2026) -- that exact boilerplate, sent from a brand-new
+            // domain with no reputation yet, was landing in Gmail's spam
+            // folder. Real branding + a footer explaining why the email
+            // arrived are trust signals spam filters weigh; the domain
+            // still needs to build sending history over time regardless.
+            sendVerificationRequest: async ({ identifier: to, url, provider }) => {
+              const res = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${provider.apiKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  from: provider.from,
+                  to,
+                  subject: "Your StageForge Health sign-in link",
+                  html: magicLinkEmailHtml(url),
+                  text: magicLinkEmailText(url),
+                }),
+              });
+              if (!res.ok) throw new Error("Resend error: " + JSON.stringify(await res.json()));
+            },
           }),
         ]
       : []),
@@ -142,7 +238,17 @@ export const authConfig: NextAuthConfig = {
     // unapproved email never even gets one sent), not just after they
     // click it.
     signIn: async ({ user, account }) => {
-      const existing = await db.user.findUnique({ where: { email: user.email ?? "" } });
+      // User.email is stored as typed by whichever admin added the person
+      // (no normalization at creation, historically) -- an exact-case
+      // lookup here means a real approved user gets wrongly rejected the
+      // moment they type their own email in different case than the
+      // admin did (found live, 1 Sep 2026: Dazcane13@gmail.com's own
+      // account, created with a capital D, rejected him signing in with
+      // the lowercase he naturally typed). createUser/updateUser now
+      // normalize on write too, so this only remains load-bearing for
+      // whatever existed before that fix.
+      const email = (user.email ?? "").trim().toLowerCase();
+      const existing = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
       // Archived (left the company) is rejected the same way an
       // unknown email is -- their User row still exists (so past
       // evidence/sign-offs/audit history keeps their name), it just no

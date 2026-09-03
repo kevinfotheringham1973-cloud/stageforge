@@ -113,7 +113,7 @@ fs.mkdirSync(STAGE_DIR, { recursive: true });
 const standaloneSrc = path.join(nextappSrc, ".next", "standalone");
 if (!fs.existsSync(standaloneSrc)) {
   console.error(
-    `[prepare-resources] missing ${standaloneSrc} -- run "npm run build" in app/ first (next.config.ts's output: "standalone" is what produces this folder).`
+    `[prepare-resources] missing ${standaloneSrc} -- run STAGEFORGE_DESKTOP_BUILD=1 npm run build in app/ first (next.config.ts only sets output: "standalone", which produces this folder, when that env var is set -- see next.config.ts's own comment for why a plain build won't produce it).`
   );
   process.exit(1);
 }
@@ -133,8 +133,21 @@ if (!fs.existsSync(standaloneSrc)) {
 // process.env regardless, but that doesn't stop the raw file itself
 // from shipping on disk for anyone to open -- excluded here the same
 // way the old whole-app-dir copy always excluded it.
+// dereference: true is required here -- Next's own output-file-tracing
+// stages some packages (found live, 30 Aug 2026: node-cron) as an NTFS
+// junction into .next/node_modules/<pkg>-<hash> pointing straight back
+// at app/node_modules/<pkg>, rather than a real copy. Without
+// dereferencing, cpSync faithfully recreates that junction inside the
+// packaged app, still pointing at this dev machine's own
+// C:\Projects\StageForge\... path -- meaningless (and MODULE_NOT_FOUND
+// at runtime if ever resolved) on a customer's machine, and outright
+// fatal for the appx target specifically: makeappx.exe refuses to pack
+// a reparse point at all ("You can't add folders or devices to the
+// package"), so the NSIS/portable builds silently shipped a landmine
+// that the MSIX build instead failed loudly on.
 fs.cpSync(standaloneSrc, nextappDest, {
   recursive: true,
+  dereference: true,
   filter: (src) => path.basename(src) !== ".env",
 });
 
@@ -179,6 +192,49 @@ for (const pkg of CLI_ONLY_PACKAGES) {
   fs.cpSync(srcPath, destPath, { recursive: true });
 }
 
+// Read by main.js's ensureWritableCliRuntime (31 Aug 2026) -- migrate
+// deploy/seed/anonymize all run the CLI packages above in place, inside
+// APP_DIR. That's fine for NSIS/portable (a writable per-user install
+// dir either way), but the appx target's install location is read-only
+// by Windows' own design with no opt-out (unlike NSIS's perMachine
+// escape hatch above) -- Prisma writes into its own node_modules at
+// runtime regardless (a jiti/c12 config-load cache for prisma.config.ts,
+// and a query-engine binary copy), so running the CLI in place there hit
+// EPERM and crashed the app on first launch, confirmed live 31 Aug 2026
+// testing the actual submitted appx. The fix is the same shape as
+// ensureWritablePgRuntime below: copy just what the CLI needs into a
+// writable userData folder once, and always invoke it from there. This
+// manifest is that "just what it needs" list, computed here from the
+// same lockfile-derived closure as the copy loop above so it can't drift
+// out of sync with what's actually staged.
+fs.writeFileSync(
+  path.join(nextappDest, "cli-runtime-manifest.json"),
+  JSON.stringify(
+    {
+      // @prisma/client and its generated .prisma/client (the actual
+      // query engine, ~20MB) aren't part of CLI_ONLY_PACKAGES -- they're
+      // already covered by Next's own standalone trace for the server's
+      // own use, which is why prepare-resources.js never had to copy
+      // them separately above. seed.ts imports @prisma/client directly
+      // though, and once it's running from its own isolated cli-runtime
+      // copy (not APP_DIR) rather than in place, that copy needs its own
+      // node_modules/@prisma/client -- confirmed live, 31 Aug 2026,
+      // testing the actual fix: migrate deploy started working, seed.ts
+      // then failed with Cannot find module '@prisma/client'. Sourced
+      // from nextappDest (both already land there via the standalone
+      // trace), not copied specially -- just listed here so
+      // ensureWritableCliRuntime knows to bring them along too.
+      packages: [...CLI_ONLY_PACKAGES, "@prisma/client", ".prisma/client"],
+      // Everything else migrate/seed/anonymize touch by relative path --
+      // see localDb.js's migrateAndSeed and the copies just above this
+      // one for why each is here.
+      paths: ["prisma", "scripts", "src", "tsconfig.json", "prisma.config.ts", "package.json"],
+    },
+    null,
+    2
+  )
+);
+
 // -- pg: embedded-postgres + its full transitive runtime dependency closure --
 const pgSrc = path.join(ELECTRON_DIR, "node_modules");
 const pgDest = path.join(STAGE_DIR, "pg", "node_modules");
@@ -220,4 +276,97 @@ fs.writeFileSync(
   JSON.stringify({ ...gitInfoAt(REPO_ROOT), packagedAt: new Date().toISOString() }, null, 2)
 );
 
+// Prisma's query engine (query_engine-windows.dll.node) is a native Node
+// addon compiled against the MSVC toolchain, and per Prisma's own system
+// requirements docs, needs the Microsoft Visual C++ Redistributable 2015+
+// present on the machine ("by default the case on most modern
+// installations" — but NOT guaranteed, and confirmed absent on at least
+// one certification test device, 1 Sep 2026: MSIX submission rejected
+// with "StageForge failed to start" on a Dell Inspiron 14, matching this
+// exact failure mode). Every dev machine building this app has almost
+// certainly had it installed for years (Visual Studio, other native
+// tooling), which is exactly why this went unnoticed until a genuinely
+// clean test machine hit it.
+//
+// Fixed via Microsoft's documented "app-local deployment" pattern —
+// redistributing vcruntime140.dll/vcruntime140_1.dll/msvcp140.dll
+// alongside the app is explicitly permitted by the VC++ Redistributable
+// license, and is the standard fix for exactly this scenario. These three
+// files (electron/vcredist/, copied from this dev machine's own
+// C:\Windows\System32, Microsoft-signature-verified) get dropped directly
+// alongside every copy of the Prisma engine binary, not next to
+// StageForge.exe — Node's native addon loader uses
+// LOAD_WITH_ALTERED_SEARCH_PATH, which searches the .node file's OWN
+// directory first, not the main executable's.
+//
+// Also placed alongside embedded-postgres's own initdb.exe/postgres.exe/
+// pg_ctl.exe (native/bin/) — confirmed live, 1 Sep 2026, on a genuine
+// clean Windows 10 22H2 test machine: `pg.initialise()` failed with exit
+// code 3221225781 (0xC0000135, STATUS_DLL_NOT_FOUND) launching initdb.exe.
+// Wrongly assumed fixed by the Prisma-only fix above, on the theory that
+// embedded-postgres bundles its own runtime DLLs (ICU, OpenSSL, etc. are
+// present in native/bin/) — it does, but evidently not for whatever these
+// three specific EXEs (as opposed to postgres's other bundled DLLs) link
+// against. Plain EXE loading uses ordinary Windows DLL search order
+// (same directory as the EXE is always checked first), so no
+// LOAD_WITH_ALTERED_SEARCH_PATH consideration needed here unlike the
+// Prisma .node case above.
+const VCREDIST_DIR = path.join(ELECTRON_DIR, "vcredist");
+const VCREDIST_FILES = ["vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll"];
+const PRISMA_ENGINE_DIRS = [
+  path.join(nextappDest, "node_modules", ".prisma", "client"),
+  path.join(nextappDest, "node_modules", "@prisma", "engines"),
+  path.join(nextappDest, "node_modules", "prisma"),
+];
+const POSTGRES_BIN_DIR = path.join(pgDest, "@embedded-postgres", "windows-x64", "native", "bin");
+for (const dir of [...PRISMA_ENGINE_DIRS, POSTGRES_BIN_DIR]) {
+  if (!fs.existsSync(dir)) {
+    console.error(`[prepare-resources] expected engine dir missing, can't place vcredist DLLs: ${dir}`);
+    process.exit(1);
+  }
+  for (const file of VCREDIST_FILES) {
+    fs.copyFileSync(path.join(VCREDIST_DIR, file), path.join(dir, file));
+  }
+}
+console.log(
+  `[prepare-resources] staged VC++ runtime DLLs alongside all ${PRISMA_ENGINE_DIRS.length} Prisma engine copies and the embedded-postgres bin/ dir`
+);
+
 console.log(`[prepare-resources] staged nextapp/ and pg/ into ${STAGE_DIR}`);
+
+// nextappSrc (app/) is ALSO the live tunnel-hosted server's serving
+// directory (see deploy-topology notes) -- the STAGEFORGE_DESKTOP_BUILD=1
+// build staged above left app/.next configured with output: "standalone",
+// which `next start` cannot run (breaks Auth.js's verify-request action --
+// found live 29 Aug 2026, a real "can't log in, no email arrives" report
+// some hours after this was left unconditionally on; see next.config.ts's
+// own comment). Everything this script needs from that build is already
+// copied into STAGE_DIR above, so it's safe to immediately rebuild
+// app/.next as a plain (non-standalone) build here, restoring the live
+// server to a working state before electron-builder even runs -- instead
+// of relying on a human to remember to do this by hand afterward, which
+// is exactly what didn't happen 29 Aug 2026.
+console.log("[prepare-resources] restoring app/.next to a plain (non-standalone) build for the live server...");
+const restoreEnv = { ...process.env };
+delete restoreEnv.STAGEFORGE_DESKTOP_BUILD;
+try {
+  execSync("npm run build", { cwd: nextappSrc, stdio: "inherit", env: restoreEnv });
+} catch {
+  console.error(
+    "[prepare-resources] FAILED to restore a plain build in app/ -- the live server's .next is still the broken standalone build from this desktop packaging pass. Fix the build error above, then run `npm run build` in app/ by hand (no STAGEFORGE_DESKTOP_BUILD set) before doing anything else."
+  );
+  process.exit(1);
+}
+
+// Best-effort: get the live process serving the restored build right
+// away instead of leaving it broken until whatever incidental restart
+// happens to notice next. Not fatal if pm2 or this process isn't present
+// (e.g. packaging from a machine that doesn't run the live tunnel).
+try {
+  execSync("pm2 restart stageforge-tunnel --update-env", { cwd: REPO_ROOT, stdio: "inherit" });
+  console.log("[prepare-resources] restarted stageforge-tunnel with the restored build.");
+} catch {
+  console.warn(
+    "[prepare-resources] could not restart stageforge-tunnel via pm2 (not running on this machine?) -- if this IS the live-serving machine, restart it by hand before leaving things here."
+  );
+}

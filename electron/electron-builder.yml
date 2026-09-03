@@ -84,6 +84,7 @@ win:
   target:
     - nsis
     - portable
+    - appx
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
@@ -115,6 +116,38 @@ nsis:
 # per-install auth secret) already lives in app.getPath("userData")
 # regardless of where the portable .exe itself is run from, so this
 # needs no other code changes.
+# These three values are NOT arbitrary -- they must byte-for-byte match
+# what Partner Center already has reserved for the "StageForge Health"
+# product (Product management > Product Identity in the dashboard), or
+# the Store rejects the package at certification with an identity
+# mismatch. Copied from there 30 Aug 2026, not invented here:
+#   Package/Identity/Name             -> identityName
+#   Package/Identity/Publisher        -> publisher
+#   Package/Properties/PublisherDisplayName -> publisherDisplayName
+# Left unsigned deliberately -- Store submissions of this type get
+# re-signed by Microsoft on certification, so there's no local
+# certificateFile/certificatePassword to configure here, unlike the
+# NSIS/portable targets above.
+appx:
+  identityName: TransitionInsightPartners.StageForgeHealth
+  publisher: CN=8CA17DBF-B93F-4983-9D83-F75E58C3F9DF
+  publisherDisplayName: Transition Insight Partners Ltd
+  applicationId: StageForgeHealth
+  displayName: StageForge Health
+  # Tile images for the Start menu/taskbar/Store listing -- unlike the
+  # NSIS/portable targets above, appx does NOT auto-generate these from
+  # the top-level icon: field. Without a build/appx/ folder,
+  # electron-builder silently falls back to its own bundled generic
+  # placeholder images (found live, 30 Aug 2026: shipped completely
+  # blank -- solid white, not StageForge's icon at all -- confirmed by
+  # inspecting the built .appx directly and sampling pixels). The four
+  # PNGs in build/appx/ (StoreLogo/Square44x44Logo/Square150x150Logo/
+  # Wide310x150Logo) are generated from build/icon.png -- see
+  # scripts/generate-appx-assets.ps1. backgroundColor fills the
+  # transparent margin electron-builder leaves around the icon in each
+  # of those (white, to match the icon's own card-style rounded-square
+  # background rather than the library's dark gray default).
+  backgroundColor: "#FFFFFF"
 portable:
   artifactName: "${productName}-${version}-portable.${ext}"
   # Default is a per-BUILD uuid ("changed on each build of portable

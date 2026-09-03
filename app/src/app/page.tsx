@@ -1,15 +1,11 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { getCurrentUserGlobalRoleKeys } from "@/lib/session";
-import {
-  canManageScheduledReports,
-  DAY_NAMES,
-  GATE_TIMELINE_LABELS,
-  GATE_TIMELINE_TEXT_CLASS,
-} from "@/lib/permissions";
+import { canManageScheduledReports, DAY_NAMES } from "@/lib/permissions";
 import { getPortfolioRows } from "@/lib/portfolioReport";
 import { createScheduledReport, deleteScheduledReport, sendScheduledReportNow } from "@/lib/actions";
 import { SubmitButton } from "@/components/SubmitButton";
+import { PortfolioTable } from "@/components/PortfolioTable";
 
 const GBP = (n: number) => `£${n.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -46,57 +42,16 @@ export default async function HomePage() {
     siblingsByProjectId.set(r.project.id, packageMates.map((m) => ({ projectNumber: m.project.projectNumber, name: m.project.name })));
   }
 
-  const worksPackageInfo = (r: (typeof rows)[number]) =>
-    r.worksPackage && (
-      <div className="mt-0.5 text-xs text-inkmuted">
-        Part of:{" "}
-        <Link href={`/works-packages/${r.worksPackage.id}`} className="font-semibold text-accent hover:underline">
-          {r.worksPackage.name}
-        </Link>
-        {siblingsByProjectId.get(r.project.id)!.length > 0 && (
-          <>
-            {" "}
-            with{" "}
-            {siblingsByProjectId
-              .get(r.project.id)!
-              .map((s, i, arr) => (
-                <span key={s.projectNumber}>
-                  <Link href={`/projects/${s.projectNumber}`} className="text-accent hover:underline">
-                    {s.name}
-                  </Link>
-                  {i < arr.length - 1 ? ", " : ""}
-                </span>
-              ))}
-          </>
-        )}
-        {" · "}
-        <Link href={`/projects/new?worksPackageId=${r.worksPackage.id}`} className="text-accent hover:underline">
-          + Add a system
-        </Link>
-      </div>
-    );
+  const tableRows = rows.map((r) => ({ ...r, siblings: siblingsByProjectId.get(r.project.id) ?? [] }));
 
-  const outstandingInfo = (r: (typeof rows)[number]) =>
-    r.outstandingDeliverables === 0 && r.outstandingCompliance === 0 ? (
-      <span className="font-semibold text-inkmuted">Clear &mdash; nothing outstanding</span>
-    ) : (
-      <span className="text-sm">
-        {r.outstandingDeliverables > 0 && (
-          <span className="font-bold text-warn">
-            {r.outstandingDeliverables} <span className="font-semibold">deliverable{r.outstandingDeliverables === 1 ? "" : "s"}</span>
-          </span>
-        )}
-        {r.outstandingDeliverables > 0 && r.outstandingCompliance > 0 && (
-          <span className="text-inkmuted"> &middot; </span>
-        )}
-        {r.outstandingCompliance > 0 && (
-          <span className="font-bold text-flag">
-            {r.outstandingCompliance} <span className="font-semibold">compliance item{r.outstandingCompliance === 1 ? "" : "s"}</span>
-          </span>
-        )}
-        <span className="block text-xs font-normal text-inkmuted">still to upload or sign off</span>
-      </span>
-    );
+  // Executive summary strip (1 Sep 2026, group layout feedback) --
+  // "an instant snapshot of portfolio health before diving into
+  // specific projects." Active issues counts blocking deliverables +
+  // compliance items outstanding across every live project, same
+  // definition each row already uses for its own "Outstanding" column.
+  const totalBudget = rows.reduce((sum, r) => sum + r.totalSpend, 0);
+  const approvedBudget = rows.reduce((sum, r) => sum + r.approvedSpend, 0);
+  const activeIssues = rows.reduce((sum, r) => sum + r.outstandingDeliverables + r.outstandingCompliance, 0);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 md:px-10 md:py-10">
@@ -111,6 +66,30 @@ export default async function HomePage() {
         Definition, Concept Design, and so on) &mdash; each one has its own checklist of deliverables
         and compliance items that need evidence or sign-off before the project can move to the next.
       </p>
+
+      {rows.length > 0 && (
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border border-rule bg-surface p-5">
+            <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-wide text-ink">Total projects</h2>
+            <div className="text-3xl font-extrabold">{rows.length}</div>
+            <div className="text-sm font-medium text-inkmuted">live right now</div>
+          </div>
+          <div className="rounded-lg border border-rule bg-surface p-5">
+            <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-wide text-ink">Total budget</h2>
+            <div className="text-3xl font-extrabold">{GBP(totalBudget)}</div>
+            <div className="text-sm font-medium text-inkmuted">
+              <span className="font-semibold text-ok">{GBP(approvedBudget)}</span> approved
+            </div>
+          </div>
+          <div className={`rounded-lg border bg-surface p-5 ${activeIssues > 0 ? "border-warn" : "border-rule"}`}>
+            <h2 className="mb-2 font-mono text-xs font-bold uppercase tracking-wide text-ink">Active issues</h2>
+            <div className="text-3xl font-extrabold">{activeIssues}</div>
+            <div className="text-sm font-medium text-inkmuted">
+              {activeIssues > 0 ? "deliverables/compliance still outstanding" : "nothing outstanding"}
+            </div>
+          </div>
+        </div>
+      )}
 
       {draftProjects.length > 0 && (
         <div className="mb-8">
@@ -138,101 +117,7 @@ export default async function HomePage() {
       {rows.length === 0 ? (
         <p className="mb-10 text-sm text-inkmuted">No live projects.</p>
       ) : (
-        <>
-          {/* Boxed cards below sm: a table's row lines are too faint to track by touch/scroll on a phone.
-              Full-bleed to the screen edge (negative margin cancels the page's own px-4) rather than
-              floating boxes with margin either side. */}
-          <div className="-mx-4 mb-10 flex flex-col gap-2 sm:hidden">
-            {rows.map((r) => (
-              <div key={r.project.id} className="border-y border-rule bg-surface p-4 shadow-sm">
-                <Link href={`/projects/${r.project.projectNumber}`} className="text-lg font-bold text-accent hover:underline">
-                  {r.project.name}
-                </Link>
-                <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
-                {worksPackageInfo(r)}
-                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                  <div>
-                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Current gate</div>
-                    <div className="font-semibold">{r.currentGateName}</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Timeline</div>
-                    <div className={`font-bold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>{GATE_TIMELINE_LABELS[r.timeline]}</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Est. completion</div>
-                    <div className="font-semibold">
-                      {r.estimatedCompletion ? (
-                        r.estimatedCompletion.toLocaleDateString("en-GB")
-                      ) : (
-                        <span className="font-normal text-inkmuted">Not set</span>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Cost approved / total</div>
-                    <div className="whitespace-nowrap font-semibold">
-                      <span className="text-ok">{GBP(r.approvedSpend)}</span>
-                      {" / "}
-                      {GBP(r.totalSpend)}
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">Outstanding</div>
-                    {outstandingInfo(r)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mb-10 hidden -mx-4 overflow-x-auto px-4 sm:block sm:mx-0 sm:px-0">
-            <table className="w-full min-w-[980px] border-separate border-spacing-y-2 text-base">
-              <thead>
-                <tr className="text-left font-mono text-xs font-bold uppercase tracking-wide text-ink">
-                  <th scope="col" className="py-2 pr-4">Project</th>
-                  <th scope="col" className="py-2 pr-4">Current gate</th>
-                  <th scope="col" className="py-2 pr-4">Timeline</th>
-                  <th scope="col" className="py-2 pr-4">Est. completion</th>
-                  <th scope="col" className="py-2 pr-4">Cost approved / total</th>
-                  <th scope="col" className="py-2 pr-4">Outstanding</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.project.id} className="align-top">
-                    <td className="rounded-l-lg border-y border-l border-rule bg-surface py-4 pl-4 pr-4">
-                      <Link href={`/projects/${r.project.projectNumber}`} className="text-lg font-bold text-accent hover:underline">
-                        {r.project.name}
-                      </Link>
-                      <div className="font-mono text-xs text-inkmuted">#{r.project.projectNumber}</div>
-                      {worksPackageInfo(r)}
-                    </td>
-                    <td className="border-y border-rule bg-surface py-4 pr-4 font-semibold">{r.currentGateName}</td>
-                    <td className={`border-y border-rule bg-surface py-4 pr-4 font-bold ${GATE_TIMELINE_TEXT_CLASS[r.timeline]}`}>
-                      {GATE_TIMELINE_LABELS[r.timeline]}
-                    </td>
-                    <td className="border-y border-rule bg-surface py-4 pr-4 whitespace-nowrap font-semibold">
-                      {r.estimatedCompletion ? (
-                        r.estimatedCompletion.toLocaleDateString("en-GB")
-                      ) : (
-                        <span className="font-normal text-inkmuted">Not set</span>
-                      )}
-                    </td>
-                    <td className="border-y border-rule bg-surface py-4 pr-4 whitespace-nowrap font-semibold">
-                      <span className="text-ok">{GBP(r.approvedSpend)}</span>
-                      {" / "}
-                      {GBP(r.totalSpend)}
-                    </td>
-                    <td className="rounded-r-lg border-y border-r border-rule bg-surface py-4 pr-4 whitespace-nowrap">
-                      {outstandingInfo(r)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+        <PortfolioTable rows={tableRows} />
       )}
 
       <div className="rounded-lg border border-rule bg-surface p-5">

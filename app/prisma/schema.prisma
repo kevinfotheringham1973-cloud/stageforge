@@ -50,6 +50,18 @@ model User {
   id                         String                   @id @default(cuid())
   name                       String
   email                      String                   @unique
+  // Stable internal lookup key for the handful of canonical seeded
+  // personas standardTeam.ts/disciplineTeam.ts hardcode a specific
+  // holder for (e.g. "compliance_officer_scotland") -- deliberately NOT
+  // email, after the desktop build's anonymize-local-demo-names.ts
+  // rewriting `email` to an anonymized value broke every one of those
+  // lookups (found live, 29 Aug 2026; standardTeam.ts's own header
+  // comment already documents an earlier, unrelated instance of this
+  // exact "hardcoded email drifted out of sync" failure mode). Never
+  // shown in any UI, never a real address -- just an id these two
+  // lookup tables can rely on staying put regardless of what name/email
+  // this build happens to display for that person.
+  seedKey                    String?                  @unique
   emailVerified              DateTime?
   accounts                   Account[]
   sessions                   Session[]

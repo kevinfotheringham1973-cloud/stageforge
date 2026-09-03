@@ -29,27 +29,28 @@ import { ENGLAND_SECTOR_VARIANT_KEY } from "./englandConversion";
 // assigned below from the project's own createdById instead, which is
 // what "as a PM, [whoever created it] should have an auto role"
 // actually needs, and is immune to the exact bug this comment is next
-// to: a hardcoded email going stale the moment that person's contact
-// details are edited (see updateUser, #98) is a silent, easy-to-miss
-// failure mode -- Derek Gibb's PM/FM_CONTRACTOR entries here quietly
-// stopped resolving the moment his seed .example address was changed
-// to a real inbox, and every project created since then got no PM at
-// all with no error anywhere. createdById is a real foreign key, not
-// a string that can drift out of sync with itself.
-const STANDARD_TEAM_SCOTLAND: { email: string; roleKey: string }[] = [
-  { email: "derek.g999@outlook.com", roleKey: "FM_CONTRACTOR" },
-  // Real address (not .example) — see prisma/seed.ts, David is the one
-  // demo persona pointed at a real inbox so scheduled-report emails
-  // have somewhere to actually land.
-  { email: "kevinfotheringham1973@gmail.com", roleKey: "SPONSOR" },
-  { email: "kevinfotheringham1973@gmail.com", roleKey: "CLIENT_AUTHORITY" },
-  { email: "gary.grant@buildcare.example", roleKey: "COMPLIANCE_OFFICER" },
-  { email: "gaz808@gmail.com", roleKey: "SRO" },
-  { email: "andrea@buildcare.example", roleKey: "FINANCE" },
+// to: a hardcoded lookup key going stale the moment that person's
+// contact details are edited (see updateUser, #98) is a silent,
+// easy-to-miss failure mode -- Derek Gibb's PM/FM_CONTRACTOR entries
+// here quietly stopped resolving once, the moment his seed .example
+// address was changed to a real inbox, and every project created since
+// then got no PM at all with no error anywhere. createdById is a real
+// foreign key, not a string that can drift out of sync with itself --
+// the same reasoning is why every entry below keys off User.seedKey now,
+// not email (29 Aug 2026: the desktop build's anonymize-local-demo-names.ts
+// rewriting every seeded user's email broke every single one of these
+// lookups the exact same way, see User.seedKey's own schema comment).
+const STANDARD_TEAM_SCOTLAND: { seedKey: string; roleKey: string }[] = [
+  { seedKey: "fm_contractor_scotland", roleKey: "FM_CONTRACTOR" },
+  { seedKey: "sponsor_client_authority_scotland", roleKey: "SPONSOR" },
+  { seedKey: "sponsor_client_authority_scotland", roleKey: "CLIENT_AUTHORITY" },
+  { seedKey: "compliance_officer_scotland", roleKey: "COMPLIANCE_OFFICER" },
+  { seedKey: "sro_scotland", roleKey: "SRO" },
+  { seedKey: "finance_scotland", roleKey: "FINANCE" },
   // Fire safety oversight applies hospital-wide, same as the rest of
   // this standing team — not discipline-specific like AP/AE/Principal
   // Designer, which stay a manual per-project decision (see comment above).
-  { email: "alan.mcgeachie@staldwyn.example", roleKey: "FIRE_OFFICER" },
+  { seedKey: "fire_officer_scotland", roleKey: "FIRE_OFFICER" },
 ];
 
 // England's own standing roster (28 Aug 2026) — the same cast
@@ -59,13 +60,13 @@ const STANDARD_TEAM_SCOTLAND: { email: string; roleKey: string }[] = [
 // England fire-safety persona, so this role is simply left unassigned
 // on an England project until one exists, same graceful no-op
 // assignOne already does for any role with nobody to assign.
-const STANDARD_TEAM_ENGLAND: { email: string; roleKey: string }[] = [
-  { email: "pm@hardfmservices.example", roleKey: "FM_CONTRACTOR" },
-  { email: "sponsor@meadowbrooknhs.example", roleKey: "SPONSOR" },
-  { email: "sponsor@meadowbrooknhs.example", roleKey: "CLIENT_AUTHORITY" },
-  { email: "compliance@hardfmservices.example", roleKey: "COMPLIANCE_OFFICER" },
-  { email: "sro@meadowbrooknhs.example", roleKey: "SRO" },
-  { email: "finance@hardfmservices.example", roleKey: "FINANCE" },
+const STANDARD_TEAM_ENGLAND: { seedKey: string; roleKey: string }[] = [
+  { seedKey: "fm_contractor_england", roleKey: "FM_CONTRACTOR" },
+  { seedKey: "sponsor_client_authority_england", roleKey: "SPONSOR" },
+  { seedKey: "sponsor_client_authority_england", roleKey: "CLIENT_AUTHORITY" },
+  { seedKey: "compliance_officer_england", roleKey: "COMPLIANCE_OFFICER" },
+  { seedKey: "sro_england", roleKey: "SRO" },
+  { seedKey: "finance_england", roleKey: "FINANCE" },
 ];
 
 async function assignOne(projectId: string, userId: string, roleKey: string, context: string): Promise<void> {
@@ -106,11 +107,11 @@ export async function assignStandardTeam(projectId: string, createdByUserId: str
     project.template.sectorVariant.key === ENGLAND_SECTOR_VARIANT_KEY ? STANDARD_TEAM_ENGLAND : STANDARD_TEAM_SCOTLAND;
 
   for (const member of standardTeam) {
-    const user = await db.user.findUnique({ where: { email: member.email } });
+    const user = await db.user.findUnique({ where: { seedKey: member.seedKey } });
     if (!user) {
-      console.error(`[standardTeam] could not assign ${member.roleKey} on project ${projectId}: no user with email ${member.email}`);
+      console.error(`[standardTeam] could not assign ${member.roleKey} on project ${projectId}: no user with seedKey ${member.seedKey}`);
       continue;
     }
-    await assignOne(projectId, user.id, member.roleKey, `standing team, ${member.email}`);
+    await assignOne(projectId, user.id, member.roleKey, `standing team, ${member.seedKey}`);
   }
 }

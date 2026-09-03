@@ -43,14 +43,12 @@ export async function getCurrentUserId(): Promise<string | null> {
     return resolveShareLinkViewerUserId(shareToken);
   }
 
-  // Desktop build only (28 Aug 2026): "view as" would otherwise let the
-  // single auto-signed-in Local Admin acquire any seeded role's real
-  // permissions, not just preview their screen -- giving away the
-  // governance/compliance enforcement that's the actual reason to want
-  // the cloud version. Local Admin holds no role assignments of its own
-  // by default, so ignoring this cookie here is what makes every
-  // canX() check in permissions.ts correctly deny it, same as it would
-  // any other role-less user.
+  // Desktop build only: "view as" has no meaning here -- there is only
+  // ever one real identity in local mode (the auto-signed-in Local
+  // Admin), and getCurrentUserRoleKeysForProject/getCurrentUserGlobalRoleKeys
+  // below already grant that one identity every role outright (see
+  // their own comment, reversed 29 Aug 2026), so there's no second
+  // persona for this cookie to usefully switch to or away from.
   if (process.env.STAGEFORGE_LOCAL_MODE === "1") return realUserId;
 
   const viewAsId = store.get(VIEW_AS_COOKIE_NAME)?.value;
@@ -77,12 +75,33 @@ export async function getCurrentUser() {
   return db.user.findUnique({ where: { id: userId } });
 }
 
+// Desktop build only. Reversed 29 Aug 2026 from the 28 Aug 2026 change
+// that made the Local Admin hold no roles at all (see getCurrentUserId's
+// own comment on that): real end users hit it immediately -- a project
+// stuck forever "still waiting for Compliance Officer review" with no
+// second person on the machine who could ever hold that role. There is
+// only ever one real identity in local mode (getCurrentUserId above
+// ignores "view as" entirely), so there is no one else this could ever
+// be granted to by mistake, and every role-gated screen already shows
+// the real "Requires {role}" badge regardless (that label comes from
+// the deliverable/requirement's own bypassAuthority/overrideAuthority
+// field, not from whether the current user can act) -- so the warning
+// Kevin asked to keep is already there. This just stops it from also
+// being a dead end: the Local Admin can act as every role, the same way
+// a real single-person trial of the tool would need to, instead of
+// getting permanently stuck on a sign-off nobody else can ever give.
+async function allRoleKeys(): Promise<string[]> {
+  const roles = await db.role.findMany({ select: { key: true } });
+  return roles.map((r) => r.key);
+}
+
 /** Role keys the current user holds on a specific project. */
 export async function getCurrentUserRoleKeysForProject(
   projectId: string
 ): Promise<string[]> {
   const userId = await getCurrentUserId();
   if (!userId) return [];
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") return allRoleKeys();
   const assignments = await db.projectRoleAssignment.findMany({
     where: { userId, projectId },
     include: { role: true },
@@ -101,6 +120,9 @@ export async function getCurrentUserRoleKeysForProject(
 export async function getCurrentUserGlobalRoleKeys(): Promise<string[]> {
   const userId = await getCurrentUserId();
   if (!userId) return [];
+  // See getCurrentUserRoleKeysForProject's comment above -- same reasoning,
+  // same single-identity guarantee in local mode.
+  if (process.env.STAGEFORGE_LOCAL_MODE === "1") return allRoleKeys();
   const assignments = await db.projectRoleAssignment.findMany({
     where: { userId },
     include: { role: true },

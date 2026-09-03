@@ -23,6 +23,7 @@ const { app, BrowserWindow, dialog } = require("electron");
 const { spawn, execSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const http = require("http");
 const { startLocalDatabase, migrateAndSeed } = require("./localDb");
 const { getOrCreateAuthSecret } = require("./localAuthSecret");
@@ -64,7 +65,7 @@ let serverProcess;
 let mainWindow;
 let pgProcess;
 
-function runtimeEnv(databaseUrl, evidenceDir, authSecret) {
+function runtimeEnv(databaseUrl, evidenceDir, authSecret, logDir) {
   return {
     ...process.env,
     // See auth.ts — skips Entra ID / Resend, auto-signs in as the
@@ -85,6 +86,11 @@ function runtimeEnv(databaseUrl, evidenceDir, authSecret) {
     // See localEvidenceStorage.ts — replaces SharePoint with a folder
     // under this OS's per-user app-data directory.
     STAGEFORGE_EVIDENCE_DIR: evidenceDir,
+    // See instrumentation.ts's onRequestError — a real server error's
+    // full message/stack, otherwise unrecoverable once React's
+    // production error stripping and this app's lack of a visible
+    // terminal both apply.
+    STAGEFORGE_LOG_DIR: logDir,
     // Every optional cloud credential, explicitly blanked rather than
     // just left unset — whoever's .env this app loads (Next reads it
     // regardless of who spawns the process) may well have real keys
@@ -196,7 +202,21 @@ async function waitForResources(pgModulesDir, retriesLeft = 480) {
   }
 }
 
+// stdio: "inherit" is a no-op in a packaged build -- Electron's main
+// process is a Windows GUI-subsystem executable with no properly-attached
+// console for children to inherit into, so the Next.js server's own
+// stdout/stderr (its normal "Ready on port X" line, or any crash stack)
+// vanishes silently (same root cause and same fix as pgWorker.js's
+// DEBUG_LOG_PATH, found live 1-2 Sep 2026 chasing a genuine Windows 10
+// 22H2 certification-style failure). Passing real, already-open file
+// descriptors as stdio (rather than "inherit" or a string like "pipe")
+// bypasses the whole inherited-console problem entirely.
+const SERVER_DEBUG_LOG_PATH = path.join(os.tmpdir(), "stageforge-server-debug.log");
+
 function startServer(env) {
+  const logFd = fs.openSync(SERVER_DEBUG_LOG_PATH, "a");
+  fs.writeSync(logFd, `\n${new Date().toISOString()} spawning server, packaged=${app.isPackaged}\n`);
+
   // Packaged builds ship .next/standalone's own server.js (see
   // prepare-resources.js) instead of the full `next` CLI + full
   // node_modules, so this launches that directly rather than `next
@@ -207,19 +227,23 @@ function startServer(env) {
   if (app.isPackaged) {
     serverProcess = spawn(process.execPath, [path.join(APP_DIR, "server.js")], {
       cwd: APP_DIR,
-      stdio: "inherit",
+      stdio: ["ignore", logFd, logFd],
       env: { ...env, ELECTRON_RUN_AS_NODE: "1", PORT: String(PORT) },
     });
   } else {
     serverProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT)], {
       cwd: APP_DIR,
-      stdio: "inherit",
+      stdio: ["ignore", logFd, logFd],
       env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
     });
   }
 
   serverProcess.on("error", (err) => {
+    fs.writeSync(logFd, `${new Date().toISOString()} spawn error: ${err.stack || err}\n`);
     console.error("[electron] failed to start Next.js server:", err);
+  });
+  serverProcess.on("exit", (code, signal) => {
+    fs.writeSync(logFd, `${new Date().toISOString()} server exited: code=${code} signal=${signal}\n`);
   });
 }
 
@@ -328,7 +352,67 @@ async function ensureWritablePgRuntime(pgSourceDir, pgRuntimeDir) {
   fs.cpSync(pgSourceDir, pgRuntimeDir, { recursive: true });
 }
 
+// Same shape, same reason, as pgRuntimeReady/ensureWritablePgRuntime
+// above -- but for the CLI packages migrateAndSeed runs (prisma migrate
+// deploy, tsx running seed.ts + the anonymize script), not embedded
+// Postgres. Confirmed live, 31 Aug 2026, testing the actual .appx
+// submitted to the Store: running `prisma migrate deploy` in place
+// inside APP_DIR crashed the app on first launch with EPERM (a
+// jiti/c12 config-load cache under node_modules/.cache/prisma, then a
+// query-engine binary copy under node_modules/@prisma/engines) -- the
+// appx install location is read-only with no per-install-location
+// escape hatch the way NSIS's perMachine:false is, so this can't be
+// fixed by choosing an install location; it needs its own writable copy
+// the same way the pg runtime already gets one. cli-runtime-manifest.json
+// (written by prepare-resources.js from the same lockfile-derived
+// closure CLI_ONLY_PACKAGES uses) is the "what to copy" list, so this
+// can't drift out of sync with what prepare-resources.js actually staged.
+function cliRuntimeReady(cliRuntimeDir) {
+  return fs.existsSync(path.join(cliRuntimeDir, "node_modules", "prisma", "build", "index.js"));
+}
+
+async function ensureWritableCliRuntime(cliSourceDir, cliRuntimeDir) {
+  if (cliRuntimeReady(cliRuntimeDir)) return;
+  const manifest = JSON.parse(fs.readFileSync(path.join(cliSourceDir, "cli-runtime-manifest.json"), "utf8"));
+  fs.rmSync(cliRuntimeDir, { recursive: true, force: true });
+  fs.mkdirSync(cliRuntimeDir, { recursive: true });
+  for (const relPath of manifest.paths) {
+    fs.cpSync(path.join(cliSourceDir, relPath), path.join(cliRuntimeDir, relPath), { recursive: true });
+  }
+  for (const pkg of manifest.packages) {
+    const destPath = path.join(cliRuntimeDir, "node_modules", pkg);
+    fs.mkdirSync(path.dirname(destPath), { recursive: true });
+    fs.cpSync(path.join(cliSourceDir, "node_modules", pkg), destPath, { recursive: true });
+  }
+}
+
+// Postgres itself refuses to run under an Administrator/elevated account
+// (a deliberate, hard-coded Postgres security policy on every OS, not
+// specific to this app) -- without this check that surfaces as a bare,
+// generic "Postgres worker process exited with code 1" with no
+// indication why (found live, 2 Sep 2026, testing from an elevated
+// PowerShell window). `net session` only succeeds when elevated -- a
+// standard, dependency-free way to detect this on Windows.
+function isRunningElevated() {
+  if (process.platform !== "win32") return false;
+  try {
+    execSync("net session", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 app.whenReady().then(async () => {
+  if (isRunningElevated()) {
+    dialog.showErrorBox(
+      "StageForge can't run as Administrator",
+      "StageForge's local database refuses to start under an elevated/Administrator account, by design (Postgres's own security policy). Please close this and run StageForge normally instead -- just double-click it, don't use \"Run as administrator\"."
+    );
+    app.quit();
+    return;
+  }
+
   try {
     const databaseDir = path.join(app.getPath("userData"), "pgdata");
     // Deliberately NOT under APP_DIR/resources/app -- see localDb.js and
@@ -363,16 +447,59 @@ app.whenReady().then(async () => {
     const dbResult = await startLocalDatabase(databaseDir, pgModulesDir);
     pgProcess = dbResult.pgProcess;
     const { databaseUrl, isFirstRun } = dbResult;
+    // Deliberately NOT the same thing as isFirstRun above (which only
+    // asks "does a Postgres cluster already exist in this userData
+    // folder") -- found live, 29 Aug 2026, on a real Microsoft
+    // Store-path install: seeding got interrupted partway (the process
+    // killed mid-run), leaving a database with some rows but not all of
+    // them. isFirstRun was already false on every later launch (the
+    // cluster genuinely did exist), so seeding was never retried --
+    // permanently half-seeded, no error, no way to recover short of a
+    // manual folder deletion. This marker file is written by
+    // migrateAndSeed ONLY after seed.ts and the anonymize script have
+    // both actually finished (see its own comment), so its absence is a
+    // trustworthy "seeding never completed" signal on its own, decoupled
+    // from Postgres's own bookkeeping (PG_VERSION / isFirstRun above).
+    // Lives INSIDE databaseDir, not alongside it -- found live, 29 Aug
+    // 2026: a user manually deleting only the pgdata folder (the
+    // documented way to reset a broken install) got a silently
+    // *unseeded* database forever after, since the marker survived in
+    // userData and the next launch's needsSeed check saw it, skipped
+    // seed.ts entirely, and left a schema with zero rows (surfaced as a
+    // Prisma "no record found" crash on the very first page needing any
+    // seeded data, e.g. /projects/new's SectorVariant lookup). Marker
+    // and data must reset together, since the marker's only meaning is
+    // "this exact database has been seeded."
+    const seedMarkerPath = path.join(databaseDir, "stageforge-seed-complete.marker");
+    const needsSeed = !fs.existsSync(seedMarkerPath);
     const buildNeeded = needsBuild();
-    // First run and/or a missing build: initialising the cluster +
-    // applying 35 migrations + seeding demo data + (on this dev-machine
-    // testing path only, see needsBuild's comment) building the app can
-    // take a while — worth a visible wait state rather than looking frozen.
-    if (isFirstRun || buildNeeded) ensureSplashWindow();
-    await migrateAndSeed(APP_DIR, databaseUrl, isFirstRun);
+    // First run, seeding needed, and/or a missing build: initialising
+    // the cluster + applying migrations + seeding demo data + (on this
+    // dev-machine testing path only, see needsBuild's comment) building
+    // the app can take a while — worth a visible wait state rather than
+    // looking frozen.
+    if (isFirstRun || needsSeed || buildNeeded) ensureSplashWindow();
+    // Writable copy of just the CLI packages, same reason and same
+    // pattern as pgModulesDir above -- see ensureWritableCliRuntime's
+    // comment. A source checkout's APP_DIR is already writable, so it
+    // runs the CLI in place unchanged, same as the pg case.
+    const cliRuntimeDir = app.isPackaged ? path.join(app.getPath("userData"), "cli-runtime") : APP_DIR;
+    if (app.isPackaged && !cliRuntimeReady(cliRuntimeDir)) {
+      ensureSplashWindow();
+      await ensureWritableCliRuntime(APP_DIR, cliRuntimeDir);
+    }
+    await migrateAndSeed(cliRuntimeDir, databaseUrl, needsSeed, seedMarkerPath);
     const evidenceDir = path.join(app.getPath("userData"), "evidence");
     const authSecret = getOrCreateAuthSecret(app.getPath("userData"));
-    const env = runtimeEnv(databaseUrl, evidenceDir, authSecret);
+    // instrumentation.ts's onRequestError writes here — production React
+    // deliberately strips the real message from errors like #441 (an RSC
+    // render threw), leaving only an opaque digest on screen, and this
+    // packaged app has no visible terminal for stdio: "inherit" to reach
+    // once launched normally (found live, 29 Aug 2026: a real "new
+    // project" crash left nothing usable behind to diagnose it from).
+    const logDir = path.join(app.getPath("userData"), "logs");
+    fs.mkdirSync(logDir, { recursive: true });
+    const env = runtimeEnv(databaseUrl, evidenceDir, authSecret, logDir);
     if (buildNeeded) await buildApp(env);
     startServer(env);
     await waitForServer();

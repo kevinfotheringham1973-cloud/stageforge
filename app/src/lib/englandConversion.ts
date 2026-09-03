@@ -6,7 +6,7 @@
 // every SHTM/Scotland-specific string that actually exists (not
 // guessed), then converted against Regulation Conversion_England_Scotland.docx's
 // per-system and "Key Conversion Notes" tables.
-import type { PrismaClient } from "@prisma/client";
+import type { DbClient } from "./db";
 import { instantiateStage } from "./instantiation";
 import { effectiveComplianceTags } from "./cdm";
 
@@ -165,7 +165,7 @@ function ruleOverrideKey(ruleKey: string): string {
  * before this changed, not just newly-created ones.
  */
 export async function generateEnglandVariant(
-  db: PrismaClient
+  db: DbClient
 ): Promise<{ sectorVariantId: string; templatesCreated: number; rulesCreated: number }> {
   const scotland = await db.sectorVariant.findUniqueOrThrow({ where: { key: "health" } });
 
@@ -292,7 +292,7 @@ export async function generateEnglandVariant(
  * this tenant should never have shown an invented person's name to
  * begin with.
  */
-export async function seedEnglandDemo(db: PrismaClient): Promise<{ projectNumber: string }> {
+export async function seedEnglandDemo(db: DbClient): Promise<{ projectNumber: string }> {
   const england = await db.sectorVariant.findUniqueOrThrow({ where: { key: ENGLAND_SECTOR_VARIANT_KEY } });
   const template = await db.template.findUniqueOrThrow({
     where: { key: "template.health_england.domestic_hot_cold_water_replacement" },
@@ -331,6 +331,10 @@ export async function seedEnglandDemo(db: PrismaClient): Promise<{ projectNumber
     data: {
       name: [roles.PM.name, roles.FM_CONTRACTOR.name].join(" · "),
       email: "pm@hardfmservices.example",
+      // Stable lookup key for standardTeam.ts's CANDIDATES_ENGLAND/
+      // STANDARD_TEAM_ENGLAND -- not email, see User.seedKey's own
+      // schema comment for why.
+      seedKey: "fm_contractor_england",
       homeDepartmentId: fmEstates.id,
     },
   });
@@ -338,23 +342,39 @@ export async function seedEnglandDemo(db: PrismaClient): Promise<{ projectNumber
     data: {
       name: [roles.SPONSOR.name, roles.CLIENT_AUTHORITY.name].join(" · "),
       email: "sponsor@meadowbrooknhs.example",
+      seedKey: "sponsor_client_authority_england",
       homeDepartmentId: clientEstates.id,
     },
   });
   const complianceUser = await db.user.create({
-    data: { name: roles.COMPLIANCE_OFFICER.name, email: "compliance@hardfmservices.example", homeDepartmentId: fmEstates.id },
+    data: {
+      name: roles.COMPLIANCE_OFFICER.name,
+      email: "compliance@hardfmservices.example",
+      seedKey: "compliance_officer_england",
+      homeDepartmentId: fmEstates.id,
+    },
   });
   const sroUser = await db.user.create({
-    data: { name: roles.SRO.name, email: "sro@meadowbrooknhs.example", homeDepartmentId: clientEstates.id },
+    data: { name: roles.SRO.name, email: "sro@meadowbrooknhs.example", seedKey: "sro_england", homeDepartmentId: clientEstates.id },
   });
   const financeUser = await db.user.create({
-    data: { name: roles.FINANCE.name, email: "finance@hardfmservices.example", homeDepartmentId: fmFinance.id },
+    data: { name: roles.FINANCE.name, email: "finance@hardfmservices.example", seedKey: "finance_england", homeDepartmentId: fmFinance.id },
   });
   const principalDesignerUser = await db.user.create({
-    data: { name: roles.PRINCIPAL_DESIGNER.name, email: "principal.designer@hardfmservices.example", homeDepartmentId: fmEstates.id },
+    data: {
+      name: roles.PRINCIPAL_DESIGNER.name,
+      email: "principal.designer@hardfmservices.example",
+      seedKey: "principal_designer_england",
+      homeDepartmentId: fmEstates.id,
+    },
   });
   const apWaterUser = await db.user.create({
-    data: { name: roles.AUTHORISED_PERSON_WATER.name, email: "ap.water@hardfmservices.example", homeDepartmentId: fmEstates.id },
+    data: {
+      name: roles.AUTHORISED_PERSON_WATER.name,
+      email: "ap.water@hardfmservices.example",
+      seedKey: "ap_water_england",
+      homeDepartmentId: fmEstates.id,
+    },
   });
 
   // ── Project ───────────────────────────────────────────────────────

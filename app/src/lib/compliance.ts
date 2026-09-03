@@ -8,10 +8,10 @@
 // live, so editing the corpus later never rewrites what an in-progress
 // or signed-off gate was actually reviewed against.
 
-import type { PrismaClient } from "@prisma/client";
+import type { DbClient } from "./db";
 
 export async function matchingComplianceRuleTemplates(
-  db: PrismaClient,
+  db: DbClient,
   sectorVariantId: string,
   stageKey: string,
   projectTags: string[]
