@@ -1900,7 +1900,15 @@ export async function createUser(formData: FormData) {
   }
 
   const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  // Lowercased on write — Auth.js's own defaultNormalizer always lowercases
+  // whatever a person types into the sign-in form before ever looking it
+  // up (send-token.js), so a stored mixed-case email can never match a
+  // real sign-in attempt regardless of what case the person uses. Found
+  // live, 1 Sep 2026: a team member added as "Dazcane13@..." (capital D)
+  // was rejected with AccessDenied on every sign-in attempt, no matter
+  // what case he typed — see auth.ts's signIn callback for the
+  // matching case-insensitive-lookup half of this fix.
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const homeDepartmentId = String(formData.get("homeDepartmentId") ?? "").trim();
   if (!name || !email || !homeDepartmentId) {
     throw new Error("Name, email, and department are all required.");
@@ -1908,7 +1916,9 @@ export async function createUser(formData: FormData) {
 
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
-    throw new Error(`A person with the email ${email} already exists.`);
+    throw new Error(
+      `${email} is already a team member — no need to re-add them. If they need to sign in, they can go straight to the login page and request their own link there.`
+    );
   }
 
   const created = await db.user.create({ data: { name, email, homeDepartmentId } });
@@ -1938,7 +1948,8 @@ export async function updateUser(userId: string, formData: FormData) {
   }
 
   const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  // Lowercased on write — see createUser's matching comment.
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   // Optional -- someone can be created/left without a department yet
   // (see createUser's own homeDepartmentId requirement, which this
   // predates) and this is the only place to fix that after the fact,

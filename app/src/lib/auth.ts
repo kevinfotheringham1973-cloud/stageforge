@@ -100,8 +100,28 @@ function magicLinkEmailText(url: string): string {
   return `Sign in to StageForge Health\n\n${url}\n\nThis link expires in 24 hours and can only be used once.\n\nYou're getting this because someone entered this email address on the StageForge Health sign-in page. If that wasn't you, no action is needed.\n\nStageForge Health is provided by Transition Insight Partners Ltd.\n`;
 }
 
+// Auth.js's own internal user lookup (at magic-link click time, separate
+// from and in addition to the signIn callback below) goes through
+// adapter.getUserByEmail -- PrismaAdapter's stock implementation is a
+// case-SENSITIVE exact match. Auth.js's defaultNormalizer always
+// lowercases whatever's typed into the sign-in form before doing anything
+// else (send-token.js), so a stored email with any uppercase letter is
+// treated as a brand-new signup on every single attempt, no matter what
+// case anyone enters -- which then crashes trying to auto-create a User
+// row with no `name` (schema requires one), surfacing as a bare
+// Verification/server error with no useful message. Found live, 1 Sep
+// 2026: Dazcane13@gmail.com's stored capital-D email. createUser/
+// updateUser lowercase on write now (defense in depth for future data),
+// but relying on every write path staying disciplined forever isn't a
+// real fix -- overriding just this one method makes lookups correct
+// regardless of what case is actually stored, past or future.
+const adapter = PrismaAdapter(db);
+adapter.getUserByEmail = async (email) => {
+  return db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
+};
+
 export const authConfig: NextAuthConfig = {
-  adapter: PrismaAdapter(db),
+  adapter,
   // JWT session kept for simplicity. The original reason this was
   // forced (Auth.js requires JWT whenever a Credentials provider is
   // present) is gone now that Credentials has been replaced by Resend
@@ -218,7 +238,17 @@ export const authConfig: NextAuthConfig = {
     // unapproved email never even gets one sent), not just after they
     // click it.
     signIn: async ({ user, account }) => {
-      const existing = await db.user.findUnique({ where: { email: user.email ?? "" } });
+      // User.email is stored as typed by whichever admin added the person
+      // (no normalization at creation, historically) -- an exact-case
+      // lookup here means a real approved user gets wrongly rejected the
+      // moment they type their own email in different case than the
+      // admin did (found live, 1 Sep 2026: Dazcane13@gmail.com's own
+      // account, created with a capital D, rejected him signing in with
+      // the lowercase he naturally typed). createUser/updateUser now
+      // normalize on write too, so this only remains load-bearing for
+      // whatever existed before that fix.
+      const email = (user.email ?? "").trim().toLowerCase();
+      const existing = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
       // Archived (left the company) is rejected the same way an
       // unknown email is -- their User row still exists (so past
       // evidence/sign-offs/audit history keeps their name), it just no
