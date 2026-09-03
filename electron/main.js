@@ -23,6 +23,7 @@ const { app, BrowserWindow, dialog } = require("electron");
 const { spawn, execSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const http = require("http");
 const { startLocalDatabase, migrateAndSeed } = require("./localDb");
 const { getOrCreateAuthSecret } = require("./localAuthSecret");
@@ -201,7 +202,21 @@ async function waitForResources(pgModulesDir, retriesLeft = 480) {
   }
 }
 
+// stdio: "inherit" is a no-op in a packaged build -- Electron's main
+// process is a Windows GUI-subsystem executable with no properly-attached
+// console for children to inherit into, so the Next.js server's own
+// stdout/stderr (its normal "Ready on port X" line, or any crash stack)
+// vanishes silently (same root cause and same fix as pgWorker.js's
+// DEBUG_LOG_PATH, found live 1-2 Sep 2026 chasing a genuine Windows 10
+// 22H2 certification-style failure). Passing real, already-open file
+// descriptors as stdio (rather than "inherit" or a string like "pipe")
+// bypasses the whole inherited-console problem entirely.
+const SERVER_DEBUG_LOG_PATH = path.join(os.tmpdir(), "stageforge-server-debug.log");
+
 function startServer(env) {
+  const logFd = fs.openSync(SERVER_DEBUG_LOG_PATH, "a");
+  fs.writeSync(logFd, `\n${new Date().toISOString()} spawning server, packaged=${app.isPackaged}\n`);
+
   // Packaged builds ship .next/standalone's own server.js (see
   // prepare-resources.js) instead of the full `next` CLI + full
   // node_modules, so this launches that directly rather than `next
@@ -212,19 +227,23 @@ function startServer(env) {
   if (app.isPackaged) {
     serverProcess = spawn(process.execPath, [path.join(APP_DIR, "server.js")], {
       cwd: APP_DIR,
-      stdio: "inherit",
+      stdio: ["ignore", logFd, logFd],
       env: { ...env, ELECTRON_RUN_AS_NODE: "1", PORT: String(PORT) },
     });
   } else {
     serverProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT)], {
       cwd: APP_DIR,
-      stdio: "inherit",
+      stdio: ["ignore", logFd, logFd],
       env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
     });
   }
 
   serverProcess.on("error", (err) => {
+    fs.writeSync(logFd, `${new Date().toISOString()} spawn error: ${err.stack || err}\n`);
     console.error("[electron] failed to start Next.js server:", err);
+  });
+  serverProcess.on("exit", (code, signal) => {
+    fs.writeSync(logFd, `${new Date().toISOString()} server exited: code=${code} signal=${signal}\n`);
   });
 }
 
@@ -367,7 +386,33 @@ async function ensureWritableCliRuntime(cliSourceDir, cliRuntimeDir) {
   }
 }
 
+// Postgres itself refuses to run under an Administrator/elevated account
+// (a deliberate, hard-coded Postgres security policy on every OS, not
+// specific to this app) -- without this check that surfaces as a bare,
+// generic "Postgres worker process exited with code 1" with no
+// indication why (found live, 2 Sep 2026, testing from an elevated
+// PowerShell window). `net session` only succeeds when elevated -- a
+// standard, dependency-free way to detect this on Windows.
+function isRunningElevated() {
+  if (process.platform !== "win32") return false;
+  try {
+    execSync("net session", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 app.whenReady().then(async () => {
+  if (isRunningElevated()) {
+    dialog.showErrorBox(
+      "StageForge can't run as Administrator",
+      "StageForge's local database refuses to start under an elevated/Administrator account, by design (Postgres's own security policy). Please close this and run StageForge normally instead -- just double-click it, don't use \"Run as administrator\"."
+    );
+    app.quit();
+    return;
+  }
+
   try {
     const databaseDir = path.join(app.getPath("userData"), "pgdata");
     // Deliberately NOT under APP_DIR/resources/app -- see localDb.js and

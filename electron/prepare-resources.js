@@ -276,6 +276,62 @@ fs.writeFileSync(
   JSON.stringify({ ...gitInfoAt(REPO_ROOT), packagedAt: new Date().toISOString() }, null, 2)
 );
 
+// Prisma's query engine (query_engine-windows.dll.node) is a native Node
+// addon compiled against the MSVC toolchain, and per Prisma's own system
+// requirements docs, needs the Microsoft Visual C++ Redistributable 2015+
+// present on the machine ("by default the case on most modern
+// installations" — but NOT guaranteed, and confirmed absent on at least
+// one certification test device, 1 Sep 2026: MSIX submission rejected
+// with "StageForge failed to start" on a Dell Inspiron 14, matching this
+// exact failure mode). Every dev machine building this app has almost
+// certainly had it installed for years (Visual Studio, other native
+// tooling), which is exactly why this went unnoticed until a genuinely
+// clean test machine hit it.
+//
+// Fixed via Microsoft's documented "app-local deployment" pattern —
+// redistributing vcruntime140.dll/vcruntime140_1.dll/msvcp140.dll
+// alongside the app is explicitly permitted by the VC++ Redistributable
+// license, and is the standard fix for exactly this scenario. These three
+// files (electron/vcredist/, copied from this dev machine's own
+// C:\Windows\System32, Microsoft-signature-verified) get dropped directly
+// alongside every copy of the Prisma engine binary, not next to
+// StageForge.exe — Node's native addon loader uses
+// LOAD_WITH_ALTERED_SEARCH_PATH, which searches the .node file's OWN
+// directory first, not the main executable's.
+//
+// Also placed alongside embedded-postgres's own initdb.exe/postgres.exe/
+// pg_ctl.exe (native/bin/) — confirmed live, 1 Sep 2026, on a genuine
+// clean Windows 10 22H2 test machine: `pg.initialise()` failed with exit
+// code 3221225781 (0xC0000135, STATUS_DLL_NOT_FOUND) launching initdb.exe.
+// Wrongly assumed fixed by the Prisma-only fix above, on the theory that
+// embedded-postgres bundles its own runtime DLLs (ICU, OpenSSL, etc. are
+// present in native/bin/) — it does, but evidently not for whatever these
+// three specific EXEs (as opposed to postgres's other bundled DLLs) link
+// against. Plain EXE loading uses ordinary Windows DLL search order
+// (same directory as the EXE is always checked first), so no
+// LOAD_WITH_ALTERED_SEARCH_PATH consideration needed here unlike the
+// Prisma .node case above.
+const VCREDIST_DIR = path.join(ELECTRON_DIR, "vcredist");
+const VCREDIST_FILES = ["vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll"];
+const PRISMA_ENGINE_DIRS = [
+  path.join(nextappDest, "node_modules", ".prisma", "client"),
+  path.join(nextappDest, "node_modules", "@prisma", "engines"),
+  path.join(nextappDest, "node_modules", "prisma"),
+];
+const POSTGRES_BIN_DIR = path.join(pgDest, "@embedded-postgres", "windows-x64", "native", "bin");
+for (const dir of [...PRISMA_ENGINE_DIRS, POSTGRES_BIN_DIR]) {
+  if (!fs.existsSync(dir)) {
+    console.error(`[prepare-resources] expected engine dir missing, can't place vcredist DLLs: ${dir}`);
+    process.exit(1);
+  }
+  for (const file of VCREDIST_FILES) {
+    fs.copyFileSync(path.join(VCREDIST_DIR, file), path.join(dir, file));
+  }
+}
+console.log(
+  `[prepare-resources] staged VC++ runtime DLLs alongside all ${PRISMA_ENGINE_DIRS.length} Prisma engine copies and the embedded-postgres bin/ dir`
+);
+
 console.log(`[prepare-resources] staged nextapp/ and pg/ into ${STAGE_DIR}`);
 
 // nextappSrc (app/) is ALSO the live tunnel-hosted server's serving
