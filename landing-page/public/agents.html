@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Review Agents — StageForge Health</title>
+<meta name="description" content="Specialist AI agents that review RAMS, Statements of Work, inspection reports, and financial workbooks — automatically, as the documents arrive." />
+<link rel="icon" href="/favicon.png" type="image/png" />
+<link rel="canonical" href="https://pmopassport.co.uk/agents.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="StageForge Health" />
+<meta property="og:title" content="AI Review Agents — StageForge Health" />
+<meta property="og:description" content="Specialist AI agents that review RAMS, Statements of Work, inspection reports, and financial workbooks — automatically, as the documents arrive." />
+<meta property="og:url" content="https://pmopassport.co.uk/agents.html" />
+<meta property="og:image" content="https://pmopassport.co.uk/favicon.png" />
+<style>
+  :root {
+    --blue: #28659B;
+    --teal: #2D9A9C;
+    --ink: #1a1f26;
+    --ink-muted: #5b6472;
+    --rule: #e4e8ec;
+    --surface: #ffffff;
+    --bg: #f7f8fa;
+    --accentsoft: #eef4f8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--rule); }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .wordmark {
+    display: flex; flex-direction: column; line-height: 0.95;
+    font-family: Georgia, "Times New Roman", serif; font-weight: 700; font-size: 28px;
+    text-decoration: none;
+  }
+  .wordmark .sf { color: var(--blue); }
+  .wordmark .h { color: var(--teal); }
+  .nav a.cta {
+    font-size: 14px; font-weight: 600; color: var(--blue); text-decoration: none;
+    border: 1px solid var(--blue); padding: 8px 16px; border-radius: 6px;
+  }
+  .nav a.cta:hover { background: var(--accentsoft); }
+
+  .nav-right { display: flex; align-items: center; gap: 14px; }
+  .nav-agents-label { text-align: right; line-height: 1.3; }
+  .nav-agents-label .title { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .nav-agents-label .sub { font-size: 11.5px; color: var(--ink-muted); }
+  .nav-agents { display: flex; align-items: center; gap: 8px; }
+  @media (max-width: 640px) { .nav-agents-label { display: none; } }
+  .agent-icon {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--rule);
+    background: var(--surface); color: var(--blue); text-decoration: none;
+  }
+  .agent-icon svg { width: 17px; height: 17px; }
+  .agent-icon:hover { background: var(--accentsoft); border-color: var(--blue); }
+  .agent-icon .tip {
+    position: absolute; top: 46px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; font-size: 12px; line-height: 1.4;
+    padding: 8px 11px; border-radius: 6px; width: 200px; text-align: left;
+    opacity: 0; visibility: hidden; transition: opacity 0.12s ease; pointer-events: none; z-index: 30;
+  }
+  .agent-icon .tip strong { display: block; font-size: 12.5px; margin-bottom: 2px; }
+  .agent-icon:hover .tip, .agent-icon:focus .tip { opacity: 1; visibility: visible; }
+  @media (max-width: 640px) { .nav-agents .tip { display: none; } }
+
+  section.band { padding: 56px 0; }
+  section.band.alt { background: var(--surface); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+
+  .page-intro { padding: 60px 0 8px; }
+  .page-intro h1 { font-size: 32px; margin: 0 0 16px; letter-spacing: -0.01em; max-width: 720px; }
+  .page-intro p.lead { font-size: 17px; color: var(--ink-muted); max-width: 660px; margin: 0; }
+  .back-link { font-size: 14px; font-weight: 600; color: var(--blue); text-decoration: none; }
+  .back-link:hover { text-decoration: underline; }
+
+  h2.section-title { font-size: 26px; margin: 0 0 12px; }
+  p.section-lead { color: var(--ink-muted); max-width: 640px; margin: 0 0 36px; font-size: 16px; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .grid4 { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 8px; }
+  .grid4 .step { flex: 1; min-width: 180px; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } .page-intro h1 { font-size: 26px; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--teal);
+    border-radius: 10px; padding: 24px; scroll-margin-top: 90px;
+  }
+  .card .icon-badge {
+    width: 40px; height: 40px; border-radius: 10px; background: var(--accentsoft); color: var(--blue);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+  }
+  .card .icon-badge svg { width: 20px; height: 20px; }
+  .card h3 { font-size: 17px; margin: 0 0 4px; }
+  .card .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--teal); background: #e5f4f4; padding: 3px 10px;
+    border-radius: 999px; margin: 10px 6px 10px 0;
+  }
+  .card p { font-size: 14.5px; color: var(--ink-muted); margin: 0; }
+  .card .sandbox {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; color: var(--ink-muted); background: var(--accentsoft);
+    padding: 3px 10px; border-radius: 999px; margin-top: 14px;
+  }
+
+  .step .num { font-size: 12px; font-weight: 700; color: var(--teal); }
+  .step h4 { font-size: 15px; margin: 6px 0 4px; }
+  .step p { font-size: 13.5px; color: var(--ink-muted); margin: 0; }
+
+  .btn-primary {
+    background: var(--blue); color: #fff; text-decoration: none; font-weight: 600; font-size: 15px;
+    padding: 12px 22px; border-radius: 6px; display: inline-block;
+  }
+  .btn-primary:hover { opacity: 0.92; }
+
+  footer { padding: 40px 0; border-top: 1px solid var(--rule); }
+  footer .foot-grid { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; font-size: 13.5px; color: var(--ink-muted); }
+  footer .foot-brand { display: flex; align-items: center; gap: 8px; }
+  footer a { color: var(--ink-muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="wordmark" href="/"><span class="sf">StageForge</span><span class="h">Health</span></a>
+    <div class="nav-right">
+      <div class="nav-agents-label">
+        <div class="title">Email review agents</div>
+        <div class="sub">Reads the email, reviews it, replies</div>
+      </div>
+      <div class="nav-agents" aria-label="AI review agents">
+        <a class="agent-icon" href="#rams" aria-label="RAMS Review">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+          <span class="tip"><strong>RAMS Review</strong>Checks contractor Risk Assessments &amp; Method Statements for real site-specific awareness before works begin.</span>
+        </a>
+        <a class="agent-icon" href="#sow" aria-label="SOW Review">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <span class="tip"><strong>SOW Review</strong>Reviews a contractor's quotation for proposed work — gap analysis, lifecycle judgement, and commercial terms.</span>
+        </a>
+        <a class="agent-icon" href="#inspection" aria-label="Inspection Review">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span class="tip"><strong>Inspection Review</strong>Assesses the current condition and compliance status of an existing system, with a repair-vs-replace cost view.</span>
+        </a>
+        <a class="agent-icon" href="#finance" aria-label="Finance Review">
+          <svg viewBox="0 0 24 24"><text x="12" y="18" text-anchor="middle" font-size="17" font-weight="700" fill="currentColor" font-family="Arial, Helvetica, sans-serif">&#163;</text></svg>
+          <span class="tip"><strong>Finance Review</strong>Checks financial workbooks for accuracy and reconciliation, surfacing exceptions in an isolated sandbox.</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="wrap page-intro">
+  <a class="back-link" href="/">&larr; Back to home</a>
+  <h1 style="margin-top:16px;">AI agents that review the work as it happens</h1>
+  <p class="lead">
+    Alongside stage-gate delivery, a set of specialist agents run headless — no dashboard to check,
+    no queue to work. A relevant document lands, gets classified, and comes back as a registered,
+    downloadable report — usually inside the same working day.
+  </p>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="grid2">
+      <div class="card" id="rams">
+        <div class="icon-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+        </div>
+        <h3>RAMS Review</h3>
+        <div><span class="badge">RAMS</span><span class="badge">Method Statements</span></div>
+        <p>
+          Reviews a contractor's Risk Assessment &amp; Method Statement before hospital works begin —
+          checks for genuine site-specific awareness versus generic template content, verifies named
+          site personnel evidence, and rates each contractor's package.
+        </p>
+      </div>
+      <div class="card" id="sow">
+        <div class="icon-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        </div>
+        <h3>SOW Review</h3>
+        <div><span class="badge">Statement of Work</span><span class="badge">Quotations</span></div>
+        <p>
+          Reviews a contractor's quotation for proposed future work — gap analysis across compliance,
+          scope adequacy, lifecycle repair-vs-replace judgement, and commercial terms, before the work
+          is commissioned.
+        </p>
+      </div>
+      <div class="card" id="inspection">
+        <div class="icon-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+        <h3>Inspection Review</h3>
+        <div><span class="badge">Condition reports</span><span class="badge">Test certificates</span></div>
+        <p>
+          Assesses the current state of an existing system — medical gas, water, electrical, fire,
+          HVAC, lifts, and more — grading compliance breach status and condition, with a repair-vs-
+          lifecycle-replacement cost view.
+        </p>
+      </div>
+      <div class="card" id="finance">
+        <div class="icon-badge">
+          <svg viewBox="0 0 24 24"><text x="12" y="18" text-anchor="middle" font-size="19" font-weight="700" fill="currentColor" font-family="Arial, Helvetica, sans-serif">&#163;</text></svg>
+        </div>
+        <h3>Finance Review</h3>
+        <div><span class="badge">Management accounts</span><span class="badge">P&amp;L review</span></div>
+        <p>
+          Reviews financial workbooks for accuracy and reconciliation — hard-keyed versus formula
+          totals, intercompany symmetry, variance thresholds — surfacing exceptions and findings.
+        </p>
+        <span class="sandbox">Runs in an isolated sandbox</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <h2 class="section-title">How it works</h2>
+    <p class="section-lead">The same pattern runs behind every agent above.</p>
+    <div class="grid4">
+      <div class="step"><span class="num">01</span><h4>Document arrives</h4><p>A relevant document is picked up automatically — no one has to route it.</p></div>
+      <div class="step"><span class="num">02</span><h4>Agent runs headless</h4><p>The right specialist agent reads it, no human in the loop.</p></div>
+      <div class="step"><span class="num">03</span><h4>Report registered</h4><p>Findings are saved as a project deliverable, downloadable in-app.</p></div>
+      <div class="step"><span class="num">04</span><h4>Reply sent</h4><p>A findings report goes back by return, attached and ready to share.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap" style="text-align:center;">
+    <a class="btn-primary" href="mailto:kevin@pmopassport.co.uk?subject=AI%20review%20agents">Ask for a demo &rarr;</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <img src="/tip-logo.png" alt="" width="30" height="30" />
+      <span>&copy; 2026 Transition Insight Partners Ltd. All rights reserved.</span>
+    </div>
+    <div><a href="/privacy">Privacy Policy</a> &middot; <a href="mailto:support@pmopassport.co.uk">support@pmopassport.co.uk</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
