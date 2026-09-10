@@ -14,6 +14,17 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: "10 Sep 2026",
+    title: "Three new checklists, contractor vetting and dangerous-substances checks, several smaller compliance gaps closed",
+    highlights: [
+      "Three new checklists for systems that had none before: Automatic Doors, Fume Cupboards, and Fire Curtains — each with the same real regulatory grounding as the existing library (BS EN 16005/16034 for doors, BS EN 14175 and the COSHH-mandated 14-month exhaust-ventilation test cycle for fume cupboards, BS 8524 for fire curtains).",
+      "PVG Scheme membership evidence for contractor personnel is now checked on every project before construction starts — previously nothing in the system asked for it.",
+      "A dangerous-substances risk assessment (DSEAR) is now required before construction on any project involving flammable or pressurised substances — refrigerant, fuel supply, or compressed/medical gas.",
+      "Radiation Protection Adviser sign-off is now a separate, explicit check for any project working in, adjacent to, above or below a CT/X-ray/imaging room — distinct from the existing infection-control check, since a job can pass that cleanly and still risk the room's lead shielding.",
+      "Several smaller, more specific gaps closed: gas safety compliance evidence on boiler projects, anaesthetic-gas exposure monitoring on medical gas projects, an annual fire-damper test requirement on ventilation and fire-alarm projects, a periodic thermal-imaging survey requirement for electrical switchgear, and backflow-prevention/dialysis-water-treatment/water-cooler-hygiene checks on domestic water projects.",
+    ],
+  },
+  {
     date: "3 Sep 2026",
     title: "Desktop trial now on the Microsoft Store, sign-in fix",
     highlights: [
