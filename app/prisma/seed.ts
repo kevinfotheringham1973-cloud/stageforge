@@ -599,6 +599,7 @@ async function seedBody(db: DbClient) {
       { key: "del.electrical_soft_landings_review", label: "Soft landings / post-occupancy review (performance, resilience, energy, user feedback)", description: "SHTM 00." },
       { key: "del.electrical_updated_maintenance_regime", label: "Updated maintenance regime, inspection schedules and emergency procedures", description: "SHTM 06." },
       { key: "del.electrical_ongoing_statutory_inspection", label: "Ongoing statutory inspection and testing records", description: "Electricity at Work Regulations.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.electrical_thermal_imaging_survey", label: "Periodic thermal imaging survey of distribution boards/switchgear", description: "IET Guidance Note 3, BS 7671 — an approved test method for identifying overheating connections/overloaded circuits before failure, often also an insurance condition of cover. An ongoing O&M activity, not a one-off design deliverable — placed here at Use rather than Technical Design." },
       { key: "del.common_defects_liability_final_account", label: "Defects liability records & final account" },
       { key: "del.common_lessons_learned_report", label: "Lessons learned report", description: "SHTM 00." },
     ],
@@ -706,6 +707,9 @@ async function seedBody(db: DbClient) {
       { key: "del.water_monitoring_sampling_bms_design", section: "Technical Design Package", label: "Temperature monitoring, sampling points and BMS integration design", description: "SHTM 04-01." },
       { key: "del.water_electrical_design", section: "Technical Design Package", label: "Electrical design associated with pumps and controls", description: "SHTM 06 series." },
       { key: "del.water_byelaws_compliance_info", label: "Building Regulations / Water Byelaws compliance information", description: "Scottish Water Byelaws.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.water_rpz_backflow_prevention", section: "Technical Design Package", label: "RPZ valve installation and annual testing regime (backflow prevention)", description: "WRAS AIM 08-01 — required wherever a water system could backflow-contaminate the mains (lab/medical device connections). Distinct from the general Water Byelaws compliance item above and from Legionella/water-safety control: a system can pass every Legionella check with a lapsed or absent RPZ test." },
+      { key: "del.water_dialysis_renal_treatment_requirements", section: "Technical Design Package", label: "Dialysis/renal water treatment requirements confirmed (if the system feeds a renal/haemodialysis unit)", description: "ISO 23500 — a patient-safety-critical water-quality standard distinct from general building water safety, since dialysis water enters the bloodstream directly during treatment." },
+      { key: "del.water_dispenser_legionella_biofilm_risk", section: "Technical Design Package", label: "Water dispenser/cooler Legionella and biofilm risk confirmed (reservoir-type vs mains-fed/point-of-use)", description: "HSG274 / HSE ACOP L8 — reservoir-type coolers are a named Legionella/biofilm risk (stored water, biofilm-prone internals) distinct from a mains-fed/point-of-use unit's continuous-flow lower risk. State which type is involved before treating a water dispenser as low-risk by default." },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
       { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, SHTM 04-01.", bypassAuthority: "SRO" },
@@ -1218,6 +1222,7 @@ async function seedBody(db: DbClient) {
       { key: "del.boiler_bms_control_philosophy", section: "Technical Design Package", label: "BMS control philosophy, sequences & point schedules (new boilers + retained systems)", description: "SHTM 06-01. PM check: sufficient for pricing and coordination at this stage, not full construction detail." },
       { key: "del.boiler_electrical_design", section: "Technical Design Package", label: "Electrical design (boiler power, controls, temporary plant)", description: "SHTM 06-01. PM check: sufficient for pricing and coordination at this stage, not full construction detail." },
       { key: "del.boiler_flue_gas_oil_design", section: "Technical Design Package", label: "Flue system design, combustion air, gas & oil supply modifications", description: "PM check: sufficient for pricing and coordination at this stage, not full construction detail." },
+      { key: "del.boiler_gas_safety_regs_compliance", section: "Technical Design Package", label: "Gas Safety (Installation and Use) Regulations 1998 compliance evidence", description: "Applies wherever new or retained boilers are gas-fired — a distinct statutory step from general Building Regulations compliance, not previously itemised separately." },
       { key: "del.boiler_structural_support_design", section: "Technical Design Package", label: "Structural / plinth / support design information", description: "PM check: sufficient for pricing and coordination at this stage, not full construction detail." },
       { key: "del.boiler_thermal_insulation_spec", section: "Technical Design Package", label: "Thermal insulation specification", description: "PM check: sufficient for pricing and coordination at this stage, not full construction detail." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
@@ -1386,6 +1391,7 @@ async function seedBody(db: DbClient) {
       { key: "del.ventilation_bms_control_philosophy", section: "Technical Design Package", label: "BMS / controls philosophy and point schedules", description: "SHTM 06-01." },
       { key: "del.ventilation_electrical_design", section: "Technical Design Package", label: "Electrical design associated with AHUs, fans and controls", description: "SHTM 06-01." },
       { key: "del.ventilation_duct_insulation_spec", section: "Technical Design Package", label: "Duct insulation specification" },
+      { key: "del.ventilation_fire_damper_drop_test_regime", section: "Technical Design Package", label: "Fire damper annual drop-test regime specified", description: "BS 9999:2017 requires an annual drop test by a competent person — one of the most commonly-cited real compliance failures in UK healthcare estates (dampers painted over, boxed in, or simply never tested)." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
@@ -1536,6 +1542,7 @@ async function seedBody(db: DbClient) {
       { key: "del.medgas_pendant_structural_design", section: "Technical Design Package", label: "Structural design information for pendant supports / ceiling fixings" },
       { key: "del.medgas_electrical_data_design", section: "Technical Design Package", label: "Electrical & data design associated with pendants", description: "SHTM 06-01." },
       { key: "del.medgas_alarm_system_design", section: "Technical Design Package", label: "Alarm system design and interface requirements", description: "SHTM 02-01 Part A." },
+      { key: "del.medgas_agss_wel_exposure_control", section: "Technical Design Package", label: "AGSS occupational exposure control — Workplace Exposure Limit (WEL) monitoring evidence for waste anaesthetic gases", description: "COSHH — real quantified limits apply (100ppm nitrous oxide, 50ppm halogenated agents generally, 10ppm halothane specifically). The Outline MGPS strategy above may name AGSS as part of the system, but exposure-limit monitoring is a distinct occupational-health step, not covered by general MGPS commissioning." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
@@ -1671,6 +1678,7 @@ async function seedBody(db: DbClient) {
       { key: "del.firealarm_cause_effect_matrix", section: "Technical Design Package", label: "Cause & effect matrix / interface schedule (doors, plant, lifts, smoke control, etc.)", description: "SHTM 82." },
       { key: "del.firealarm_battery_power_supply_design", section: "Technical Design Package", label: "Battery autonomy and power supply design", description: "BS 5839-1." },
       { key: "del.firealarm_ufas_reduction_strategy", section: "Technical Design Package", label: "UFAS reduction strategy (detector selection, multi-criteria, verification technology)", description: "SHTM 82." },
+      { key: "del.firealarm_fire_damper_drop_test_regime", section: "Technical Design Package", label: "Fire damper annual drop-test regime specified (where dampers fall within this system's interface scope)", description: "BS 9999:2017 requires an annual drop test by a competent person — one of the most commonly-cited real compliance failures in UK healthcare estates." },
       { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
       { key: "del.common_pre_construction_information", label: "Pre-Construction Information (CDM)", description: "CDM 2015." },
       { key: "del.common_construction_phase_plan", label: "Construction Phase Plan", description: "CDM 2015 reg 12 — produced by the Principal Contractor (or the contractor, if only one) before the construction phase begins." },
@@ -3429,6 +3437,268 @@ async function seedBody(db: DbClient) {
     ],
   ]);
 
+  // ── Templates 22-24: Automatic Doors, Fume Cupboards, Fire Curtains —
+  // three real gaps found the same session as the PVG/DSEAR/RPA
+  // compliance rules above: no live template existed for any of these
+  // three, matching the same gap found and fixed in the Document_Outlines
+  // docx reference checklists (Automatic Doors.docx, Fume Cupboards.docx,
+  // Fire Curtains.docx — read in full for their real content, not
+  // guessed). PVG/DSEAR/RPA are deliberately NOT duplicated into any of
+  // these three as DeliverableTemplate rows — the three ComplianceRuleTemplate
+  // rules above already cover every template automatically (PVG via its
+  // empty appliesIfTags; DSEAR/RPA whenever a project against one of
+  // these templates gets tagged accordingly at provisioning time).
+  const autoDoorsTemplate = await db.template.create({
+    data: {
+      key: "template.health.automatic_doors_replacement",
+      name: "Automatic Doors Replacement",
+      description:
+        "Replacement, major upgrade or installation of automatic (power-operated) doors in hospital premises — sliding, swing, revolving and folding doorsets, including fire/smoke-resisting variants. Doors on isolation-room or theatre lobbies are part of pressure-cascade control, not just access control — a design/commissioning check distinct from general HAI-SCRIBE review.",
+      matchKeywords: ["automatic door", "power-operated door", "sliding door", "revolving door", "folding door", "fire door", "smoke door", "doorset"],
+      sectorVariantId: health.id,
+    },
+  });
+  const autoDoorsStageTemplates = await createStageAndGateTemplates(autoDoorsTemplate.id);
+  await createDeliverableTemplates(autoDoorsStageTemplates, [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.autodoors_business_case", label: "Business case / need identification (door condition, safety, access control need)", description: "SHTM 00." },
+      { key: "del.autodoors_strategic_brief", label: "Strategic brief & outcomes (safe operation, accessibility, escape-route compliance)" },
+      { key: "del.common_clinical_operational_impact_assessment", label: "High-level clinical / operational impact assessment" },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.autodoors_project_brief", label: "Project Brief (scope of doorsets, fire/smoke rating, accessibility requirements)" },
+      { key: "del.autodoors_condition_surveys", label: "Existing condition surveys (mechanism, safety sensors, fire/smoke seal condition)" },
+      { key: "del.common_expanded_risk_register", label: "Expanded Risk Register", description: "SHTM 00, CDM 2015." },
+      { key: "del.common_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
+      { key: "del.autodoors_imaging_adjacency_check", label: "Confirmation of whether any affected door adjoins an ionising-radiation imaging suite (CT/X-ray/fluoroscopy/nuclear medicine)", description: "Flags the door for the Radiation Protection Adviser (RPA) shielding-integrity compliance rule — a separate gate from HAI-SCRIBE, not covered by it." },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.autodoors_concept_design_report", label: "Concept design options (door type, operation mode, fail-safe strategy)", description: "BS EN 16005." },
+      { key: "del.autodoors_pressure_cascade_role", label: "Confirmation of whether the door forms part of a pressure-cascade boundary (isolation room / theatre lobby)", description: "SHTM 03-01 / HAI-SCRIBE — a pressure-cascade door needs its sealing/fail-safe function specified alongside its access-control function." },
+      { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015." },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.autodoors_coordinated_layout_drawings", label: "Coordinated design (door positions, swing/slide clearances, escape-route width)", description: "Building (Scotland) Regulations 2004 (means of escape)." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services" },
+      { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (fire/smoke-rated doorsets)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing strategy (principles only)" },
+    ],
+    // Gate 4 — Technical Design (Critical Gate). Pre-Contract Hold Point.
+    [
+      { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works" },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency" },
+      { key: "del.autodoors_detailed_specification", section: "Technical Design Package", label: "Detailed specification (door type, actuator, safety sensors, fail-safe/break-out operation)", description: "BS EN 16005." },
+      { key: "del.autodoors_fire_smoke_doorset_spec", section: "Technical Design Package", label: "Fire/smoke-resisting doorset specification (where applicable)", description: "BS EN 16034." },
+      { key: "del.autodoors_accessibility_compliance", section: "Technical Design Package", label: "Accessibility compliance confirmation (clear opening width, activation controls, timing)", description: "Equality Act 2010." },
+      { key: "del.autodoors_rpa_shielding_check", section: "Technical Design Package", label: "Radiation Protection Adviser (RPA) sign-off confirming shielding integrity unaffected (where the door adjoins an imaging suite)", description: "IRR17 — see the imaging-adjacency check flagged at Gate 1. A separate gate from HAI-SCRIBE, not covered by it." },
+      { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015.", bypassAuthority: "SRO" },
+      { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
+      { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM documentation and current compliance status for the existing plant being replaced." },
+      { key: "del.common_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off.", bypassAuthority: "SRO" },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates" },
+      { key: "del.autodoors_install_commissioning", label: "Installation, safety sensor commissioning and fail-safe/break-out testing" },
+      { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant doorsets" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.common_full_commissioning_records", label: "Full Commissioning and Validation Reports (force testing, safety sensor function, fire/smoke seal integrity)", description: "BS EN 16005 / BS EN 16034." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals" },
+      { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
+      { key: "del.common_training_records", label: "Training & demonstration records for estates staff" },
+      { key: "del.common_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
+      { key: "del.common_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.autodoors_soft_landings_review", label: "Soft landings / post-occupancy review (reliability, user feedback)" },
+      { key: "del.autodoors_ongoing_maintenance_regime", label: "Ongoing maintenance and periodic safety-function testing regime" },
+      { key: "del.common_defects_liability_final_account", label: "Defects liability records & final account" },
+      { key: "del.common_lessons_learned_report", label: "Lessons learned report" },
+    ],
+  ]);
+
+  const fumeCupboardsTemplate = await db.template.create({
+    data: {
+      key: "template.health.fume_cupboards_replacement",
+      name: "Fume Cupboards Replacement",
+      description:
+        "Installation, replacement or major upgrade of fume cupboards in hospital premises — laboratory, pathology and pharmacy fume cupboards, ducted and recirculating units, and associated Local Exhaust Ventilation (LEV). Face-velocity containment (0.4 m/s ±20%) and the COSHH-mandated 14-month LEV thorough-examination-and-test cycle are distinct statutory requirements, not covered by general commissioning.",
+      matchKeywords: ["fume cupboard", "fume hood", "LEV", "local exhaust ventilation", "laboratory ventilation", "pathology fume extract", "pharmacy fume extract"],
+      sectorVariantId: health.id,
+    },
+  });
+  const fumeCupboardsStageTemplates = await createStageAndGateTemplates(fumeCupboardsTemplate.id);
+  await createDeliverableTemplates(fumeCupboardsStageTemplates, [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.fumecupboard_business_case", label: "Business case / need identification (cupboard condition, face-velocity performance, LEV test history, capacity)", description: "COSHH Regulation 9." },
+      { key: "del.fumecupboard_strategic_brief", label: "Strategic brief & outcomes (containment performance, LEV compliance, capacity)" },
+      { key: "del.common_clinical_operational_impact_assessment", label: "High-level clinical / operational impact assessment" },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.fumecupboard_project_brief", label: "Project Brief (scope of cupboards, ducted vs recirculating, capacity, substance/process inventory)", description: "COSHH." },
+      { key: "del.fumecupboard_substance_process_confirmation", label: "Confirmation of which substances/processes the cupboard(s) serve (COSHH/DSEAR relevance)", description: "COSHH, DSEAR — flags the project for the DSEAR risk assessment compliance rule where flammable solvents are handled." },
+      { key: "del.fumecupboard_condition_lev_history", label: "Existing condition surveys including face-velocity and LEV thorough examination/test history", description: "BS EN 14175, COSHH Regulation 9." },
+      { key: "del.common_expanded_risk_register", label: "Expanded Risk Register (loss of containment, service continuity, DSEAR/flammable-substance risk)", description: "COSHH, DSEAR, CDM 2015." },
+      { key: "del.common_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.fumecupboard_concept_design_report", label: "Concept design options (ducted vs recirculating, constant-air-volume vs variable-air-volume control)", description: "BS EN 14175." },
+      { key: "del.fumecupboard_type_confirmation", label: "Confirmation of ducted versus recirculating type for each unit", description: "BS EN 14175." },
+      { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015, COSHH." },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.fumecupboard_coordinated_layout_drawings", label: "Coordinated design (cupboard positions, extract ductwork routes, plant space)", description: "SHTM 03-01 where linked." },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services" },
+      { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment (ductwork penetrations)", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing strategy (principles only)" },
+    ],
+    // Gate 4 — Technical Design (Critical Gate). Pre-Contract Hold Point.
+    [
+      { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works" },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency" },
+      { key: "del.fumecupboard_detailed_specification", section: "Technical Design Package", label: "Detailed specifications (cupboard, extract fan, controls, VAV system if applicable)", description: "BS EN 14175." },
+      { key: "del.fumecupboard_face_velocity_design", section: "Technical Design Package", label: "Face-velocity and containment design confirmation (0.4 m/s ±20%)", description: "BS EN 14175." },
+      { key: "del.fumecupboard_extract_ductwork_design", section: "Technical Design Package", label: "Extract ductwork schematics and electrical/controls design", description: "SHTM 06 series." },
+      { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015, COSHH.", bypassAuthority: "SRO" },
+      { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
+      { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM documentation and current compliance status for the existing plant being replaced." },
+      { key: "del.common_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off.", bypassAuthority: "SRO" },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates" },
+      { key: "del.fumecupboard_install", label: "Installation of cupboard(s), extract ductwork, controls and VAV system if applicable" },
+      { key: "del.fumecupboard_commissioning_face_velocity_test", label: "Commissioning face-velocity and containment testing", description: "BS EN 14175 — critical containment verification, cannot be bypassed at PM level.", bypassAuthority: "SRO" },
+      { key: "del.fumecupboard_first_lev_test", label: "First LEV thorough examination and test (COSHH Regulation 9)", description: "HSG258 — a distinct statutory step from general commissioning.", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant cupboards" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.fumecupboard_full_commissioning_records", label: "Full commissioning records including LEV thorough examination and test certificate", description: "COSHH Regulation 9, HSG258." },
+      { key: "del.fumecupboard_face_velocity_sash_verification", label: "Face-velocity verification across sash positions", description: "BS EN 14175." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals" },
+      { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
+      { key: "del.common_training_records", label: "Training & demonstration records for estates/lab staff" },
+      { key: "del.common_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
+      { key: "del.common_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.fumecupboard_soft_landings_review", label: "Soft landings / post-occupancy review (containment performance, user feedback)" },
+      { key: "del.fumecupboard_ongoing_lev_regime", label: "Ongoing LEV thorough examination and test regime in operation (at least every 14 months)", description: "COSHH Regulation 9, HSG258." },
+      { key: "del.fumecupboard_periodic_face_velocity_checks", label: "Periodic face-velocity spot-checks", description: "BS EN 14175." },
+      { key: "del.common_defects_liability_final_account", label: "Defects liability records & final account" },
+      { key: "del.common_lessons_learned_report", label: "Lessons learned report" },
+    ],
+  ]);
+
+  const fireCurtainsTemplate = await db.template.create({
+    data: {
+      key: "template.health.fire_curtains_replacement",
+      name: "Fire Curtains Replacement",
+      description:
+        "Installation, replacement or major upgrade of active fire curtain barrier assemblies in hospital premises — smoke/fire curtains at compartment lines, atria, and where used as an alternative to fixed fire-rated construction. BS 8524's own third-party certification scheme lapsed in June 2023 — confirm current certification status rather than assuming it's settled; the underlying maintenance/testing expectations in BS 8524-2 remain real and citable regardless.",
+      matchKeywords: ["fire curtain", "smoke curtain", "active fire barrier", "compartment curtain", "atrium smoke curtain"],
+      sectorVariantId: health.id,
+    },
+  });
+  const fireCurtainsStageTemplates = await createStageAndGateTemplates(fireCurtainsTemplate.id);
+  await createDeliverableTemplates(fireCurtainsStageTemplates, [
+    // Gate 0 — Strategic Definition
+    [
+      { key: "del.firecurtain_business_case", label: "Business case / need identification (curtain condition, compartmentation risk)", description: "SHTM 80." },
+      { key: "del.firecurtain_strategic_brief", label: "Strategic brief & outcomes (compartmentation integrity, smoke control performance)" },
+      { key: "del.common_clinical_operational_impact_assessment", label: "High-level clinical / operational impact assessment" },
+    ],
+    // Gate 1 — Preparation & Briefing
+    [
+      { key: "del.firecurtain_project_brief", label: "Project Brief (scope of curtains, compartment lines/atria affected, smoke-control interface)" },
+      { key: "del.firecurtain_condition_surveys", label: "Existing condition surveys and current certification status confirmation", description: "BS 8524-1 — confirm whether third-party certification for the existing/proposed product is current, given the scheme's June 2023 lapse; don't assume settled." },
+      { key: "del.common_expanded_risk_register", label: "Expanded Risk Register", description: "SHTM 00, CDM 2015." },
+      { key: "del.common_project_execution_plan", label: "Project Execution Plan & procurement strategy" },
+    ],
+    // Gate 2 — Concept Design
+    [
+      { key: "del.firecurtain_concept_design_report", label: "Concept design options (curtain type, smoke-control system interface, fail-safe/gravity-fail strategy)", description: "BS 8524-1." },
+      { key: "del.common_outline_specs_cost_plan", label: "Outline specifications & preliminary cost plan" },
+      { key: "del.common_concept_risk_assessment", label: "Design risk assessment", description: "CDM 2015." },
+    ],
+    // Gate 3 — Spatial Coordination
+    [
+      { key: "del.firecurtain_coordinated_layout_drawings", label: "Coordinated design (curtain positions, headbox locations, structural fixings)" },
+      { key: "del.common_mep_structural_coordination", label: "Spatial coordination with structure and other building services" },
+      { key: "del.common_fire_compartmentation_assessment", label: "Fire compartmentation impact assessment", description: "Statutory duty under the Building (Scotland) Regulations and Fire (Scotland) Act — only the site NHS Fire Officer can approve or reject fire-related compliance, not the SRO.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.common_updated_risk_register_spatial", label: "Updated cost plan, risk register & high-level phasing strategy (principles only)" },
+    ],
+    // Gate 4 — Technical Design (Critical Gate). Pre-Contract Hold Point.
+    [
+      { key: "del.common_developed_design_pricing_specs", label: "Developed design / performance specifications (sufficient for accurate pricing)", description: "Not full construction-issue drawings — those follow contractor appointment, once the Pre-Contract Hold Point below clears." },
+      { key: "del.common_detailed_scope_of_works", label: "Detailed Scope of Works" },
+      { key: "del.common_updated_cost_plan_contingency", label: "Updated cost plan including appropriate contingency" },
+      { key: "del.firecurtain_detailed_specification", section: "Technical Design Package", label: "Detailed specification (curtain fabric rating, backup power for retract, smoke-resistance, gravity-failsafe)", description: "BS 8524-1." },
+      { key: "del.firecurtain_smoke_control_interface", section: "Technical Design Package", label: "Smoke control system interface design (where the curtain forms part of a wider smoke control system)", description: "SHTM 03-01, SHTM 82 — requires quarterly testing once operational, per BS 8524." },
+      { key: "del.common_building_regs_compliance_info", label: "Building Regulations / statutory compliance information", bypassAuthority: "COMPLIANCE_OFFICER" },
+      { key: "del.common_design_risk_assessment_signed", label: "Designer's Risk Assessment & residual risks", description: "CDM 2015.", bypassAuthority: "SRO" },
+      { key: "del.common_tender_documentation", label: "Tender documentation / Scope of Works / pricing schedules" },
+      { key: "del.firecurtain_fsa_design_approval", label: "Fire Safety Advisor / stakeholder review and approval of design", description: "Only the site NHS Fire Officer can approve or reject fire-related design compliance, not the SRO or Compliance Officer.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.common_quotations_submission_and_ppm", label: "Obtain and submit competitive quotations (with PPM documentation) for PFI/NHS lifecycle approval", description: "Minimum of two competitive quotations, cost comparison, contingency and recommendation, submitted to the PFI Board / NHS together with valid PPM documentation and current compliance status for the existing plant being replaced." },
+      { key: "del.common_pre_contract_hold_point", label: "PRE-CONTRACT HOLD POINT — no contractor appointment or Gate 5 works until written PFI/NHS cost approval is received", description: "Clear commercial & governance cut-off.", bypassAuthority: "SRO" },
+      { key: "del.common_post_appointment_full_design", label: "After appointment: complete full technical drawings, final coordination and any remaining design details" },
+    ],
+    // Gate 5 — Manufacturing & Construction
+    [
+      { key: "del.common_method_statements", label: "Contractor's detailed Method Statements and full RAMS", description: "Only produced after contractor appointment, once the Gate 4 Pre-Contract Hold Point has cleared." },
+      { key: "del.common_material_equipment_certificates", label: "Material & equipment certificates" },
+      { key: "del.firecurtain_install", label: "Installation of curtain(s), headbox, guides and controls" },
+      { key: "del.firecurtain_smoke_control_integration_testing", label: "Integration testing with the wider smoke control system (where applicable)", description: "SHTM 03-01/82 — critical for compartmentation reliance, cannot be bypassed at PM level.", bypassAuthority: "FIRE_OFFICER" },
+      { key: "del.common_progress_records_quality_log", label: "Progress records, quality inspections, change control log" },
+      { key: "del.common_decommissioning_records", label: "Decommissioning & strip-out records of redundant curtains" },
+    ],
+    // Gate 6 — Handover
+    [
+      { key: "del.firecurtain_full_commissioning_records", label: "Full commissioning and functional test records (descent time, gravity-failsafe, backup power, smoke resistance)", description: "BS 8524-1/2." },
+      { key: "del.common_as_fitted_drawings", label: "As-fitted drawings and schedules" },
+      { key: "del.common_om_manuals", label: "Comprehensive O&M manuals" },
+      { key: "del.common_updated_hs_file", label: "Updated Health & Safety File", description: "CDM 2015." },
+      { key: "del.common_training_records", label: "Training & demonstration records for estates staff" },
+      { key: "del.common_residual_risk_register", label: "Residual risk register", description: "CDM 2015." },
+      { key: "del.common_practical_completion_certificate", label: "Practical Completion / handover certificate", bypassAuthority: "SRO" },
+      { key: "del.firecurtain_fsa_handover_acceptance", label: "Fire Safety Advisor formal handover acceptance", bypassAuthority: "FIRE_OFFICER" },
+    ],
+    // Gate 7 — Use
+    [
+      { key: "del.firecurtain_soft_landings_review", label: "Soft landings / post-occupancy review (reliability, user feedback)" },
+      { key: "del.firecurtain_ongoing_testing_regime", label: "Ongoing quarterly test regime in operation where linked to a smoke control system, otherwise per BS 8524-2's maintenance schedule", description: "BS 8524-2." },
+      { key: "del.common_defects_liability_final_account", label: "Defects liability records & final account" },
+      { key: "del.common_lessons_learned_report", label: "Lessons learned report" },
+    ],
+  ]);
+
   // ── Compliance corpus: independently maintained, reused across every
   // programme type (ConfigSchema.html §04) — not authored per project.
   // Grounded in Complaince and Regulations.docx. Deliberately distinct
@@ -3741,6 +4011,50 @@ async function seedBody(db: DbClient) {
         blocksGate: true,
         appliesToStageKeys: ["stage.technical_design"],
         appliesIfTags: [CDM_PRINCIPAL_DESIGNER_TAG],
+      },
+      // Three rules added same session as the Automatic Doors / Fume
+      // Cupboards / Fire Curtains templates below, ported from the
+      // Document_Outlines docx reference checklists' own PVG/DSEAR/RPA
+      // additions. All three are genuinely cross-cutting — they don't
+      // belong to one discipline the way F-Gas or LOLER do — so they
+      // live here in the core ruleset rather than duplicated as a
+      // DeliverableTemplate row in every affected template.
+      {
+        ruleSetId: scottishHealthCompliance.id,
+        key: "comp.pvg_scheme_membership",
+        label: "PVG Scheme membership evidenced for contractor personnel attending site",
+        description: "Current PVG Scheme membership (Disclosure Scotland's 5-year membership product for regulated roles, legally required since the Disclosure (Scotland) Act 2020's 1 April 2025 commencement) must be evidenced for named contractor operatives before they attend an occupied hospital site — distinct from Level 1/Level 2 disclosure, and from general trade competency cards. Applies to every project: hospital circulation routes aren't cleanly separable from vulnerable-patient areas.",
+        ruleRef: "Disclosure (Scotland) Act 2020 / PVG Scheme",
+        blocksGate: true,
+        appliesToStageKeys: ["stage.manufacturing_construction"],
+        appliesIfTags: [],
+      },
+      {
+        ruleSetId: scottishHealthCompliance.id,
+        key: "comp.dsear_risk_assessment",
+        label: "DSEAR risk assessment completed for dangerous substances / explosive atmospheres",
+        description: "Applies wherever the works involve a flammable or pressurised substance — refrigerant handling (including A2L refrigerants such as R32, in scope since DSEAR's 2015 amendment brought all 'gases under pressure' into scope regardless of flammability class), fuel supply/combustion, or compressed/medical gas — particularly where hot works occur on or near the same system. A distinct statutory risk assessment from the general fire risk assessment and the hot-works permit above.",
+        ruleRef: "Dangerous Substances and Explosive Atmospheres Regulations 2002, as amended 2015",
+        blocksGate: true,
+        appliesToStageKeys: ["stage.manufacturing_construction"],
+        appliesIfTags: ["dsear_dangerous_substances_affected"],
+        // Fire-domain in practice (ignition-source control, same concern
+        // as comp.hot_works_permit) but the underlying hazard is the
+        // dangerous substance itself, not fire-safety-of-the-building —
+        // kept on the default SRO authority rather than FIRE_OFFICER,
+        // consistent with comp.work_at_height_authorisation and
+        // comp.lone_working_arrangements (no SHTM/HTM-established AP
+        // exists for DSEAR the way it does for fire/electrical/water).
+      },
+      {
+        ruleSetId: scottishHealthCompliance.id,
+        key: "comp.rpa_shielding_integrity",
+        label: "Radiation Protection Adviser (RPA) sign-off confirming shielding integrity unaffected",
+        description: "Applies wherever works are in, adjacent to, above or below a room housing ionising-radiation imaging equipment (CT, X-ray, fluoroscopy, nuclear medicine — not MRI, which uses no ionising radiation). A separate gate from HAI-SCRIBE, not covered by it: a job can pass infection-control review cleanly and still risk breaching lead shielding integrity by drilling or fixing into a bounding wall, floor or ceiling.",
+        ruleRef: "Ionising Radiations Regulations 2017 (IRR17)",
+        blocksGate: true,
+        appliesToStageKeys: ["stage.technical_design"],
+        appliesIfTags: ["imaging_suite_adjacent_works"],
       },
     ],
   });
