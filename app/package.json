@@ -14,6 +14,7 @@
     "db:studio": "prisma studio",
     "sharepoint:check": "tsx scripts/sharepoint-check.ts",
     "england:generate": "tsx scripts/generate-england-variant.ts",
+    "sync:2026-09-10-compliance": "tsx scripts/sync-scotland-compliance-updates.ts",
     "england:demo": "tsx scripts/seed-england-demo.ts",
     "test:desktop": "playwright test"
   },
