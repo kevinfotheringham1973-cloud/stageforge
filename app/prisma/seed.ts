@@ -278,8 +278,8 @@ async function seedBody(db: DbClient) {
     },
   });
   // Real logins added 25 Aug 2026, consolidating PM and AP (Water) down
-  // to one named holder each -- see lightingProject and the AP (Water)
-  // reassignment near the end of this function.
+  // to one named holder each -- see waterProject's second PM row and
+  // the AP (Water) reassignment near the end of this function.
   const javier = await db.user.create({
     data: {
       name: "Javier Carreno",
@@ -5147,165 +5147,39 @@ async function seedBody(db: DbClient) {
     },
   });
 
-  // ── Fourth demo project: Cold Water Storage & Distribution
-  // Replacement, originally created live via the managed project-number
-  // flow on 19 Aug 2026 as project 30001 — at the time, matched to the
-  // calorifier template because its description still over-claimed
-  // "hot/cold water storage" scope, which is exactly the gap the Cold
-  // Water template above exists to close. Replayed here against the
-  // correct template, same reproducible pattern as the drainage
-  // project. Kept as project number 30001 to match what was actually
-  // issued — the counter below is seeded to 30001 (not 30000) so the
-  // next real project correctly gets 30002, not a collision with this one.
-  const coldWaterProject = await db.project.create({
-    data: {
-      projectNumber: "30001",
-      isDemoProject: true,
-      name: "Main Water Tank Replacement for the Entire Hospital",
-      templateId: coldWaterTemplate.id,
-      includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8
-      tags: ["water_systems_affected", "occupied_during_works"],
-      // Replacing 4 large inlet/filtered storage tanks serving the
-      // whole hospital needs a reinforced plant-room base and new
-      // access/overflow arrangements — building fabric work, not a
-      // like-for-like swap.
-      worksType: "BUILDING_MODIFICATION",
-      status: "ACTIVE",
-      createdById: derek.id,
-      provisioningBrief:
-        "There are 2 main inlet water tanks and 2 filtered tanks, supplying the whole of the Hospital. Currently, they are leaking badly and need to be replaced.",
-      provisioningMatchReasoning:
-        "Replacement of leaking inlet and filtered cold water storage tanks serving the hospital — cold water storage/distribution plant, not calorifiers or hot water, and not drainage — matches Cold Water Storage & Distribution Replacement. Water systems clearly affected, and the hospital remains operational during works.",
-    },
-  });
-
-  await db.projectRoleAssignment.createMany({
-    data: [
-      { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.PM.id },
-      { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },
-      { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.SPONSOR.id },
-      { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
-      { projectId: coldWaterProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
-      { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
-      { projectId: coldWaterProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
-      { projectId: coldWaterProject.id, departmentId: stAldwynEstates.id, userId: alan.id, roleId: roles.FIRE_OFFICER.id },
-      { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
-      { projectId: coldWaterProject.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
-      // AP (Water) is James Slaven, not listed here -- see the
-      // portfolio-wide reassignment near the end of this function.
-    ],
-  });
-
-  await db.provisioningReview.create({
-    data: { projectId: coldWaterProject.id, decision: "APPROVED", reviewedById: gary.id },
-  });
-
-  const coldWaterStageTemplatesFull = await db.stageTemplate.findMany({
-    where: { templateId: coldWaterTemplate.id },
-    orderBy: { order: "asc" },
-    include: { gateTemplate: { include: { deliverableTemplates: true } } },
-  });
-  for (let i = 0; i < coldWaterStageTemplatesFull.length; i++) {
-    await instantiateStage(db, {
-      projectId: coldWaterProject.id,
-      projectTags: effectiveComplianceTags(coldWaterProject, [coldWaterTemplate.key]),
-      sectorVariantId: health.id,
-      order: i,
-      stageTemplates: [coldWaterStageTemplatesFull[i]!],
-    });
-  }
-
-  // ── Fifth demo project: Lighting & Electrical Distribution
-  // Replacement, originally created live via the managed project-number
-  // flow on 20 Aug 2026 as project 30002 — at the time, matched to the
-  // M&E Systems Replacement template for lack of anywhere better to go,
-  // which is exactly the gap the Lighting template above exists to
-  // close. Replayed here against the correct template, same
-  // reproducible pattern as the drainage/cold-water projects. worksType
-  // stays DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS to match what was
-  // actually selected — a like-for-like LED retrofit needs an
-  // electrician and a specialist waste-disposal contractor for the
-  // fluorescent tubes, but doesn't touch the building fabric.
-  const lightingProject = await db.project.create({
-    data: {
-      projectNumber: "30002",
-      isDemoProject: true,
-      name: "LED Upgrade Throughout Hospital Corridors and Avenues",
-      templateId: lightingTemplate.id,
-      includedStageKeys: stageDefs.map((s) => s.key), // provisioning defaults to all 8
-      tags: ["occupied_during_works"],
-      worksType: "DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS",
-      status: "ACTIVE",
-      createdById: dennis.id,
-      provisioningBrief:
-        "Aligning with Net Zero, this project consists of replacing all fluorescent lights in the hospital corridors and avenues with LED alternatives.",
-      provisioningMatchReasoning:
-        "Fluorescent-to-LED retrofit is a lighting and electrical distribution problem — luminaires, lighting circuits, and emergency/escape lighting — not standby power (UPS/generators), so matches Lighting & Electrical Distribution Replacement rather than M&E Systems Replacement. Hospital corridors remain in use during works, hence occupied_during_works.",
-    },
-  });
-
-  await db.projectRoleAssignment.createMany({
-    data: [
-      // Dennis was "acting as" when the real project was created live —
-      // createProvisioningDraft assigns PM to the creator, not always
-      // Derek (confirmed 20 Aug 2026, after this gap caused
-      // canSetGateTimeline to look "broken" when acting as anyone else).
-      // PM reassigned to Javier 25 Aug 2026, when Kevin consolidated PM
-      // duties down to Derek + Javier only -- createdById above stays
-      // Dennis, since that's a historical fact about who created the
-      // project, not a current role.
-      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: javier.id, roleId: roles.PM.id },
-      { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: derek.id, roleId: roles.FM_CONTRACTOR.id },
-      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.SPONSOR.id },
-      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: david.id, roleId: roles.CLIENT_AUTHORITY.id },
-      { projectId: lightingProject.id, departmentId: buildCareCompliance.id, userId: gary.id, roleId: roles.COMPLIANCE_OFFICER.id },
-      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: mark.id, roleId: roles.SRO.id },
-      { projectId: lightingProject.id, departmentId: buildCareFinance.id, userId: andrea.id, roleId: roles.FINANCE.id },
-      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: alan.id, roleId: roles.FIRE_OFFICER.id },
-      { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: bob.id, roleId: roles.AUTHORISED_PERSON_ELECTRICAL.id },
-      { projectId: lightingProject.id, departmentId: stAldwynEstates.id, userId: dennis.id, roleId: roles.AUTHORISING_ENGINEER_ELECTRICAL.id },
-      { projectId: lightingProject.id, departmentId: buildCareNorth.id, userId: ross.id, roleId: roles.PRINCIPAL_DESIGNER.id },
-    ],
-  });
-
-  await db.provisioningReview.create({
-    data: { projectId: lightingProject.id, decision: "APPROVED", reviewedById: gary.id },
-  });
-
-  const lightingStageTemplatesFull = await db.stageTemplate.findMany({
-    where: { templateId: lightingTemplate.id },
-    orderBy: { order: "asc" },
-    include: { gateTemplate: { include: { deliverableTemplates: true } } },
-  });
-  for (let i = 0; i < lightingStageTemplatesFull.length; i++) {
-    await instantiateStage(db, {
-      projectId: lightingProject.id,
-      projectTags: effectiveComplianceTags(lightingProject, [lightingTemplate.key]),
-      sectorVariantId: health.id,
-      order: i,
-      stageTemplates: [lightingStageTemplatesFull[i]!],
-    });
-  }
+  // The fourth and fifth demo projects (Cold Water Tank #30001, LED
+  // Upgrade #30002) were removed on Kevin's explicit request (11 Sep
+  // 2026) to reduce the demo portfolio to 3 projects ahead of a Store
+  // submission — UPS, Water/Calorifier and Drainage were kept
+  // specifically because they preserve two real demos the other two
+  // weren't needed for: UPS+Water share a gate key so /lessons-learned
+  // still shows genuine cross-project grouping, and Water+Drainage
+  // still independently prove the CDM 2015 BUILDING_MODIFICATION branch
+  // alongside UPS's own DIRECT_REPLACEMENT_MULTIPLE_CONTRACTORS
+  // contrast. Real, lost side effect: the retired "Cold Water Storage &
+  // Distribution Replacement" template above is now genuinely dead
+  // weight — it was only ever kept alive to give project #30001 a valid
+  // templateId, and that project no longer exists. Left in place rather
+  // than pulled, since removing a template is a separate decision from
+  // trimming demo projects and wasn't asked for.
 
   // ── Resource/capacity view: realistic % FTE allocation per
   // delivery-facing person across the live projects, including one
   // deliberate over-100% case (Derek, PM/FM Contractor spread across
-  // all 5) — that flagging is the entire point of /resources, so the
-  // seed should always demonstrate it rather than leave everyone at 0%.
+  // all 3 remaining projects) — that flagging is the entire point of
+  // /resources, so the seed should always demonstrate it rather than
+  // leave everyone at 0%. Percentages rebalanced onto 3 projects (was
+  // 5) to keep Derek's total over 100% after the trim above — same
+  // combined total (110%) as before, just redistributed.
   const resourceAllocations: { user: typeof derek; project: typeof project; pct: number }[] = [
-    { user: derek, project, pct: 30 }, // UPS (20456)
-    { user: derek, project: waterProject, pct: 15 }, // Calorifier (20777)
-    { user: derek, project: coldWaterProject, pct: 20 }, // Cold water tank (30001)
-    { user: derek, project: lightingProject, pct: 15 }, // LED (30002)
+    { user: derek, project, pct: 50 }, // UPS (20456)
+    { user: derek, project: waterProject, pct: 30 }, // Calorifier (20777)
     { user: derek, project: drainageProject, pct: 30 }, // Kitchen drainage (55998)
     { user: ross, project, pct: 15 },
     { user: ross, project: waterProject, pct: 10 },
-    { user: ross, project: lightingProject, pct: 15 },
     { user: ross, project: drainageProject, pct: 10 },
     { user: bob, project, pct: 20 },
-    { user: bob, project: lightingProject, pct: 20 },
     { user: dennis, project, pct: 15 },
-    { user: dennis, project: lightingProject, pct: 25 },
   ];
   for (const a of resourceAllocations) {
     await db.resourceAllocation.create({
@@ -5317,8 +5191,8 @@ async function seedBody(db: DbClient) {
   // portfolio (25 Aug 2026) -- a live bulk reassignment mirrored here as
   // one pass over every project that exists by this point, rather than
   // threaded into each project's own hardcoded role list above (see
-  // waterProject/coldWaterProject, where Claire's old
-  // AUTHORISED_PERSON_WATER row was simply removed). skipDuplicates
+  // waterProject, where Claire's old AUTHORISED_PERSON_WATER row was
+  // simply removed). skipDuplicates
   // guards against ever running this twice against the same DB.
   const allProjectsForWaterAP = await db.project.findMany({ select: { id: true } });
   await db.projectRoleAssignment.createMany({
