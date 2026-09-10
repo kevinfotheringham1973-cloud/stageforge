@@ -14,6 +14,16 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: "11 Sep 2026",
+    title: "Eight more system checklists, a full library-wide compliance audit, and Scotland-specific corrections",
+    highlights: [
+      "Eight more system checklists covering hospital systems that had none before: Catering/Kitchen Equipment, Laundry/Linen Services, Waste Management, Mortuary Services, Renewable/Net Zero Plant (solar, heat pumps, battery storage, EV charging), Building Fabric/External Envelope, Escalators, and non-domestic Water Treatment Plant — each with the same real regulatory grounding as the existing library.",
+      "Every one of the (now 33) system checklists was independently reviewed end-to-end for two things: is anything a Project Manager genuinely needs missing, and is anything in there unnecessary. The good news on the second question — nothing unnecessary was found anywhere in the library.",
+      "That review did turn up some real gaps, now closed: Legionella control for cooling towers on Chilled Water & Cooling projects, a fire-precautions reference for existing/occupied buildings (SHTM 85) on both fire checklists, a heads-up about the incoming international lift safety standard replacing the current one this year, and an asbestos survey requirement on Room/Ward/Theatre refresh projects before any wall, floor or door work starts.",
+      "A number of citations across the library were corrected to the actual Scotland-specific rule rather than the generic or England/Wales one — Building Warrant instead of generic \"Building Regulations,\" Scotland's own water-fittings byelaws instead of the England/Wales regulations, and the actual NHS Scotland cyber-resilience framework named on Building Management System projects instead of a vague reference.",
+    ],
+  },
+  {
     date: "10 Sep 2026",
     title: "Three new checklists, contractor vetting and dangerous-substances checks, several smaller compliance gaps closed",
     highlights: [
