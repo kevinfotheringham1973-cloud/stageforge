@@ -71,6 +71,7 @@ model User {
   roleAssignments            ProjectRoleAssignment[]
   evidenceUploads            EvidenceFile[]
   bypasses                   DeliverableBypass[]
+  bypassesUndone             DeliverableBypass[]      @relation("DeliverableBypassUndoneBy")
   signOffs                   GateSignOff[]
   auditEntries               AuditLogEntry[]
   complianceUploads          ComplianceEvidenceFile[]
@@ -928,6 +929,20 @@ model EvidenceFile {
 // bypasses must hold the role named by the deliverable's
 // bypassAuthority; enforced in application code (lib/permissions.ts),
 // not the schema.
+// A Deliverable keeps at most one DeliverableBypass row (deliverableId
+// stays @unique -- kept deliberately, see undoDeliverableBypass's own
+// comment) representing its CURRENT bypass state, mirroring how
+// Deliverable.status itself is a single current value, not a history --
+// the full immutable event-by-event history (bypassed, undone, bypassed
+// again) lives in AuditLogEntry regardless, same as every other action
+// in this schema. undone* fields added 11 Sep 2026, real user-reported
+// gap: an accidental bypass had no way back to PENDING to add real
+// evidence. bypassDeliverable upserts this row rather than only ever
+// creating it, so a deliverable can be bypassed, undone, and bypassed
+// again -- each re-bypass overwrites bypassedBy/reason/createdAt and
+// clears the undone* fields, which is the one piece of history this
+// table alone doesn't preserve across multiple cycles (AuditLogEntry
+// does).
 model DeliverableBypass {
   id            String      @id @default(cuid())
   deliverableId String      @unique
@@ -936,6 +951,10 @@ model DeliverableBypass {
   bypassedBy    User        @relation(fields: [bypassedById], references: [id])
   reason        String
   createdAt     DateTime    @default(now())
+  undoneAt      DateTime?
+  undoneById    String?
+  undoneBy      User?       @relation("DeliverableBypassUndoneBy", fields: [undoneById], references: [id])
+  undoneReason  String?
 }
 
 enum SignOffDecision {
