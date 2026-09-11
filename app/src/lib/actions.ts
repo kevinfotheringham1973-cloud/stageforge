@@ -38,6 +38,7 @@ import { assertSameSectorVariant, constituentTemplateIds, loadConstituentTemplat
 import { sendScheduledReport } from "./scheduledReportSender";
 import { evidenceFolderPath, isSharePointConfigured, uploadEvidenceFile } from "./sharepoint";
 import { isLocalEvidenceStorageEnabled, localEvidenceFolderPath, saveLocalEvidenceFile } from "./localEvidenceStorage";
+import { REVIEWABLE_AGENT_SLUGS } from "./documentReviewEvidence";
 
 /**
  * Admin-only "view as" -- lets a real, signed-in platform admin preview
@@ -1895,21 +1896,6 @@ export async function requestEmailApproval(gateId: string, projectNumber: string
 
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
 }
-
-// Phase 5 (PRD.html §06/§09) — only the nhs-scotland-* agents shaped as
-// "one document in, one report out" are eligible. The Q&A/guidance agents
-// (hardfm-compliance, ipc-haiscribe, lifecycle-handback, netzero-energy,
-// pfi-paymech) don't take a document at all, and the multi-document
-// drafting agent (ccn-preparation, which needs a SOW+quote pair) doesn't
-// fit a single-EvidenceFile request either — both deliberately excluded
-// from this bridge for now, not an oversight.
-export const REVIEWABLE_AGENT_SLUGS = [
-  "nhs-scotland-rams-review",
-  "nhs-scotland-sow-review",
-  "nhs-scotland-inspection-review",
-  "nhs-scotland-cdm-review",
-  "nhs-scotland-sfg20-mapping-review",
-] as const;
 
 /**
  * PM requests an AI review of one real, already-submitted piece of

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { getCurrentUser, getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { evidenceFolderPath } from "@/lib/sharepoint";
+import { REVIEWABLE_AGENT_SLUGS } from "@/lib/documentReviewEvidence";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
   canApproveSpend,
@@ -35,7 +36,6 @@ import {
   rejectSpend,
   requestDocumentReview,
   requestEmailApproval,
-  REVIEWABLE_AGENT_SLUGS,
   reviseSpend,
   setGateTimeline,
   submitForApproval,

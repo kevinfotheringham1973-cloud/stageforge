@@ -15,6 +15,24 @@ import {
 
 type ProjectRef = { name: string; projectNumber: string };
 
+// Only the nhs-scotland-* agents shaped as "one document in, one report
+// out" are eligible. The Q&A/guidance agents (hardfm-compliance,
+// ipc-haiscribe, lifecycle-handback, netzero-energy, pfi-paymech) don't
+// take a document at all, and the multi-document drafting agent
+// (ccn-preparation, which needs a SOW+quote pair) doesn't fit a single-
+// EvidenceFile request either — both deliberately excluded from this
+// bridge for now, not an oversight. Lives here, not in actions.ts, because
+// a "use server" file may only export async functions — a plain const
+// export breaks Next's build (found live in CI, not by `tsc --noEmit`,
+// which doesn't enforce that constraint).
+export const REVIEWABLE_AGENT_SLUGS = [
+  "nhs-scotland-rams-review",
+  "nhs-scotland-sow-review",
+  "nhs-scotland-inspection-review",
+  "nhs-scotland-cdm-review",
+  "nhs-scotland-sfg20-mapping-review",
+] as const;
+
 /**
  * Downloads a SUBMITTED EvidenceFile's real bytes for the AI Council to
  * review. Returns null (never throws for this specific case) when the
