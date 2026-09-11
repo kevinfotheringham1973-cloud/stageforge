@@ -8,6 +8,8 @@ const APPROVAL_BUCKET_LABELS: Record<string, string> = {
   LIFECYCLE_REPLACEMENT: "Lifecycle replacement",
   SMALL_WORKS: "Small works",
   VARIATION: "Variation",
+  SERCO_INVESTMENT: "Serco investment",
+  CAPITAL_PROJECT: "Capital project",
 };
 
 /**

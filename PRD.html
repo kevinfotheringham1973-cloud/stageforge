@@ -565,15 +565,15 @@
   <h3>Financial View</h3>
   <ul>
     <li>Shows actual spend — all invoices — rolled up against the central project number.</li>
-    <li>Spend is classified into the three <strong>Approval Buckets</strong> Hard FM uses: <strong>Lifecycle Replacement</strong>, <strong>Small Works</strong>, and <strong>Variation</strong>. Each bucket carries its own approval route.</li>
+    <li>Spend is classified into the five <strong>Approval Buckets</strong> Hard FM uses: <strong>Lifecycle Replacement</strong>, <strong>Small Works</strong>, <strong>Variation</strong>, <strong>Serco Investment</strong>, and <strong>Capital Project</strong>. Each bucket carries its own approval route.</li>
     <li>A single large project can draw from more than one bucket at once — the Financial View must show total spend across all buckets combined for that project, as well as broken out per bucket, so a Sponsor or SRO sees full committed spend rather than one approval stream's slice of it.</li>
     <li>Longer-term ambition to connect that project number back to SAP or D365.</li>
   </ul>
-  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed 19 Aug 2026: the three approval buckets are Lifecycle Replacement, Small Works, and Variation; large projects often draw from more than one, and spend must roll up across all of them a project uses, not just per bucket.</div>
+  <div class="flag decided"><span class="flag-label">Decided</span>Confirmed 19 Aug 2026: the original three approval buckets are Lifecycle Replacement, Small Works, and Variation; large projects often draw from more than one, and spend must roll up across all of them a project uses, not just per bucket. Extended 11 Sep 2026 with two more, from real user feedback: Serco Investment (Serco's own capital committed to a project, not client-funded) and Capital Project (a distinct capital works programme, as opposed to routine lifecycle replacement of an existing asset) — same rollup rule applies across all five.</div>
   <div class="flag decided"><span class="flag-label">Decided</span>Confirmed: SAP/D365 integration is not near-term. Financial view should ship with manual/invoice-level actuals only; ERP reconciliation stays a later-phase ambition.</div>
   <div class="flag">
     <span class="flag-label">Open question</span>
-    Approval thresholds and workflow differences between the three buckets — value ranges, whether each bucket has its own sign-off role beyond Sponsor/SRO, whether bucket choice is set per-deliverable or per-project — aren't specified yet. Needs the input before this becomes a data model.
+    Approval thresholds and workflow differences between the five buckets — value ranges, whether each bucket has its own sign-off role beyond Sponsor/SRO, whether bucket choice is set per-deliverable or per-project — aren't specified yet. Needs the input before this becomes a data model.
   </div>
 
   <h3>Sector / Brand Variants &amp; Tenancy</h3>
@@ -687,7 +687,7 @@
     <div class="phase-num">Phase 3</div>
     <div class="phase-body">
       <h4>Finance view + second sector</h4>
-      <p>Financial view (manual/invoice actuals, no ERP yet), spend classified into the three Hard FM approval buckets — Lifecycle Replacement, Small Works, Variation — with combined spend rolled up across all three where a project draws from more than one; begin templating a second sector to prove the white-label model actually holds. SAP/D365 integration deferred beyond this.</p>
+      <p>Financial view (manual/invoice actuals, no ERP yet), spend classified into the five Hard FM approval buckets — Lifecycle Replacement, Small Works, Variation, Serco Investment, Capital Project — with combined spend rolled up across all five where a project draws from more than one; begin templating a second sector to prove the white-label model actually holds. SAP/D365 integration deferred beyond this.</p>
     </div>
   </div>
 
@@ -704,7 +704,7 @@
   <ol class="oq">
     <li>Does StageForge share any infrastructure or login with the GasNet project under pmopassport.co.uk, or does it just coexist as a sibling subdomain?</li>
     <li>How much PM-facing guidance AI-assisted project provisioning should surface — a one-time generated brief versus ongoing per-gate guidance.</li>
-    <li>Approval thresholds and workflow differences between the three spend buckets (Lifecycle Replacement, Small Works, Variation) — value ranges, bucket-specific approvers, and whether bucket is set per-deliverable or per-project.</li>
+    <li>Approval thresholds and workflow differences between the five spend buckets (Lifecycle Replacement, Small Works, Variation, Serco Investment, Capital Project) — value ranges, bucket-specific approvers, and whether bucket is set per-deliverable or per-project.</li>
     <li>Inbound-reply verification strength for the Project Managed System's email-based approvals — address-match, SPF/DKIM authentication-results, or a unique per-request reply token.</li>
     <li>How the Project Managed System's external <code>EmailApproval</code> mechanism reconciles with the pre-existing, still-undesigned internal multi-party-approval item (Compliance Officer <em>and</em> a named NHS-side approver, both required) under Roles &amp; Permissions.</li>
   </ol>
@@ -716,6 +716,7 @@
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (11 Sep 2026, later): Phases 2 and 3 of the Project Managed System build (§06/§09) shipped and independently verified — notification routing via the bearer-token API, and inbound approval capture requiring an exact roster-address sender match, an explicit unambiguous decision, a still-current Sponsor <code>roleKey</code>, and every gate precondition the in-app <code>decide()</code> action itself enforces, before a <code>GateSignOff</code> tagged <code>capturedVia: EMAIL_PROXY</code> is ever written. Verified with a permanent, fire-tested smoke test (28 checks, calls the real route handlers directly against real local dev data). Next: the AI Council side of Phase 3 — the mailbox reply scanner/classifier that calls this route — then Phase 3 end-to-end, then Phase 4 (escalation/reminders).</p>
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (11 Sep 2026, later still): Phase 3 verified fully end-to-end on real data — a real inbound reply sent through the real Microsoft Graph mailbox, read and classified by the new AI Council reply-scanner, and recorded by StageForge's <code>/reply</code> route against an isolated local dev server; caught and fixed a real bug along the way (the route was keyed by database <code>id</code>, but the reply-scanner only ever has the <code>requestToken</code> read out of the email's own <code>[REF: ...]</code> marker — now keyed by <code>requestToken</code> throughout). Phase 4 (escalation/reminders) then built and shipped the same day: a graduated reminder-then-escalate policy that stops chasing automatically once escalated, verified with 11 new fire-tested smoke checks and a live end-to-end run (a real reminder email, then a real escalation email, both sent and confirmed against an isolated server).</p>
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (11 Sep 2026, still later): Phase 5 (the StageForge↔AI Council document-review bridge) built and shipped — PM-triggered review of a real Deliverable's evidence, restricted to the five <code>nhs-scotland-*</code> agents shaped for it, with a new <code>EvidenceFileKind</code> distinction keeping AI-generated review reports from ever being mistaken for, or superseding, real submitted evidence. 26 new fire-tested smoke checks (65 total) including a genuine real byte-level upload/download round trip, plus two live end-to-end runs on the AI Council side: a real headless review agent producing a real, substantive report, and a deliberately invalid agent slug correctly caught and recorded as a genuine failure rather than disappearing silently. New standing rule captured this round: fire-testing (deliberately breaking a guard, confirming the test catches it, then reverting) is now mandatory alongside smoke-testing before any phase is treated as verified.</p>
+  <p style="color:var(--ink-muted); font-size:.9rem;">Resolved this round (11 Sep 2026, yet later): two more Approval Buckets added, from real user feedback — Serco Investment and Capital Project alongside the original Lifecycle Replacement/Small Works/Variation — now five in total, same cross-bucket rollup rule applying to all of them. Verified with a real database round trip (both new bucket values created, reloaded, and confirmed to match) and a real production build in an isolated worktree.</p>
   <p style="color:var(--ink-muted); font-size:.9rem;">Resolved in earlier rounds and reflected here: target user/buyer, role set, role-assignment model, bypass/approval permissions, audit trail &amp; versioning, tenancy model, compliance architecture direction, ERP timing, compliance-blocks-by-default with SRO override, SRO assigned per-project, SRO override requires written reason + single sign-off, PM bypass requires written reason, tenant boundary resolved via project-scoped access, legally significant deliverables escalate bypass authority to Compliance Officer/SRO, pmopassport.co.uk as sibling subdomain, SRO title, gate rejection requires written reason and returns to PM, sector priority after Health stays open.</p>
 
   <h2><span class="num">11</span>Out of scope, for now</h2>
@@ -735,6 +736,6 @@
     <li>Reduction in manual spend-reconciliation effort versus the current process — needs a baseline.</li>
   </ul>
 
-  <footer>StageForge · PRD draft v0.20 · expanded from Overview.docx + the decisions, 18–23 Aug 2026, 11 Sep 2026</footer>
+  <footer>StageForge · PRD draft v0.21 · expanded from Overview.docx + the decisions, 18–23 Aug 2026, 11 Sep 2026</footer>
 
 </div>
