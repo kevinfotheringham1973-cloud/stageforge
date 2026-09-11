@@ -79,6 +79,7 @@ model User {
   createdProjects            Project[]                @relation("ProjectCreatedBy")
   createdWorksPackages       WorksPackage[]           @relation("WorksPackageCreatedBy")
   createdProjectContacts     ProjectContact[]         @relation("ProjectContactCreatedBy")
+  emailApprovalsRequested    EmailApproval[]
   provisioningReviews        ProvisioningReview[]
   resourceAllocations        ResourceAllocation[]
   resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
@@ -239,6 +240,7 @@ model ProjectContact {
   createdBy   User     @relation("ProjectContactCreatedBy", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  emailApprovals EmailApproval[]
 
   @@index([projectId])
 }
@@ -880,6 +882,7 @@ model Gate {
   complianceOverrides    ComplianceOverride[]
   spendRecords           SpendRecord[]
   signOffs               GateSignOff[]
+  emailApprovals         EmailApproval[]
   auditEntries           AuditLogEntry[]
   lessonsLearned         LessonLearned[]
   createdAt              DateTime                @default(now())
@@ -951,6 +954,50 @@ model GateSignOff {
   signedOffBy   User            @relation(fields: [signedOffById], references: [id])
   reason        String?
   createdAt     DateTime        @default(now())
+}
+
+// ── Project Manager Agent: email-based approval (Phase 2) ───────────────
+// See PRD.html §06 "External Roster & Email-Based Approval" for the full
+// design and the hard boundary this whole mechanism operates under: the
+// requesting system relays and records, it never decides. This model is
+// standalone -- GateSignOff above is untouched by this phase. A later
+// phase (verified inbound approval capture) will add a nullable
+// emailApprovalId + capturedVia flag to GateSignOff once a real decision
+// can be recorded from one of these; until then this table only tracks
+// the request/send lifecycle, never a decision.
+enum EmailApprovalStatus {
+  PENDING // created, not yet sent
+  SENT // the mailbox pipeline confirmed it emailed the contact
+  DECIDED // reserved for the inbound-capture phase -- unused so far
+}
+
+model EmailApproval {
+  id              String              @id @default(cuid())
+  gateId          String
+  gate            Gate                @relation(fields: [gateId], references: [id])
+  contactId       String
+  contact         ProjectContact      @relation(fields: [contactId], references: [id])
+  // Opaque, unguessable -- embedded in the outbound email (subject or a
+  // custom header) so a future reply can be matched back to this exact
+  // request without relying on subject-line text matching alone. Not a
+  // secret in the security sense (it identifies a request, doesn't
+  // authorize a decision on its own -- see the inbound-capture phase's
+  // own sender-verification requirement), but still unguessable so a
+  // stray email can't accidentally collide with a real request.
+  requestToken    String              @unique @default(cuid())
+  status          EmailApprovalStatus @default(PENDING)
+  requestedById   String
+  requestedBy     User                @relation(fields: [requestedById], references: [id])
+  requestedAt     DateTime            @default(now())
+  sentAt          DateTime?
+  // Decision fields -- deliberately present now (avoids a second
+  // migration for what's conceptually one entity) but genuinely unused
+  // until the inbound-capture phase populates them. Never write these
+  // from this phase's code.
+  decision        SignOffDecision?
+  decisionEmail   String?
+  verifiedSender  String?
+  decidedAt       DateTime?
 }
 
 enum LessonType {

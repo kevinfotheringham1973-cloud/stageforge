@@ -33,6 +33,7 @@ import {
   recordSpend,
   rejectGate,
   rejectSpend,
+  requestEmailApproval,
   reviseSpend,
   setGateTimeline,
   submitForApproval,
@@ -206,11 +207,17 @@ export async function GateDetail({
         },
       },
       signOffs: { orderBy: { createdAt: "desc" }, include: { signedOffBy: true } },
+      emailApprovals: { orderBy: { requestedAt: "desc" }, include: { contact: true, requestedBy: true } },
       auditEntries: { orderBy: { createdAt: "desc" }, include: { actor: true } },
       lessonsLearned: { orderBy: { createdAt: "desc" }, include: { recordedBy: true } },
     },
   });
   if (!gate || gate.stage.project.projectNumber !== projectNumber) notFound();
+
+  const activeContacts = await db.projectContact.findMany({
+    where: { projectId: gate.stage.projectId, active: true },
+    orderBy: { name: "asc" },
+  });
 
   const [roleKeys, globalRoleKeys, allRoles, currentUser] = await Promise.all([
     getCurrentUserRoleKeysForProject(gate.stage.projectId),
@@ -1509,6 +1516,66 @@ export async function GateDetail({
           </div>
         </div>
       )}
+
+      <div className="mt-6">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="font-mono text-[11px] uppercase tracking-wide text-inkmuted">
+            External roster approval requests{gate.emailApprovals.length > 0 && <> &middot; {gate.emailApprovals.length}</>}
+          </h3>
+          <span className="text-xs text-inkmuted">Phase 2 of the Project Manager Agent build &mdash; see PRD.html §06</span>
+        </div>
+        <p className="mb-3 text-xs text-inkmuted">
+          Requests an email be sent to a named external contact for this gate &mdash; a request/send record only.
+          No decision is ever recorded from here; that requires the (not-yet-built) verified inbound-capture step.
+        </p>
+        {gate.emailApprovals.length > 0 && (
+          <div className="mb-3 flex flex-col gap-2">
+            {gate.emailApprovals.map((ea) => (
+              <div key={ea.id} className="rounded-md border border-rule bg-surface px-4 py-2.5 text-sm">
+                <span className="font-semibold">{ea.contact.name}</span>{" "}
+                <span className="text-inkmuted">&lt;{ea.contact.email}&gt;</span>
+                <span
+                  className={`ml-2 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${
+                    ea.status === "SENT" ? "bg-accentsoft text-accent" : "bg-surface2 text-inkmuted"
+                  }`}
+                >
+                  {ea.status}
+                </span>
+                <div className="mt-1 text-xs text-inkmuted">
+                  Requested by {ea.requestedBy.name} &middot; {ea.requestedAt.toLocaleDateString("en-GB")}
+                  {ea.sentAt && <> &middot; sent {ea.sentAt.toLocaleDateString("en-GB")}</>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {roleKeys.includes("PM") &&
+          (activeContacts.length > 0 ? (
+            <form
+              action={requestEmailApproval.bind(null, gateId, projectNumber)}
+              className="flex flex-wrap items-end gap-3 rounded-md border border-dashed border-rule p-3"
+            >
+              <div>
+                <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Contact</label>
+                <select name="contactId" required className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
+                  <option value="">Select…</option>
+                  {activeContacts.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} &lt;{c.email}&gt;
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <SubmitButton pendingText="Requesting…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
+                Request approval
+              </SubmitButton>
+            </form>
+          ) : (
+            <p className="text-xs text-inkmuted">
+              No active external contacts on this project yet — add one on the project&rsquo;s Team &amp; scope page.
+            </p>
+          ))}
+      </div>
 
       <div id="lessons-learned" className="mt-6 scroll-mt-16">
         <div className="mb-2 flex items-center justify-between">

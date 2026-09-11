@@ -91,5 +91,12 @@ export default auth(async (req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|jpg|svg|ico)).*)"],
+  // api/email-approvals excluded alongside api/auth (11 Sep 2026): it has
+  // its own, separate bearer-token auth (checkEmailApprovalApiAuth,
+  // emailApprovalApi.ts) for the AI Council mailbox pipeline, an external
+  // caller with no NextAuth session or share-link cookie — this proxy ran
+  // first and unconditionally redirected it to /login before its own auth
+  // check ever got a chance to run, found live testing Phase 2's first
+  // real HTTP round trip.
+  matcher: ["/((?!api/auth|api/email-approvals|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|jpg|svg|ico)).*)"],
 };
