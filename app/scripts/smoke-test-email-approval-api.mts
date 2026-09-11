@@ -1,0 +1,163 @@
+// Permanent smoke test for the /api/email-approvals/* contract — the
+// boundary between StageForge (this repo) and the sibling Group
+// Discussion app's scripts/send-email-approvals.mjs, which hard-codes
+// assumptions about the exact JSON shape these routes return. Run this
+// after ANY change to the EmailApproval model or these routes, on
+// either side of that boundary, before trusting the two systems still
+// agree — see the "how do we keep them in sync" discussion in
+// project_managed_system memory notes (2026-09-11) for why this exists.
+//
+// Calls the real route handler functions directly (no running server,
+// no HTTP) against the real local dev database — same technique proven
+// during Phase 2's own verification. Creates and cleans up its own
+// throwaway test data; never touches anything else.
+//
+// Run: npx tsx scripts/smoke-test-email-approval-api.mts
+// (from the app/ directory — needs DATABASE_URL and
+// EMAIL_APPROVAL_API_TOKEN from .env, loaded via --env-file or dotenv)
+
+import "dotenv/config";
+import { PrismaClient } from "@prisma/client";
+
+const db = new PrismaClient();
+const TOKEN = process.env.EMAIL_APPROVAL_API_TOKEN;
+
+// The exact fields scripts/send-email-approvals.mjs (sibling repo)
+// destructures from a /pending item — keep this list in sync with that
+// file's approvalRequestHtmlBody()/sendApprovalRequestEmail() if either
+// side's field usage changes. This IS the contract, made explicit and
+// checked, rather than left as tribal knowledge in two separate repos.
+const REQUIRED_PENDING_FIELDS: Array<{ path: string; get: (item: any) => unknown; type: string }> = [
+  { path: "id", get: (i) => i.id, type: "string" },
+  { path: "requestToken", get: (i) => i.requestToken, type: "string" },
+  { path: "contact.name", get: (i) => i.contact?.name, type: "string" },
+  { path: "contact.email", get: (i) => i.contact?.email, type: "string" },
+  { path: "gateName", get: (i) => i.gateName, type: "string" },
+  { path: "projectName", get: (i) => i.projectName, type: "string" },
+  { path: "projectNumber", get: (i) => i.projectNumber, type: "string" },
+  { path: "requestedByName", get: (i) => i.requestedByName, type: "string" },
+];
+
+let pass = 0;
+let fail = 0;
+function check(label: string, condition: boolean) {
+  if (condition) {
+    pass++;
+    console.log(`  ✓ ${label}`);
+  } else {
+    fail++;
+    console.error(`  ✗ ${label}`);
+  }
+}
+
+async function main() {
+  if (!TOKEN) {
+    console.error("EMAIL_APPROVAL_API_TOKEN is not set — see .env.");
+    process.exit(1);
+  }
+
+  const { GET } = await import("../src/app/api/email-approvals/pending/route.ts");
+  const { POST } = await import("../src/app/api/email-approvals/[id]/sent/route.ts");
+
+  console.log("Setting up real test data...");
+  const pm = await db.user.findFirstOrThrow({ where: { email: "derek.g999@outlook.com" } });
+  const project = await db.project.findFirstOrThrow({ where: { projectNumber: "20456" } });
+  const gate = await db.gate.findFirstOrThrow({ where: { stage: { projectId: project.id } } });
+  const contact = await db.projectContact.create({
+    data: {
+      projectId: project.id,
+      name: "Smoke Test Contact",
+      email: "smoke-test@example.invalid",
+      createdById: pm.id,
+    },
+  });
+  const ea = await db.emailApproval.create({ data: { gateId: gate.id, contactId: contact.id, requestedById: pm.id } });
+
+  try {
+    console.log("\n1. Auth rejection");
+    check("GET no auth -> 401", (await GET(new Request("http://x/api/email-approvals/pending"))).status === 401);
+    check(
+      "GET wrong token -> 401",
+      (await GET(new Request("http://x/api/email-approvals/pending", { headers: { authorization: "Bearer wrong" } })))
+        .status === 401
+    );
+
+    console.log("\n2. /pending response shape (the real consumer contract)");
+    const pendingRes = await GET(
+      new Request("http://x/api/email-approvals/pending", { headers: { authorization: `Bearer ${TOKEN}` } })
+    );
+    check("GET correct token -> 200", pendingRes.status === 200);
+    const body = await pendingRes.json();
+    const item = body.pending?.find((p: any) => p.id === ea.id);
+    check("Test item present in pending list", Boolean(item));
+    for (const field of REQUIRED_PENDING_FIELDS) {
+      const value = item ? field.get(item) : undefined;
+      check(`pending[].${field.path} is a ${field.type}`, typeof value === field.type);
+    }
+
+    console.log("\n3. /sent transitions and guards");
+    check(
+      "POST sent wrong requestToken -> 404",
+      (
+        await POST(
+          new Request(`http://x/api/email-approvals/${ea.id}/sent`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+            body: JSON.stringify({ requestToken: "not-the-real-token" }),
+          }),
+          { params: Promise.resolve({ id: ea.id }) }
+        )
+      ).status === 404
+    );
+    const sentRes = await POST(
+      new Request(`http://x/api/email-approvals/${ea.id}/sent`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+        body: JSON.stringify({ requestToken: ea.requestToken }),
+      }),
+      { params: Promise.resolve({ id: ea.id }) }
+    );
+    check("POST sent correct -> 200", sentRes.status === 200);
+    const reloaded = await db.emailApproval.findUniqueOrThrow({ where: { id: ea.id } });
+    check("Status now SENT with sentAt set", reloaded.status === "SENT" && reloaded.sentAt !== null);
+
+    const pendingRes2 = await GET(
+      new Request("http://x/api/email-approvals/pending", { headers: { authorization: `Bearer ${TOKEN}` } })
+    );
+    const body2 = await pendingRes2.json();
+    check(
+      "No longer in pending list",
+      !body2.pending.some((p: any) => p.id === ea.id)
+    );
+
+    check(
+      "POST sent again (already SENT) -> 409",
+      (
+        await POST(
+          new Request(`http://x/api/email-approvals/${ea.id}/sent`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+            body: JSON.stringify({ requestToken: reloaded.requestToken }),
+          }),
+          { params: Promise.resolve({ id: ea.id }) }
+        )
+      ).status === 409
+    );
+  } finally {
+    await db.emailApproval.delete({ where: { id: ea.id } }).catch(() => {});
+    await db.projectContact.delete({ where: { id: contact.id } }).catch(() => {});
+    await db.$disconnect();
+  }
+
+  console.log(`\n${pass} passed, ${fail} failed.`);
+  if (fail > 0) {
+    console.error("SMOKE TEST FAILED — the API contract may have drifted from what send-email-approvals.mjs expects.");
+    process.exit(1);
+  }
+  console.log("SMOKE TEST PASSED.");
+}
+
+main().catch((err) => {
+  console.error("Fatal:", err);
+  process.exit(1);
+});

@@ -1549,7 +1549,7 @@ export async function GateDetail({
           <h3 className="font-mono text-[11px] uppercase tracking-wide text-inkmuted">
             External roster approval requests{gate.emailApprovals.length > 0 && <> &middot; {gate.emailApprovals.length}</>}
           </h3>
-          <span className="text-xs text-inkmuted">Phase 2 of the Project Manager Agent build &mdash; see PRD.html §06</span>
+          <span className="text-xs text-inkmuted">Phase 2 of the Project Managed System build &mdash; see PRD.html §06</span>
         </div>
         <p className="mb-3 text-xs text-inkmuted">
           Requests an email be sent to a named external contact for this gate &mdash; a request/send record only.

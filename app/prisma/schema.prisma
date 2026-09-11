@@ -975,7 +975,7 @@ model GateSignOff {
   createdAt     DateTime        @default(now())
 }
 
-// ── Project Manager Agent: email-based approval (Phase 2) ───────────────
+// ── Project Managed System: email-based approval (Phase 2) ───────────────
 // See PRD.html §06 "External Roster & Email-Based Approval" for the full
 // design and the hard boundary this whole mechanism operates under: the
 // requesting system relays and records, it never decides. This model is
