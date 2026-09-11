@@ -58,6 +58,7 @@ async function main() {
 
   const { GET } = await import("../src/app/api/email-approvals/pending/route.ts");
   const { POST } = await import("../src/app/api/email-approvals/[id]/sent/route.ts");
+  const { POST: replyPOST } = await import("../src/app/api/email-approvals/[id]/reply/route.ts");
 
   console.log("Setting up real test data...");
   const pm = await db.user.findFirstOrThrow({ where: { email: "derek.g999@outlook.com" } });
@@ -143,6 +144,111 @@ async function main() {
         )
       ).status === 409
     );
+    console.log("\n4. Reply capture (Phase 3) — refusal paths, no synthetic gate needed");
+    const ea2 = await db.emailApproval.create({ data: { gateId: gate.id, contactId: contact.id, requestedById: pm.id, status: "SENT" } });
+    check(
+      "Reply from non-Sponsor-role contact -> not recorded (contact_role_no_longer_qualifies)",
+      (
+        await (
+          await replyPOST(
+            new Request(`http://x/api/email-approvals/${ea2.id}/reply`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+              body: JSON.stringify({ requestToken: ea2.requestToken, senderEmail: contact.email, decision: "APPROVED", replyExcerpt: "Approved" }),
+            }),
+            { params: Promise.resolve({ id: ea2.requestToken }) }
+          )
+        ).json()
+      ).reason === "contact_role_no_longer_qualifies"
+    );
+
+    console.log("\n5. Reply capture — full happy path on a synthetic, isolated gate");
+    const sponsorContact = await db.projectContact.create({
+      data: { projectId: project.id, name: "Smoke Test Sponsor", email: "smoke-sponsor@example.invalid", roleKey: "SPONSOR", createdById: pm.id },
+    });
+    const stage = await db.stage.create({
+      data: { projectId: project.id, key: `smoke_test_stage_${Date.now()}`, name: "Smoke Test Stage", order: 9999 },
+    });
+    const testGate = await db.gate.create({
+      data: { stageId: stage.id, key: "smoke_test_gate", name: "Smoke Test Gate", status: "AWAITING_SPONSOR" },
+    });
+    const ea3 = await db.emailApproval.create({
+      data: { gateId: testGate.id, contactId: sponsorContact.id, requestedById: pm.id, status: "SENT" },
+    });
+
+    check(
+      "Sender mismatch -> not recorded",
+      (
+        await (
+          await replyPOST(
+            new Request(`http://x/api/email-approvals/${ea3.id}/reply`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+              body: JSON.stringify({ requestToken: ea3.requestToken, senderEmail: "someone-else@example.invalid", decision: "APPROVED", replyExcerpt: "Approved" }),
+            }),
+            { params: Promise.resolve({ id: ea3.requestToken }) }
+          )
+        ).json()
+      ).reason === "sender_mismatch"
+    );
+    check(
+      "Ambiguous decision -> not recorded",
+      (
+        await (
+          await replyPOST(
+            new Request(`http://x/api/email-approvals/${ea3.id}/reply`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+              body: JSON.stringify({ requestToken: ea3.requestToken, senderEmail: sponsorContact.email, decision: "AMBIGUOUS", replyExcerpt: "Let me check and get back to you" }),
+            }),
+            { params: Promise.resolve({ id: ea3.requestToken }) }
+          )
+        ).json()
+      ).reason === "ambiguous"
+    );
+    const happyResult = await (
+      await replyPOST(
+        new Request(`http://x/api/email-approvals/${ea3.id}/reply`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({ requestToken: ea3.requestToken, senderEmail: sponsorContact.email, decision: "APPROVED", replyExcerpt: "Approved, looks good." }),
+        }),
+        { params: Promise.resolve({ id: ea3.requestToken }) }
+      )
+    ).json();
+    check("Verified unambiguous APPROVED -> recorded: true", happyResult.recorded === true);
+
+    const decidedEa = await db.emailApproval.findUniqueOrThrow({ where: { id: ea3.id } });
+    check("EmailApproval status now DECIDED", decidedEa.status === "DECIDED");
+    check("EmailApproval.verifiedSender set correctly", decidedEa.verifiedSender === sponsorContact.email.toLowerCase());
+
+    const decidedGate = await db.gate.findUniqueOrThrow({ where: { id: testGate.id } });
+    check("Gate status now SIGNED_OFF", decidedGate.status === "SIGNED_OFF");
+
+    const resultingSignOff = await db.gateSignOff.findUnique({ where: { emailApprovalId: ea3.id } });
+    check("A real GateSignOff was created", Boolean(resultingSignOff));
+    check("capturedVia is EMAIL_PROXY", resultingSignOff?.capturedVia === "EMAIL_PROXY");
+    check("GateSignOff.decision is APPROVED", resultingSignOff?.decision === "APPROVED");
+
+    // A second reply after DECIDED must not create a duplicate sign-off.
+    const secondReply = await (
+      await replyPOST(
+        new Request(`http://x/api/email-approvals/${ea3.id}/reply`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({ requestToken: ea3.requestToken, senderEmail: sponsorContact.email, decision: "REJECTED", replyExcerpt: "Actually no" }),
+        }),
+        { params: Promise.resolve({ id: ea3.requestToken }) }
+      )
+    ).json();
+    check("Second reply after DECIDED -> not recorded", secondReply.recorded !== true);
+
+    await db.gateSignOff.delete({ where: { id: resultingSignOff!.id } }).catch(() => {});
+    await db.emailApproval.delete({ where: { id: ea3.id } }).catch(() => {});
+    await db.gate.delete({ where: { id: testGate.id } }).catch(() => {});
+    await db.stage.delete({ where: { id: stage.id } }).catch(() => {});
+    await db.projectContact.delete({ where: { id: sponsorContact.id } }).catch(() => {});
+    await db.emailApproval.delete({ where: { id: ea2.id } }).catch(() => {});
   } finally {
     await db.emailApproval.delete({ where: { id: ea.id } }).catch(() => {});
     await db.projectContact.delete({ where: { id: contact.id } }).catch(() => {});

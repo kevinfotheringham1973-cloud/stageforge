@@ -964,15 +964,33 @@ enum SignOffDecision {
 
 // Reject requires a reason too (confirmed) — same
 // mandatory-reason pattern as every bypass/override in the model.
+// DIRECT: a real, logged-in Sponsor clicked Approve/Reject in the app
+// (signedOffById is genuinely their own decision). EMAIL_PROXY: this
+// row was written by Phase 3's reply-capture endpoint from a verified
+// external email reply — signedOffById then points to a fixed service
+// User (SYSTEM_EMAIL_APPROVAL_EMAIL in emailApprovalApi.ts) that exists
+// only to satisfy the schema's foreign key, never to imply the service
+// account itself decided anything. Every UI display of a GateSignOff
+// MUST branch on capturedVia and show the real emailApproval.contact
+// (name + verified email) for EMAIL_PROXY rows, never just the service
+// account's name — see GateDetail.tsx's decision-history section.
+enum GateSignOffCapturedVia {
+  DIRECT
+  EMAIL_PROXY
+}
+
 model GateSignOff {
-  id            String          @id @default(cuid())
-  gateId        String
-  gate          Gate            @relation(fields: [gateId], references: [id])
-  decision      SignOffDecision
-  signedOffById String
-  signedOffBy   User            @relation(fields: [signedOffById], references: [id])
-  reason        String?
-  createdAt     DateTime        @default(now())
+  id             String                 @id @default(cuid())
+  gateId         String
+  gate           Gate                   @relation(fields: [gateId], references: [id])
+  decision       SignOffDecision
+  signedOffById  String
+  signedOffBy    User                   @relation(fields: [signedOffById], references: [id])
+  reason         String?
+  createdAt      DateTime               @default(now())
+  capturedVia    GateSignOffCapturedVia @default(DIRECT)
+  emailApprovalId String?               @unique
+  emailApproval   EmailApproval?        @relation(fields: [emailApprovalId], references: [id])
 }
 
 // ── Project Managed System: email-based approval (Phase 2) ───────────────
@@ -1009,14 +1027,15 @@ model EmailApproval {
   requestedBy     User                @relation(fields: [requestedById], references: [id])
   requestedAt     DateTime            @default(now())
   sentAt          DateTime?
-  // Decision fields -- deliberately present now (avoids a second
-  // migration for what's conceptually one entity) but genuinely unused
-  // until the inbound-capture phase populates them. Never write these
-  // from this phase's code.
+  // Decision fields -- populated by Phase 3's reply-capture endpoint
+  // (/api/email-approvals/[id]/reply) once a verified, unambiguous
+  // reply arrives. Never written on a sender mismatch or an ambiguous
+  // reply -- see that route's own comments for the full guard sequence.
   decision        SignOffDecision?
   decisionEmail   String?
   verifiedSender  String?
   decidedAt       DateTime?
+  resultingGateSignOff GateSignOff?
 }
 
 enum LessonType {
