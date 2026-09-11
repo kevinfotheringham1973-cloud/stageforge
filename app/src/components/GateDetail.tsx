@@ -48,6 +48,8 @@ const APPROVAL_BUCKET_LABELS: Record<string, string> = {
   LIFECYCLE_REPLACEMENT: "Lifecycle replacement",
   SMALL_WORKS: "Small works",
   VARIATION: "Variation",
+  SERCO_INVESTMENT: "Serco investment",
+  CAPITAL_PROJECT: "Capital project",
 };
 
 // One-line "what is this gate actually asking" summary (27 Aug 2026,
@@ -1370,6 +1372,8 @@ export async function GateDetail({
                             <option value="LIFECYCLE_REPLACEMENT">Lifecycle replacement</option>
                             <option value="SMALL_WORKS">Small works</option>
                             <option value="VARIATION">Variation</option>
+                            <option value="SERCO_INVESTMENT">Serco investment</option>
+                            <option value="CAPITAL_PROJECT">Capital project</option>
                           </select>
                         </div>
                         <div>
@@ -1478,6 +1482,8 @@ export async function GateDetail({
                     <option value="LIFECYCLE_REPLACEMENT">Lifecycle replacement</option>
                     <option value="SMALL_WORKS">Small works</option>
                     <option value="VARIATION">Variation</option>
+                    <option value="SERCO_INVESTMENT">Serco investment</option>
+                    <option value="CAPITAL_PROJECT">Capital project</option>
                   </select>
                 </div>
                 <div>

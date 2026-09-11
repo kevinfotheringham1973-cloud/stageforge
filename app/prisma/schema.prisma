@@ -717,6 +717,13 @@ enum ApprovalBucket {
   LIFECYCLE_REPLACEMENT
   SMALL_WORKS
   VARIATION
+  // Added 11 Sep 2026, real user feedback — spend that doesn't fit any of
+  // the original three Hard FM buckets: SERCO_INVESTMENT (Serco's own
+  // capital committed to a project, not client-funded) and
+  // CAPITAL_PROJECT (a distinct capital works programme, as opposed to
+  // routine lifecycle replacement of an existing asset).
+  SERCO_INVESTMENT
+  CAPITAL_PROJECT
 }
 
 // One row per invoice/actual, not per gate — a gate's total is the sum

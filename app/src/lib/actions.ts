@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "./db";
-import { Prisma, RoleCategory } from "@prisma/client";
+import { ApprovalBucket, Prisma, RoleCategory } from "@prisma/client";
 import {
   getCurrentUser,
   getCurrentUserGlobalRoleKeys,
@@ -595,7 +595,7 @@ export async function recordSpend(gateId: string, projectNumber: string, formDat
   const amount = String(formData.get("amount") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const invoiceReference = String(formData.get("invoiceReference") ?? "").trim();
-  if (!["LIFECYCLE_REPLACEMENT", "SMALL_WORKS", "VARIATION"].includes(bucket)) {
+  if (!Object.values(ApprovalBucket).includes(bucket as ApprovalBucket)) {
     throw new Error("A valid approval bucket is required.");
   }
   if (!amount || Number.isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -616,7 +616,7 @@ export async function recordSpend(gateId: string, projectNumber: string, formDat
     db.spendRecord.create({
       data: {
         gateId,
-        bucket: bucket as "LIFECYCLE_REPLACEMENT" | "SMALL_WORKS" | "VARIATION",
+        bucket: bucket as ApprovalBucket,
         amount,
         description,
         invoiceReference: invoiceReference || null,
@@ -761,7 +761,7 @@ export async function reviseSpend(spendRecordId: string, projectNumber: string, 
   const amount = String(formData.get("amount") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const invoiceReference = String(formData.get("invoiceReference") ?? "").trim();
-  if (!["LIFECYCLE_REPLACEMENT", "SMALL_WORKS", "VARIATION"].includes(bucket)) {
+  if (!Object.values(ApprovalBucket).includes(bucket as ApprovalBucket)) {
     throw new Error("A valid approval bucket is required.");
   }
   if (!amount || Number.isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -788,7 +788,7 @@ export async function reviseSpend(spendRecordId: string, projectNumber: string, 
     db.spendRecord.update({
       where: { id: spendRecordId },
       data: {
-        bucket: bucket as "LIFECYCLE_REPLACEMENT" | "SMALL_WORKS" | "VARIATION",
+        bucket: bucket as ApprovalBucket,
         amount,
         description,
         invoiceReference: invoiceReference || null,
