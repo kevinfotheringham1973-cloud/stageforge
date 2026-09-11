@@ -15,6 +15,14 @@ export type ReleaseNote = {
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
     date: "11 Sep 2026",
+    title: "Undo an accidental bypass, and the first steps toward email-based approvals",
+    highlights: [
+      "Fixed a real gap: bypassing a deliverable by mistake used to be permanent — there was no way back to add the real evidence instead. An \"Undo bypass\" option now appears wherever a deliverable is bypassed, for the same person who could bypass it in the first place, with the same requirement to give a written reason.",
+      "Early groundwork for an upcoming feature: projects can now hold a roster of external contacts (a Compliance Manager, an Authorised Person, a Water Group contact, etc.) who don't need a StageForge login of their own — the first step toward gate approvals being requested and recorded by email for people who aren't logged-in users of the system. Not yet wired into day-to-day use.",
+    ],
+  },
+  {
+    date: "11 Sep 2026",
     title: "Eight more system checklists, a full library-wide compliance audit, and Scotland-specific corrections",
     highlights: [
       "Eight more system checklists covering hospital systems that had none before: Catering/Kitchen Equipment, Laundry/Linen Services, Waste Management, Mortuary Services, Renewable/Net Zero Plant (solar, heat pumps, battery storage, EV charging), Building Fabric/External Envelope, Escalators, and non-domestic Water Treatment Plant — each with the same real regulatory grounding as the existing library.",
