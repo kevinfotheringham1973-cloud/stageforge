@@ -1776,6 +1776,49 @@ export async function reactivateProjectContact(contactId: string, projectId: str
   revalidatePath(`/projects/${projectNumber}`);
 }
 
+/**
+ * Phase 2 of the Project Manager Agent build (PRD.html §06) — creates a
+ * PENDING EmailApproval request only. Never sends anything itself (the
+ * AI Council mailbox pipeline does that, via the scoped API below) and
+ * never records a decision (a later phase's job) — this function's only
+ * job is "a PM asked for this gate to be sent to this contact."
+ */
+export async function requestEmailApproval(gateId: string, projectNumber: string, formData: FormData) {
+  const contactId = String(formData.get("contactId") ?? "").trim();
+  if (!contactId) throw new Error("Select a contact.");
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
+  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  if (!roleKeys.includes("PM")) {
+    throw new Error("Only the Project Manager can request an external roster approval.");
+  }
+
+  const contact = await db.projectContact.findUniqueOrThrow({ where: { id: contactId } });
+  if (contact.projectId !== gate.stage.projectId || !contact.active) {
+    throw new Error("That contact isn't an active member of this project's external roster.");
+  }
+
+  const emailApproval = await db.emailApproval.create({
+    data: { gateId, contactId, requestedById: actorId },
+  });
+
+  await db.auditLogEntry.create({
+    data: {
+      actorId,
+      gateId,
+      action: "email_approval.requested",
+      entityType: "EmailApproval",
+      entityId: emailApproval.id,
+      reason: `Approval requested from ${contact.name} <${contact.email}>`,
+    },
+  });
+
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
 // ── Timeline (planned vs. actual) ───────────────────────────────────────
 
 /**
