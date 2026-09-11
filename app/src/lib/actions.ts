@@ -1896,6 +1896,83 @@ export async function requestEmailApproval(gateId: string, projectNumber: string
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
 }
 
+// Phase 5 (PRD.html §06/§09) — only the nhs-scotland-* agents shaped as
+// "one document in, one report out" are eligible. The Q&A/guidance agents
+// (hardfm-compliance, ipc-haiscribe, lifecycle-handback, netzero-energy,
+// pfi-paymech) don't take a document at all, and the multi-document
+// drafting agent (ccn-preparation, which needs a SOW+quote pair) doesn't
+// fit a single-EvidenceFile request either — both deliberately excluded
+// from this bridge for now, not an oversight.
+export const REVIEWABLE_AGENT_SLUGS = [
+  "nhs-scotland-rams-review",
+  "nhs-scotland-sow-review",
+  "nhs-scotland-inspection-review",
+  "nhs-scotland-cdm-review",
+  "nhs-scotland-sfg20-mapping-review",
+] as const;
+
+/**
+ * PM requests an AI review of one real, already-submitted piece of
+ * evidence. Deliberately explicit agent selection, not automatic
+ * detection — see PRD.html §06's own reasoning (deliverable labels are
+ * free-text and don't cleanly map to the handful of agents this fits).
+ */
+export async function requestDocumentReview(
+  deliverableId: string,
+  evidenceFileId: string,
+  projectNumber: string,
+  formData: FormData
+) {
+  const agentSlug = String(formData.get("agentSlug") ?? "").trim();
+  if (!(REVIEWABLE_AGENT_SLUGS as readonly string[]).includes(agentSlug)) {
+    throw new Error("Choose a valid review agent.");
+  }
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const deliverable = await db.deliverable.findUniqueOrThrow({
+    where: { id: deliverableId },
+    include: { gate: { include: { stage: true } } },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(deliverable.gate.stage.projectId);
+  if (!roleKeys.includes("PM")) {
+    throw new Error("Only the Project Manager can request an AI review of evidence.");
+  }
+
+  const evidenceFile = await db.evidenceFile.findUniqueOrThrow({ where: { id: evidenceFileId } });
+  if (evidenceFile.deliverableId !== deliverableId) {
+    throw new Error("That file doesn't belong to this deliverable.");
+  }
+  if (evidenceFile.kind !== "SUBMITTED") {
+    throw new Error("Only a real submitted evidence file can be reviewed, not an AI review report itself.");
+  }
+  const currentMaxVersion = await db.evidenceFile.aggregate({
+    where: { deliverableId, kind: "SUBMITTED" },
+    _max: { version: true },
+  });
+  if (evidenceFile.version !== currentMaxVersion._max.version) {
+    throw new Error("This file has been superseded by a newer upload — review the current version instead.");
+  }
+
+  const review = await db.documentReviewRequest.create({
+    data: { deliverableId, evidenceFileId, agentSlug, requestedById: actorId },
+  });
+
+  await db.auditLogEntry.create({
+    data: {
+      actorId,
+      gateId: deliverable.gateId,
+      action: "document_review.requested",
+      entityType: "DocumentReviewRequest",
+      entityId: review.id,
+      reason: `AI review requested for "${evidenceFile.fileName}" using ${agentSlug}.`,
+    },
+  });
+
+  revalidatePath(`/projects/${projectNumber}/gates/${deliverable.gateId}`);
+}
+
 // ── Timeline (planned vs. actual) ───────────────────────────────────────
 
 /**

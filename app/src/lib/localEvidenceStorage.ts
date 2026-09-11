@@ -62,6 +62,40 @@ export async function saveLocalEvidenceFile(
   return { servePath };
 }
 
+/**
+ * Reads a file's bytes back off local disk — the local-mode counterpart to
+ * sharepoint.ts's downloadEvidenceFile(), used by the Phase 5 document-
+ * review bridge. folderPath must come from localEvidenceFolderPath(), same
+ * contract as saveLocalEvidenceFile(). Returns null rather than throwing
+ * when the file genuinely isn't there (caller turns that into a clean,
+ * honest "no real evidence file exists for this record" response).
+ */
+export async function readLocalEvidenceFile(folderPath: string, fileName: string): Promise<Buffer | null> {
+  const segments = folderPath.split("/").map(sanitizePathSegment);
+  const safeFileName = sanitizePathSegment(fileName);
+  const filePath = path.join(/* turbopackIgnore: true */ evidenceRootDir(), ...segments, safeFileName);
+  try {
+    return await fs.readFile(filePath);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw err;
+  }
+}
+
+/**
+ * Deletes a file previously saved via saveLocalEvidenceFile. Not wired to
+ * any product action (no "delete evidence" feature exists) — exists only
+ * so the permanent smoke test can clean up the real file it saves to
+ * verify the Phase 5 document-review bridge in a non-SharePoint dev
+ * environment, same justification as sharepoint.ts's own deleteEvidenceFile.
+ */
+export async function deleteLocalEvidenceFile(folderPath: string, fileName: string): Promise<void> {
+  const segments = folderPath.split("/").map(sanitizePathSegment);
+  const safeFileName = sanitizePathSegment(fileName);
+  const filePath = path.join(/* turbopackIgnore: true */ evidenceRootDir(), ...segments, safeFileName);
+  await fs.unlink(filePath).catch(() => {});
+}
+
 /** Used only by the serving route — resolves and bounds-checks a request path against the same root. */
 export function resolveLocalEvidencePath(segments: string[]): string | null {
   if (segments.some((s) => s === ".." || s.includes("/") || s.includes("\\"))) return null;

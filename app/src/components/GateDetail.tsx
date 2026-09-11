@@ -33,7 +33,9 @@ import {
   recordSpend,
   rejectGate,
   rejectSpend,
+  requestDocumentReview,
   requestEmailApproval,
+  REVIEWABLE_AGENT_SLUGS,
   reviseSpend,
   setGateTimeline,
   submitForApproval,
@@ -186,6 +188,7 @@ export async function GateDetail({
         include: {
           evidenceFiles: { orderBy: { uploadedAt: "desc" } },
           bypass: { include: { bypassedBy: true } },
+          documentReviewRequests: { orderBy: { requestedAt: "desc" } },
           template: {
             select: { order: true, section: true, gateTemplate: { select: { stageTemplate: { select: { templateId: true } } } } },
           },
@@ -640,9 +643,14 @@ export async function GateDetail({
               // is however many files were uploaded in ONE submission,
               // all sharing that submission's version number, so every
               // file in the latest version is "current" together, not
-              // just the first one.
-              const maxVersion = Math.max(...d.evidenceFiles.map((f) => f.version));
-              return d.evidenceFiles.map((f) => (
+              // just the first one. Restricted to kind: SUBMITTED — an
+              // AI_REVIEW file (Phase 5) must never join this version
+              // sequence or it could wrongly appear to supersede the
+              // real evidence it reviewed (see EvidenceFileKind's own
+              // schema comment).
+              const submitted = d.evidenceFiles.filter((f) => f.kind === "SUBMITTED");
+              const maxVersion = Math.max(...submitted.map((f) => f.version));
+              return submitted.map((f) => (
                 <div key={f.id} className="font-mono text-xs text-inkmuted">
                   {f.version === maxVersion ? (
                     <span className="font-bold text-ok">current</span>
@@ -656,7 +664,7 @@ export async function GateDetail({
             <SharePointEvidenceLocation
               project={gate.stage.project}
               stageName={gate.stage.name}
-              currentFileRef={d.evidenceFiles[0]?.fileRef ?? ""}
+              currentFileRef={d.evidenceFiles.find((f) => f.kind === "SUBMITTED")?.fileRef ?? ""}
             />
             {canReplaceEvidence && (
               <form
@@ -676,6 +684,74 @@ export async function GateDetail({
                 </SubmitButton>
               </form>
             )}
+
+            {/* Phase 5 (PRD.html §06/§09) — AI review reports for this
+                deliverable's current evidence, and a way to request a new
+                one. Deliberately separate from the SUBMITTED version list
+                above: these never compete with or replace real evidence. */}
+            {d.evidenceFiles.filter((f) => f.kind === "AI_REVIEW").length > 0 && (
+              <div className="mt-2 flex flex-col gap-1 border-t border-dashed border-rule pt-2">
+                {d.evidenceFiles
+                  .filter((f) => f.kind === "AI_REVIEW")
+                  .map((f) => (
+                    <div key={f.id} className="font-mono text-xs text-inkmuted">
+                      <span className="rounded-full bg-accentsoft px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+                        AI review
+                      </span>{" "}
+                      {f.fileName} &middot; {f.uploadedAt.toLocaleDateString("en-GB")}
+                    </div>
+                  ))}
+              </div>
+            )}
+            {(() => {
+              const currentSubmitted = d.evidenceFiles.filter((f) => f.kind === "SUBMITTED");
+              const currentMaxVersion = currentSubmitted.length > 0 ? Math.max(...currentSubmitted.map((f) => f.version)) : 0;
+              const currentFile = currentSubmitted.find((f) => f.version === currentMaxVersion);
+              const openReviews = d.documentReviewRequests.filter((r) => r.status === "PENDING" || r.status === "IN_PROGRESS");
+              const failedReviews = d.documentReviewRequests.filter((r) => r.status === "FAILED");
+              return (
+                <>
+                  {openReviews.map((r) => (
+                    <div key={r.id} className="mt-1 font-mono text-xs text-inkmuted">
+                      AI review requested ({r.agentSlug}) &middot; {r.status === "IN_PROGRESS" ? "in progress" : "queued"}
+                    </div>
+                  ))}
+                  {failedReviews.map((r) => (
+                    <div key={r.id} className="mt-1 font-mono text-xs text-red-700">
+                      AI review failed ({r.agentSlug}): {r.failureReason ?? "unknown reason"}
+                    </div>
+                  ))}
+                  {roleKeys.includes("PM") && currentFile && openReviews.length === 0 && (
+                    <form
+                      action={requestDocumentReview.bind(null, d.id, currentFile.id, projectNumber)}
+                      className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-dashed border-rule p-2"
+                    >
+                      <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Request AI review of {currentFile.fileName}
+                      </label>
+                      <select
+                        name="agentSlug"
+                        required
+                        defaultValue=""
+                        className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
+                      >
+                        <option value="" disabled>
+                          Choose an agent…
+                        </option>
+                        {REVIEWABLE_AGENT_SLUGS.map((slug) => (
+                          <option key={slug} value={slug}>
+                            {slug}
+                          </option>
+                        ))}
+                      </select>
+                      <SubmitButton pendingText="Requesting…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                        Request review
+                      </SubmitButton>
+                    </form>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

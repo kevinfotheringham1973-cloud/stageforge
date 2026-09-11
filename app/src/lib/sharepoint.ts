@@ -102,6 +102,62 @@ export async function uploadEvidenceFile(
 }
 
 /**
+ * Downloads a file's bytes from the configured SharePoint drive. Used by
+ * the Phase 5 document-review bridge (PRD.html §06/§09) to fetch a real
+ * evidence file's content for the AI Council mailbox pipeline to review —
+ * folderPath + fileName must be exactly what uploadEvidenceFile() was
+ * originally called with (EvidenceFile only ever persists the resulting
+ * webUrl, not the Graph item id, so re-deriving the same path is how this
+ * finds the file again rather than needing a new stored id).
+ */
+export async function downloadEvidenceFile(folderPath: string, fileName: string): Promise<Buffer> {
+  const siteId = process.env.SHAREPOINT_SITE_ID;
+  const driveId = process.env.SHAREPOINT_DRIVE_ID;
+  if (!siteId || !driveId) {
+    throw new Error("SharePoint isn't configured — missing SHAREPOINT_SITE_ID/SHAREPOINT_DRIVE_ID.");
+  }
+
+  const token = await getAccessToken();
+  const encodedPath = folderPath
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  const url = `${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root:/${encodedPath}/${encodeURIComponent(fileName)}:/content`;
+
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    throw new Error(`SharePoint download failed: ${res.status} ${await res.text()}`);
+  }
+  return Buffer.from(await res.arrayBuffer());
+}
+
+/**
+ * Deletes a file from the configured SharePoint drive. Not wired to any
+ * product action yet (no "delete evidence" feature exists) — exists only
+ * so the permanent smoke test can clean up the real file it uploads to
+ * verify the Phase 5 document-review bridge, rather than leaving test
+ * debris in a real SharePoint site on every run. Swallows failure (best-
+ * effort cleanup only) rather than letting a cleanup problem mask the
+ * actual test result.
+ */
+export async function deleteEvidenceFile(folderPath: string, fileName: string): Promise<void> {
+  const siteId = process.env.SHAREPOINT_SITE_ID;
+  const driveId = process.env.SHAREPOINT_DRIVE_ID;
+  if (!siteId || !driveId) return;
+  try {
+    const token = await getAccessToken();
+    const encodedPath = folderPath
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/");
+    const url = `${GRAPH_BASE}/sites/${siteId}/drives/${driveId}/root:/${encodedPath}/${encodeURIComponent(fileName)}`;
+    await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+  } catch {
+    // best-effort — see header comment
+  }
+}
+
+/**
  * Setup-time helper: resolves a SharePoint site's Graph Site ID from its
  * URL, and lists its document libraries (drives) with their Drive IDs.
  * Run via `npm run sharepoint:check -- <site-url>` once a real site

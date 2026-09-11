@@ -97,6 +97,9 @@ export const config = {
   // caller with no NextAuth session or share-link cookie — this proxy ran
   // first and unconditionally redirected it to /login before its own auth
   // check ever got a chance to run, found live testing Phase 2's first
-  // real HTTP round trip.
-  matcher: ["/((?!api/auth|api/email-approvals|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|jpg|svg|ico)).*)"],
+  // real HTTP round trip. api/document-reviews (Phase 5) reuses that exact
+  // same bearer token/check for the same reason.
+  matcher: [
+    "/((?!api/auth|api/email-approvals|api/document-reviews|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|jpg|svg|ico)).*)",
+  ],
 };

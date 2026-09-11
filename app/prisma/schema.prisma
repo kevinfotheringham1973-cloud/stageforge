@@ -81,6 +81,7 @@ model User {
   createdWorksPackages       WorksPackage[]           @relation("WorksPackageCreatedBy")
   createdProjectContacts     ProjectContact[]         @relation("ProjectContactCreatedBy")
   emailApprovalsRequested    EmailApproval[]
+  documentReviewsRequested   DocumentReviewRequest[]
   provisioningReviews        ProvisioningReview[]
   resourceAllocations        ResourceAllocation[]
   resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
@@ -212,11 +213,11 @@ model ProjectRoleAssignment {
 // yet wired into any gate/notification/approval logic (that's Phase 2+
 // -- no EmailApproval/GateSignOff linkage exists yet, deliberately).
 model ProjectContact {
-  id          String   @id @default(cuid())
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  name        String
-  email       String
+  id             String          @id @default(cuid())
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id])
+  name           String
+  email          String
   // Reuses Role.key where this contact's accountability maps to an
   // existing authority role (e.g. "AUTHORISED_PERSON_WATER",
   // "FIRE_OFFICER") -- nullable, since some real accountabilities (e.g.
@@ -225,7 +226,7 @@ model ProjectContact {
   // Role.key already isn't a closed enum (see the "fully dynamic
   // authority roles" note above), and a contact's accountability
   // shouldn't require a Role row to exist first.
-  roleKey     String?
+  roleKey        String?
   // Free-text accountability -- always shown alongside roleKey, since a
   // real registered person's actual remit is often more specific than
   // one role key covers (e.g. "Reviews only fire-related Deliverables
@@ -236,11 +237,11 @@ model ProjectContact {
   // the real, named recipient/decision-maker a future EmailApproval
   // record (Phase 3) references, and that history must keep meaning
   // something.
-  active      Boolean  @default(true)
-  createdById String
-  createdBy   User     @relation("ProjectContactCreatedBy", fields: [createdById], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  active         Boolean         @default(true)
+  createdById    String
+  createdBy      User            @relation("ProjectContactCreatedBy", fields: [createdById], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   emailApprovals EmailApproval[]
 
   @@index([projectId])
@@ -896,33 +897,92 @@ enum DeliverableStatus {
 }
 
 model Deliverable {
-  id              String               @id @default(cuid())
-  gateId          String
-  gate            Gate                 @relation(fields: [gateId], references: [id])
-  templateId      String?
-  template        DeliverableTemplate? @relation(fields: [templateId], references: [id])
-  key             String
-  label           String
-  description     String?
-  minFiles        Int                  @default(1)
-  blocksGate      Boolean              @default(true)
-  bypassAuthority String               @default("PM") // a Role.key
-  status          DeliverableStatus    @default(PENDING)
-  evidenceFiles   EvidenceFile[]
-  bypass          DeliverableBypass?
-  createdAt       DateTime             @default(now())
+  id                     String                  @id @default(cuid())
+  gateId                 String
+  gate                   Gate                    @relation(fields: [gateId], references: [id])
+  templateId             String?
+  template               DeliverableTemplate?    @relation(fields: [templateId], references: [id])
+  key                    String
+  label                  String
+  description            String?
+  minFiles               Int                     @default(1)
+  blocksGate             Boolean                 @default(true)
+  bypassAuthority        String                  @default("PM") // a Role.key
+  status                 DeliverableStatus       @default(PENDING)
+  evidenceFiles          EvidenceFile[]
+  bypass                 DeliverableBypass?
+  documentReviewRequests DocumentReviewRequest[]
+  createdAt              DateTime                @default(now())
+}
+
+// SUBMITTED is real evidence a person uploaded against this deliverable's
+// checklist item — the only kind that counts toward minFiles, "current
+// version" (see GateDetail.tsx's maxVersion logic), or bypass eligibility.
+// AI_REVIEW is a report the Phase 5 document-review bridge (PRD.html §06/
+// §09) generated FROM a SUBMITTED file — attached to the same Deliverable
+// for the PM's convenience, but it is never itself "the evidence": it must
+// stay excluded from every version/current-file computation, or an AI
+// review would wrongly appear to supersede the real thing it reviewed.
+enum EvidenceFileKind {
+  SUBMITTED
+  AI_REVIEW
 }
 
 model EvidenceFile {
-  id            String      @id @default(cuid())
-  deliverableId String
-  deliverable   Deliverable @relation(fields: [deliverableId], references: [id])
-  fileName      String
-  fileRef       String // storage path/URL — local disk in dev, object storage later
-  version       Int         @default(1)
-  uploadedById  String
-  uploadedBy    User        @relation(fields: [uploadedById], references: [id])
-  uploadedAt    DateTime    @default(now())
+  id                    String                  @id @default(cuid())
+  deliverableId         String
+  deliverable           Deliverable             @relation(fields: [deliverableId], references: [id])
+  fileName              String
+  fileRef               String // storage path/URL — local disk in dev, object storage later
+  kind                  EvidenceFileKind        @default(SUBMITTED)
+  version               Int                     @default(1)
+  uploadedById          String
+  uploadedBy            User                    @relation(fields: [uploadedById], references: [id])
+  uploadedAt            DateTime                @default(now())
+  reviewedByRequests    DocumentReviewRequest[] @relation("ReviewedEvidenceFile")
+  reviewResultOfRequest DocumentReviewRequest?  @relation("ReviewResultFile")
+}
+
+enum DocumentReviewStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETE
+  FAILED
+}
+
+// Phase 5 of the Project Managed System build (PRD.html §06/§09) — the
+// StageForge<->AI Council document-review bridge. A PM explicitly requests
+// a review of one real, already-submitted EvidenceFile, naming which
+// nhs-scotland-* agent applies (no automatic document-type detection — see
+// PRD.html's own reasoning). The AI Council mailbox pipeline discovers
+// PENDING requests via GET /api/document-reviews/pending, downloads the
+// real evidence bytes via GET .../evidence, runs the named agent headlessly,
+// and uploads the resulting report back via POST .../complete (or reports
+// a genuine failure via .../failed) — never silently dropping either
+// outcome, same discipline as every other AI Council integration point.
+model DocumentReviewRequest {
+  id                   String               @id @default(cuid())
+  deliverableId        String
+  deliverable          Deliverable          @relation(fields: [deliverableId], references: [id])
+  evidenceFileId       String
+  evidenceFile         EvidenceFile         @relation("ReviewedEvidenceFile", fields: [evidenceFileId], references: [id])
+  // One of a fixed, server-enforced whitelist (see REVIEWABLE_AGENT_SLUGS
+  // in actions.ts) — only the nhs-scotland-* agents shaped as "one document
+  // in, one report out" are eligible; the Q&A/guidance agents and
+  // multi-document drafting agents (e.g. nhs-scotland-ccn-preparation)
+  // don't fit this bridge and are deliberately out of scope for Phase 5.
+  agentSlug            String
+  requestToken         String               @unique @default(cuid())
+  status               DocumentReviewStatus @default(PENDING)
+  requestedById        String
+  requestedBy          User                 @relation(fields: [requestedById], references: [id])
+  requestedAt          DateTime             @default(now())
+  startedAt            DateTime?
+  completedAt          DateTime?
+  resultSummary        String?
+  resultEvidenceFileId String?              @unique
+  resultEvidenceFile   EvidenceFile?        @relation("ReviewResultFile", fields: [resultEvidenceFileId], references: [id])
+  failureReason        String?
 }
 
 // Reason is mandatory — confirmed, for traceability. Whoever
@@ -980,17 +1040,17 @@ enum GateSignOffCapturedVia {
 }
 
 model GateSignOff {
-  id             String                 @id @default(cuid())
-  gateId         String
-  gate           Gate                   @relation(fields: [gateId], references: [id])
-  decision       SignOffDecision
-  signedOffById  String
-  signedOffBy    User                   @relation(fields: [signedOffById], references: [id])
-  reason         String?
-  createdAt      DateTime               @default(now())
-  capturedVia    GateSignOffCapturedVia @default(DIRECT)
-  emailApprovalId String?               @unique
-  emailApproval   EmailApproval?        @relation(fields: [emailApprovalId], references: [id])
+  id              String                 @id @default(cuid())
+  gateId          String
+  gate            Gate                   @relation(fields: [gateId], references: [id])
+  decision        SignOffDecision
+  signedOffById   String
+  signedOffBy     User                   @relation(fields: [signedOffById], references: [id])
+  reason          String?
+  createdAt       DateTime               @default(now())
+  capturedVia     GateSignOffCapturedVia @default(DIRECT)
+  emailApprovalId String?                @unique
+  emailApproval   EmailApproval?         @relation(fields: [emailApprovalId], references: [id])
 }
 
 // ── Project Managed System: email-based approval (Phase 2) ───────────────
@@ -1009,11 +1069,11 @@ enum EmailApprovalStatus {
 }
 
 model EmailApproval {
-  id              String              @id @default(cuid())
-  gateId          String
-  gate            Gate                @relation(fields: [gateId], references: [id])
-  contactId       String
-  contact         ProjectContact      @relation(fields: [contactId], references: [id])
+  id                   String              @id @default(cuid())
+  gateId               String
+  gate                 Gate                @relation(fields: [gateId], references: [id])
+  contactId            String
+  contact              ProjectContact      @relation(fields: [contactId], references: [id])
   // Opaque, unguessable -- embedded in the outbound email (subject or a
   // custom header) so a future reply can be matched back to this exact
   // request without relying on subject-line text matching alone. Not a
@@ -1021,20 +1081,20 @@ model EmailApproval {
   // authorize a decision on its own -- see the inbound-capture phase's
   // own sender-verification requirement), but still unguessable so a
   // stray email can't accidentally collide with a real request.
-  requestToken    String              @unique @default(cuid())
-  status          EmailApprovalStatus @default(PENDING)
-  requestedById   String
-  requestedBy     User                @relation(fields: [requestedById], references: [id])
-  requestedAt     DateTime            @default(now())
-  sentAt          DateTime?
+  requestToken         String              @unique @default(cuid())
+  status               EmailApprovalStatus @default(PENDING)
+  requestedById        String
+  requestedBy          User                @relation(fields: [requestedById], references: [id])
+  requestedAt          DateTime            @default(now())
+  sentAt               DateTime?
   // Decision fields -- populated by Phase 3's reply-capture endpoint
   // (/api/email-approvals/[id]/reply) once a verified, unambiguous
   // reply arrives. Never written on a sender mismatch or an ambiguous
   // reply -- see that route's own comments for the full guard sequence.
-  decision        SignOffDecision?
-  decisionEmail   String?
-  verifiedSender  String?
-  decidedAt       DateTime?
+  decision             SignOffDecision?
+  decisionEmail        String?
+  verifiedSender       String?
+  decidedAt            DateTime?
   resultingGateSignOff GateSignOff?
   // Phase 4 (escalation/reminders, PRD.html §06/§09) — tracked here, not
   // just in AuditLogEntry, because GET /api/email-approvals/overdue needs
@@ -1045,9 +1105,9 @@ model EmailApproval {
   // after that this EmailApproval is excluded from /overdue entirely, so
   // the system stops nagging automatically and leaves it to the human PM
   // who requested it (never advances the gate on its own regardless).
-  reminderCount   Int                 @default(0)
-  lastReminderAt  DateTime?
-  escalatedAt     DateTime?
+  reminderCount        Int                 @default(0)
+  lastReminderAt       DateTime?
+  escalatedAt          DateTime?
 }
 
 enum LessonType {
