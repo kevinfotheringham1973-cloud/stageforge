@@ -63,6 +63,19 @@ async function main() {
   const { POST: remindedPOST } = await import("../src/app/api/email-approvals/[id]/reminded/route.ts");
   const { POST: escalatedPOST } = await import("../src/app/api/email-approvals/[id]/escalated/route.ts");
   const { REMINDER_INTERVAL_MS, MAX_REMINDERS_BEFORE_ESCALATION } = await import("../src/lib/emailApprovalEscalation.ts");
+  // Phase 5's evidence storage follows the same real-SharePoint-vs-local-
+  // vs-stub branching resolveEvidenceUploads() uses. This dev DB's
+  // SharePoint env vars are present but blank (not actually provisioned),
+  // so exercising the real byte-level round trip here means forcing the
+  // local-disk branch on, in-process, for this script only — a genuinely
+  // real storage backend (the Electron desktop build's own), not a mock.
+  process.env.STAGEFORGE_LOCAL_MODE = "1";
+  const { GET: docReviewPendingGET } = await import("../src/app/api/document-reviews/pending/route.ts");
+  const { POST: docReviewStartedPOST } = await import("../src/app/api/document-reviews/[id]/started/route.ts");
+  const { GET: docReviewEvidenceGET } = await import("../src/app/api/document-reviews/[id]/evidence/route.ts");
+  const { POST: docReviewCompletePOST } = await import("../src/app/api/document-reviews/[id]/complete/route.ts");
+  const { POST: docReviewFailedPOST } = await import("../src/app/api/document-reviews/[id]/failed/route.ts");
+  const { localEvidenceFolderPath, saveLocalEvidenceFile, deleteLocalEvidenceFile } = await import("../src/lib/localEvidenceStorage.ts");
 
   console.log("Setting up real test data...");
   const pm = await db.user.findFirstOrThrow({ where: { email: "derek.g999@outlook.com" } });
@@ -387,6 +400,223 @@ async function main() {
 
     await db.emailApproval.delete({ where: { id: ea5.id } }).catch(() => {});
     await db.emailApproval.delete({ where: { id: ea4.id } }).catch(() => {});
+
+    console.log("\n7. Document review bridge (Phase 5)");
+    const reviewStage = await db.stage.create({
+      data: { projectId: project.id, key: `smoke_test_review_stage_${Date.now()}`, name: "Smoke Test Review Stage", order: 9995 },
+    });
+    const reviewGate = await db.gate.create({
+      data: { stageId: reviewStage.id, key: "smoke_test_review_gate", name: "Smoke Test Review Gate", status: "IN_PROGRESS" },
+    });
+    const reviewDeliverable = await db.deliverable.create({
+      data: { gateId: reviewGate.id, key: "smoke_test_deliverable", label: "Smoke Test Deliverable", status: "EVIDENCED" },
+    });
+
+    const testFileName = "smoke-test-evidence.txt";
+    const testFileContent = Buffer.from(`Smoke test evidence content ${Date.now()}`);
+    const folderPath = localEvidenceFolderPath(project, reviewStage.name);
+    const uploaded = await saveLocalEvidenceFile(folderPath, testFileName, testFileContent);
+    const submittedFile = await db.evidenceFile.create({
+      data: { deliverableId: reviewDeliverable.id, fileName: testFileName, fileRef: uploaded.servePath, kind: "SUBMITTED", uploadedById: pm.id },
+    });
+    const dr = await db.documentReviewRequest.create({
+      data: {
+        deliverableId: reviewDeliverable.id,
+        evidenceFileId: submittedFile.id,
+        agentSlug: "nhs-scotland-rams-review",
+        requestedById: pm.id,
+      },
+    });
+
+    try {
+      check(
+        "GET document-reviews pending no auth -> 401",
+        (await docReviewPendingGET(new Request("http://x/api/document-reviews/pending"))).status === 401
+      );
+
+      const pendingRes5 = await docReviewPendingGET(
+        new Request("http://x/api/document-reviews/pending", { headers: { authorization: `Bearer ${TOKEN}` } })
+      );
+      const pendingBody5 = await pendingRes5.json();
+      const drItem = pendingBody5.pending?.find((p: any) => p.id === dr.id);
+      check("Test review present in pending list", Boolean(drItem));
+      check("pending[].agentSlug correct", drItem?.agentSlug === "nhs-scotland-rams-review");
+      check("pending[].evidenceFileName correct", drItem?.evidenceFileName === testFileName);
+      check("pending[].deliverableLabel correct", drItem?.deliverableLabel === "Smoke Test Deliverable");
+
+      check(
+        "POST started wrong requestToken -> 404",
+        (
+          await docReviewStartedPOST(
+            new Request(`http://x/api/document-reviews/${dr.id}/started`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+              body: JSON.stringify({ requestToken: "wrong" }),
+            }),
+            { params: Promise.resolve({ id: dr.requestToken }) }
+          )
+        ).status === 404
+      );
+      const startedRes = await docReviewStartedPOST(
+        new Request(`http://x/api/document-reviews/${dr.requestToken}/started`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({ requestToken: dr.requestToken }),
+        }),
+        { params: Promise.resolve({ id: dr.requestToken }) }
+      );
+      check("POST started correct -> 200", startedRes.status === 200);
+      const reloadedDr = await db.documentReviewRequest.findUniqueOrThrow({ where: { id: dr.id } });
+      check("Status now IN_PROGRESS with startedAt set", reloadedDr.status === "IN_PROGRESS" && reloadedDr.startedAt !== null);
+
+      const pendingRes6 = await docReviewPendingGET(
+        new Request("http://x/api/document-reviews/pending", { headers: { authorization: `Bearer ${TOKEN}` } })
+      );
+      const pendingBody6 = await pendingRes6.json();
+      check("No longer in pending list once IN_PROGRESS", !pendingBody6.pending.some((p: any) => p.id === dr.id));
+
+      check(
+        "POST started again (already IN_PROGRESS) -> 409",
+        (
+          await docReviewStartedPOST(
+            new Request(`http://x/api/document-reviews/${dr.requestToken}/started`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+              body: JSON.stringify({ requestToken: dr.requestToken }),
+            }),
+            { params: Promise.resolve({ id: dr.requestToken }) }
+          )
+        ).status === 409
+      );
+
+      check(
+        "GET evidence wrong requestToken query -> 404",
+        (
+          await docReviewEvidenceGET(new Request(`http://x/api/document-reviews/${dr.requestToken}/evidence?requestToken=wrong`, {
+            headers: { authorization: `Bearer ${TOKEN}` },
+          }), { params: Promise.resolve({ id: dr.requestToken }) })
+        ).status === 404
+      );
+      const evidenceRes = await docReviewEvidenceGET(
+        new Request(`http://x/api/document-reviews/${dr.requestToken}/evidence?requestToken=${dr.requestToken}`, {
+          headers: { authorization: `Bearer ${TOKEN}` },
+        }),
+        { params: Promise.resolve({ id: dr.requestToken }) }
+      );
+      check("GET evidence correct -> 200", evidenceRes.status === 200);
+      const downloadedBytes = Buffer.from(await evidenceRes.arrayBuffer());
+      check("Downloaded evidence bytes match the real uploaded file exactly", downloadedBytes.equals(testFileContent));
+
+      const reportContent = Buffer.from("Smoke test AI review report content.");
+      const completeRes = await docReviewCompletePOST(
+        new Request(`http://x/api/document-reviews/${dr.requestToken}/complete`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({
+            requestToken: dr.requestToken,
+            resultSummary: "Smoke test summary.",
+            fileName: "smoke-test-review-report.txt",
+            contentBase64: reportContent.toString("base64"),
+          }),
+        }),
+        { params: Promise.resolve({ id: dr.requestToken }) }
+      );
+      check("POST complete -> 200 ok", completeRes.status === 200);
+
+      const completedDr = await db.documentReviewRequest.findUniqueOrThrow({ where: { id: dr.id }, include: { resultEvidenceFile: true } });
+      check("DocumentReviewRequest status now COMPLETE", completedDr.status === "COMPLETE");
+      check("resultSummary set", completedDr.resultSummary === "Smoke test summary.");
+      check("resultEvidenceFileId linked", Boolean(completedDr.resultEvidenceFileId));
+      check("Linked result file has kind AI_REVIEW", completedDr.resultEvidenceFile?.kind === "AI_REVIEW");
+      check("Linked result file has correct fileName", completedDr.resultEvidenceFile?.fileName === "smoke-test-review-report.txt");
+
+      const allDeliverableFiles = await db.evidenceFile.findMany({ where: { deliverableId: reviewDeliverable.id } });
+      check("Original SUBMITTED evidence file untouched (still kind SUBMITTED)", allDeliverableFiles.some((f) => f.id === submittedFile.id && f.kind === "SUBMITTED"));
+
+      check(
+        "POST complete again (already COMPLETE) -> 409",
+        (
+          await docReviewCompletePOST(
+            new Request(`http://x/api/document-reviews/${dr.requestToken}/complete`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+              body: JSON.stringify({ requestToken: dr.requestToken, fileName: "x.txt", contentBase64: "eA==" }),
+            }),
+            { params: Promise.resolve({ id: dr.requestToken }) }
+          )
+        ).status === 409
+      );
+      check(
+        "POST failed on an already-COMPLETE request -> 409",
+        (
+          await docReviewFailedPOST(
+            new Request(`http://x/api/document-reviews/${dr.requestToken}/failed`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+              body: JSON.stringify({ requestToken: dr.requestToken, failureReason: "test" }),
+            }),
+            { params: Promise.resolve({ id: dr.requestToken }) }
+          )
+        ).status === 409
+      );
+
+      // Second request against a dev-stub evidence file — no real bytes exist.
+      const stubFile = await db.evidenceFile.create({
+        data: { deliverableId: reviewDeliverable.id, fileName: "stub.txt", fileRef: "local://dev-upload/stub.txt", kind: "SUBMITTED", uploadedById: pm.id },
+      });
+      const dr2 = await db.documentReviewRequest.create({
+        data: { deliverableId: reviewDeliverable.id, evidenceFileId: stubFile.id, agentSlug: "nhs-scotland-sow-review", requestedById: pm.id },
+      });
+      check(
+        "GET evidence on a dev-stub file -> 422, no real bytes",
+        (
+          await docReviewEvidenceGET(
+            new Request(`http://x/api/document-reviews/${dr2.requestToken}/evidence?requestToken=${dr2.requestToken}`, {
+              headers: { authorization: `Bearer ${TOKEN}` },
+            }),
+            { params: Promise.resolve({ id: dr2.requestToken }) }
+          )
+        ).status === 422
+      );
+      const failedRes = await docReviewFailedPOST(
+        new Request(`http://x/api/document-reviews/${dr2.requestToken}/failed`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({ requestToken: dr2.requestToken, failureReason: "No real evidence file (dev stub)." }),
+        }),
+        { params: Promise.resolve({ id: dr2.requestToken }) }
+      );
+      check("POST failed -> 200 ok", failedRes.status === 200);
+      const failedDr = await db.documentReviewRequest.findUniqueOrThrow({ where: { id: dr2.id } });
+      check("Status now FAILED with failureReason set", failedDr.status === "FAILED" && failedDr.failureReason !== null);
+      check(
+        "POST failed again (already FAILED) -> 409",
+        (
+          await docReviewFailedPOST(
+            new Request(`http://x/api/document-reviews/${dr2.requestToken}/failed`, {
+              method: "POST",
+              headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+              body: JSON.stringify({ requestToken: dr2.requestToken, failureReason: "again" }),
+            }),
+            { params: Promise.resolve({ id: dr2.requestToken }) }
+          )
+        ).status === 409
+      );
+
+      await db.documentReviewRequest.delete({ where: { id: dr2.id } }).catch(() => {});
+      await db.evidenceFile.delete({ where: { id: stubFile.id } }).catch(() => {});
+    } finally {
+      await deleteLocalEvidenceFile(folderPath, testFileName).catch(() => {});
+      await deleteLocalEvidenceFile(folderPath, "smoke-test-review-report.txt").catch(() => {});
+      const resultFiles = await db.evidenceFile.findMany({ where: { deliverableId: reviewDeliverable.id, kind: "AI_REVIEW" } });
+      await db.documentReviewRequest.updateMany({ where: { deliverableId: reviewDeliverable.id }, data: { resultEvidenceFileId: null } }).catch(() => {});
+      await db.documentReviewRequest.deleteMany({ where: { deliverableId: reviewDeliverable.id } }).catch(() => {});
+      for (const f of resultFiles) await db.evidenceFile.delete({ where: { id: f.id } }).catch(() => {});
+      await db.evidenceFile.delete({ where: { id: submittedFile.id } }).catch(() => {});
+      await db.deliverable.delete({ where: { id: reviewDeliverable.id } }).catch(() => {});
+      await db.gate.delete({ where: { id: reviewGate.id } }).catch(() => {});
+      await db.stage.delete({ where: { id: reviewStage.id } }).catch(() => {});
+    }
   } finally {
     await db.emailApproval.delete({ where: { id: ea.id } }).catch(() => {});
     await db.projectContact.delete({ where: { id: contact.id } }).catch(() => {});
