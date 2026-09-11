@@ -285,12 +285,77 @@ export async function bypassDeliverable(
   }
 
   await db.$transaction([
-    db.deliverableBypass.create({ data: { deliverableId, bypassedById: userId, reason } }),
+    // Upsert, not create — a deliverable bypassed, undone, then bypassed
+    // again reuses its one DeliverableBypass row (deliverableId stays
+    // @unique) rather than failing on a duplicate-key error. The update
+    // branch explicitly resets createdAt and clears the undone* fields,
+    // since Prisma's own @default(now()) only applies on create.
+    db.deliverableBypass.upsert({
+      where: { deliverableId },
+      create: { deliverableId, bypassedById: userId, reason },
+      update: { bypassedById: userId, reason, createdAt: new Date(), undoneAt: null, undoneById: null, undoneReason: null },
+    }),
     db.deliverable.update({ where: { id: deliverableId }, data: { status: "BYPASSED" } }),
     db.auditLogEntry.create({
       data: { actorId: userId, action: "deliverable.bypassed", gateId, entityType: "Deliverable", entityId: deliverableId, reason },
     }),
     ...startGateUpdate(gateId, gate.status),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
+ * Reverses bypassDeliverable — real user-reported gap (11 Sep 2026): an
+ * accidental bypass click had no way back to PENDING to add real
+ * evidence. Same authority as bypassing it in the first place (whoever
+ * could bypass it can also decide it shouldn't have been) — not a
+ * weaker action, undoing just returns to the state before the bypass.
+ * Marks the existing DeliverableBypass row as undone (undoneAt/
+ * undoneById/undoneReason) rather than deleting it, so the record of
+ * who bypassed it, when, and why stays real audit history even after
+ * it's reversed — see the model's own comment for why deliverableId
+ * stays @unique rather than becoming a full history table.
+ */
+export async function undoDeliverableBypass(
+  deliverableId: string,
+  projectNumber: string,
+  gateId: string,
+  formData: FormData
+) {
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) throw new Error("A reason is required to undo a bypass.");
+
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error("Not signed in.");
+
+  const deliverable = await db.deliverable.findUniqueOrThrow({ where: { id: deliverableId } });
+  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
+  const [roleKeys, globalRoleKeys, { exactMatchAuthorityKeys, roleNameByKey }] = await Promise.all([
+    getCurrentUserRoleKeysForProject(gate.stage.projectId),
+    getCurrentUserGlobalRoleKeys(),
+    fetchRoleAuthorityContext(),
+  ]);
+
+  if (!canBypassDeliverable(roleKeys, deliverable.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys)) {
+    throw new Error(
+      `This deliverable requires ${roleNameByKey[deliverable.bypassAuthority] ?? deliverable.bypassAuthority} authority to undo its bypass — your current roles on this project don't qualify.`
+    );
+  }
+  if (deliverable.status !== "BYPASSED") {
+    throw new Error("This deliverable isn't currently bypassed.");
+  }
+
+  await db.$transaction([
+    db.deliverableBypass.update({
+      where: { deliverableId },
+      data: { undoneAt: new Date(), undoneById: userId, undoneReason: reason },
+    }),
+    db.deliverable.update({ where: { id: deliverableId }, data: { status: "PENDING" } }),
+    db.auditLogEntry.create({
+      data: { actorId: userId, action: "deliverable.bypass_undone", gateId, entityType: "Deliverable", entityId: deliverableId, reason },
+    }),
   ]);
 
   revalidatePath(`/projects/${projectNumber}`);

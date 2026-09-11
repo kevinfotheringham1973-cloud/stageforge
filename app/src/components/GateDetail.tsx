@@ -37,6 +37,7 @@ import {
   reviseSpend,
   setGateTimeline,
   submitForApproval,
+  undoDeliverableBypass,
   uploadSpendInvoice,
 } from "@/lib/actions";
 import { notFound } from "next/navigation";
@@ -553,6 +554,12 @@ export async function GateDetail({
     const canBypass =
       d.status === "PENDING" &&
       canBypassDeliverable(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
+    // Same authority as bypassing in the first place — undoing isn't a
+    // weaker action, it just returns to the state before the bypass.
+    const canUndoBypass =
+      d.status === "BYPASSED" &&
+      gate.status !== "SIGNED_OFF" &&
+      canBypassDeliverable(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
     const canReplaceEvidence =
       gate.status !== "SIGNED_OFF" &&
       canUploadEvidence(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
@@ -675,6 +682,26 @@ export async function GateDetail({
               Bypassed by {d.bypass.bypassedBy.name}
             </div>
             <div className="text-inkmuted">{d.bypass.reason}</div>
+            {canUndoBypass && (
+              <form
+                action={undoDeliverableBypass.bind(null, d.id, projectNumber, gateId)}
+                className="mt-2 flex flex-wrap items-center gap-2"
+              >
+                <input
+                  name="reason"
+                  aria-label={`Reason for undoing the bypass on ${d.label}`}
+                  placeholder="Reason for undoing this bypass (required)"
+                  required
+                  className="w-full rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm sm:w-72"
+                />
+                <SubmitButton
+                  pendingText="Undoing…"
+                  className="rounded-md border border-flag px-3 py-1.5 text-sm font-semibold text-flag hover:bg-flag/10"
+                >
+                  Undo bypass
+                </SubmitButton>
+              </form>
+            )}
           </div>
         )}
 
