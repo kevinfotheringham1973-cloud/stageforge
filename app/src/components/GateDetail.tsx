@@ -1587,9 +1587,28 @@ export async function GateDetail({
                 >
                   {ea.status}
                 </span>
+                {ea.escalatedAt ? (
+                  <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-red-700">
+                    Escalated
+                  </span>
+                ) : (
+                  ea.reminderCount > 0 && (
+                    <span className="ml-2 rounded-full bg-surface2 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                      Reminded {ea.reminderCount}&times;
+                    </span>
+                  )
+                )}
                 <div className="mt-1 text-xs text-inkmuted">
                   Requested by {ea.requestedBy.name} &middot; {ea.requestedAt.toLocaleDateString("en-GB")}
                   {ea.sentAt && <> &middot; sent {ea.sentAt.toLocaleDateString("en-GB")}</>}
+                  {ea.lastReminderAt && <> &middot; last reminder {ea.lastReminderAt.toLocaleDateString("en-GB")}</>}
+                  {ea.escalatedAt && (
+                    <>
+                      {" "}
+                      &middot; escalated to {ea.requestedBy.name} {ea.escalatedAt.toLocaleDateString("en-GB")} &mdash; no automated action
+                      taken, follow up directly
+                    </>
+                  )}
                 </div>
               </div>
             ))}

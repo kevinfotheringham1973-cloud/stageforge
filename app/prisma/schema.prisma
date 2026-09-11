@@ -1036,6 +1036,18 @@ model EmailApproval {
   verifiedSender  String?
   decidedAt       DateTime?
   resultingGateSignOff GateSignOff?
+  // Phase 4 (escalation/reminders, PRD.html §06/§09) — tracked here, not
+  // just in AuditLogEntry, because GET /api/email-approvals/overdue needs
+  // to compute "is this due a reminder or an escalation yet" without
+  // replaying the whole audit history on every poll. reminderCount/
+  // lastReminderAt drive the reminder cadence; escalatedAt is set once,
+  // permanently, the first time this crosses the escalation threshold —
+  // after that this EmailApproval is excluded from /overdue entirely, so
+  // the system stops nagging automatically and leaves it to the human PM
+  // who requested it (never advances the gate on its own regardless).
+  reminderCount   Int                 @default(0)
+  lastReminderAt  DateTime?
+  escalatedAt     DateTime?
 }
 
 enum LessonType {

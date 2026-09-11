@@ -59,6 +59,10 @@ async function main() {
   const { GET } = await import("../src/app/api/email-approvals/pending/route.ts");
   const { POST } = await import("../src/app/api/email-approvals/[id]/sent/route.ts");
   const { POST: replyPOST } = await import("../src/app/api/email-approvals/[id]/reply/route.ts");
+  const { GET: overdueGET } = await import("../src/app/api/email-approvals/overdue/route.ts");
+  const { POST: remindedPOST } = await import("../src/app/api/email-approvals/[id]/reminded/route.ts");
+  const { POST: escalatedPOST } = await import("../src/app/api/email-approvals/[id]/escalated/route.ts");
+  const { REMINDER_INTERVAL_MS, MAX_REMINDERS_BEFORE_ESCALATION } = await import("../src/lib/emailApprovalEscalation.ts");
 
   console.log("Setting up real test data...");
   const pm = await db.user.findFirstOrThrow({ where: { email: "derek.g999@outlook.com" } });
@@ -249,6 +253,140 @@ async function main() {
     await db.stage.delete({ where: { id: stage.id } }).catch(() => {});
     await db.projectContact.delete({ where: { id: sponsorContact.id } }).catch(() => {});
     await db.emailApproval.delete({ where: { id: ea2.id } }).catch(() => {});
+
+    console.log("\n6. Overdue reminders & escalation (Phase 4)");
+    const ea4 = await db.emailApproval.create({
+      data: {
+        gateId: gate.id,
+        contactId: contact.id,
+        requestedById: pm.id,
+        status: "SENT",
+        sentAt: new Date(Date.now() - REMINDER_INTERVAL_MS - 60000),
+      },
+    });
+
+    check(
+      "GET overdue no auth -> 401",
+      (await overdueGET(new Request("http://x/api/email-approvals/overdue"))).status === 401
+    );
+
+    const overdue1 = await (
+      await overdueGET(new Request("http://x/api/email-approvals/overdue", { headers: { authorization: `Bearer ${TOKEN}` } }))
+    ).json();
+    const overdueItem1 = overdue1.overdue?.find((o: any) => o.id === ea4.id);
+    check("Overdue past reminder interval, 0 reminders -> action REMIND", overdueItem1?.action === "REMIND");
+
+    const remindResult = await (
+      await remindedPOST(
+        new Request(`http://x/api/email-approvals/${ea4.requestToken}/reminded`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({ requestToken: ea4.requestToken }),
+        }),
+        { params: Promise.resolve({ id: ea4.requestToken }) }
+      )
+    ).json();
+    check("POST reminded -> reminderCount now 1", remindResult.reminderCount === 1);
+
+    const overdue2 = await (
+      await overdueGET(new Request("http://x/api/email-approvals/overdue", { headers: { authorization: `Bearer ${TOKEN}` } }))
+    ).json();
+    check("Freshly reminded item drops out of overdue immediately", !overdue2.overdue?.some((o: any) => o.id === ea4.id));
+
+    // Fast-forward past the next interval and jump reminderCount to the
+    // escalation threshold directly, equivalent to MAX_REMINDERS_BEFORE_ESCALATION
+    // real reminder cycles having already happened.
+    await db.emailApproval.update({
+      where: { id: ea4.id },
+      data: {
+        reminderCount: MAX_REMINDERS_BEFORE_ESCALATION,
+        lastReminderAt: new Date(Date.now() - REMINDER_INTERVAL_MS - 60000),
+      },
+    });
+    const overdue3 = await (
+      await overdueGET(new Request("http://x/api/email-approvals/overdue", { headers: { authorization: `Bearer ${TOKEN}` } }))
+    ).json();
+    const overdueItem3 = overdue3.overdue?.find((o: any) => o.id === ea4.id);
+    check(`At ${MAX_REMINDERS_BEFORE_ESCALATION} reminders, past interval -> action ESCALATE`, overdueItem3?.action === "ESCALATE");
+
+    const escalateResult = await (
+      await escalatedPOST(
+        new Request(`http://x/api/email-approvals/${ea4.requestToken}/escalated`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({ requestToken: ea4.requestToken }),
+        }),
+        { params: Promise.resolve({ id: ea4.requestToken }) }
+      )
+    ).json();
+    check("POST escalated -> ok", escalateResult.ok === true && !escalateResult.alreadyEscalated);
+
+    const overdue4 = await (
+      await overdueGET(new Request("http://x/api/email-approvals/overdue", { headers: { authorization: `Bearer ${TOKEN}` } }))
+    ).json();
+    check("Escalated item drops out of overdue permanently", !overdue4.overdue?.some((o: any) => o.id === ea4.id));
+
+    const reEscalateResult = await (
+      await escalatedPOST(
+        new Request(`http://x/api/email-approvals/${ea4.requestToken}/escalated`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+          body: JSON.stringify({ requestToken: ea4.requestToken }),
+        }),
+        { params: Promise.resolve({ id: ea4.requestToken }) }
+      )
+    ).json();
+    check(
+      "Escalating again is idempotent, not an error",
+      reEscalateResult.ok === true && reEscalateResult.alreadyEscalated === true
+    );
+
+    check(
+      "Reminding an already-escalated item -> 409",
+      (
+        await remindedPOST(
+          new Request(`http://x/api/email-approvals/${ea4.requestToken}/reminded`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+            body: JSON.stringify({ requestToken: ea4.requestToken }),
+          }),
+          { params: Promise.resolve({ id: ea4.requestToken }) }
+        )
+      ).status === 409
+    );
+
+    const ea5 = await db.emailApproval.create({
+      data: { gateId: gate.id, contactId: contact.id, requestedById: pm.id, status: "DECIDED" },
+    });
+    check(
+      "Reminding a DECIDED item -> 409",
+      (
+        await remindedPOST(
+          new Request(`http://x/api/email-approvals/${ea5.requestToken}/reminded`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+            body: JSON.stringify({ requestToken: ea5.requestToken }),
+          }),
+          { params: Promise.resolve({ id: ea5.requestToken }) }
+        )
+      ).status === 409
+    );
+    check(
+      "Escalating a DECIDED item -> 409",
+      (
+        await escalatedPOST(
+          new Request(`http://x/api/email-approvals/${ea5.requestToken}/escalated`, {
+            method: "POST",
+            headers: { authorization: `Bearer ${TOKEN}`, "content-type": "application/json" },
+            body: JSON.stringify({ requestToken: ea5.requestToken }),
+          }),
+          { params: Promise.resolve({ id: ea5.requestToken }) }
+        )
+      ).status === 409
+    );
+
+    await db.emailApproval.delete({ where: { id: ea5.id } }).catch(() => {});
+    await db.emailApproval.delete({ where: { id: ea4.id } }).catch(() => {});
   } finally {
     await db.emailApproval.delete({ where: { id: ea.id } }).catch(() => {});
     await db.projectContact.delete({ where: { id: contact.id } }).catch(() => {});
