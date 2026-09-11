@@ -1865,6 +1865,18 @@ export async function requestEmailApproval(gateId: string, projectNumber: string
   if (contact.projectId !== gate.stage.projectId || !contact.active) {
     throw new Error("That contact isn't an active member of this project's external roster.");
   }
+  // A gate-level EmailApproval always ends up as a Sponsor-tier
+  // GateSignOff (canDecideGate requires roleKeys.includes("SPONSOR"),
+  // uniformly, not per-gate) — so the contact being asked has to
+  // actually hold that same authority, same as an in-app Sponsor would
+  // need to. Checked again, independently, at reply-capture time too
+  // (defense in depth against the role changing between request and
+  // reply) — see /api/email-approvals/[id]/reply.
+  if (contact.roleKey !== "SPONSOR") {
+    throw new Error(
+      `Only a contact with the Sponsor role can be asked to approve a gate by email — ${contact.name}'s role is ${contact.roleKey ?? "not set"}. Set their role to Sponsor on the Team & scope page first, or ask a different contact.`
+    );
+  }
 
   const emailApproval = await db.emailApproval.create({
     data: { gateId, contactId, requestedById: actorId },

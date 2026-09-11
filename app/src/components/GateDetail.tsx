@@ -207,7 +207,10 @@ export async function GateDetail({
           invoiceFiles: { orderBy: { uploadedAt: "desc" } },
         },
       },
-      signOffs: { orderBy: { createdAt: "desc" }, include: { signedOffBy: true } },
+      signOffs: {
+        orderBy: { createdAt: "desc" },
+        include: { signedOffBy: true, emailApproval: { include: { contact: true } } },
+      },
       emailApprovals: { orderBy: { requestedAt: "desc" }, include: { contact: true, requestedBy: true } },
       auditEntries: { orderBy: { createdAt: "desc" }, include: { actor: true } },
       lessonsLearned: { orderBy: { createdAt: "desc" }, include: { recordedBy: true } },
@@ -1536,7 +1539,23 @@ export async function GateDetail({
                 <span className={s.decision === "APPROVED" ? "font-semibold text-ok" : "font-semibold text-risk"}>
                   {s.decision === "APPROVED" ? "Approved" : "Rejected"}
                 </span>{" "}
-                by {s.signedOffBy.name} &middot; {s.createdAt.toLocaleDateString("en-GB")}
+                {/* EMAIL_PROXY rows: signedOffBy is a fixed service account that only
+                    satisfies the schema's foreign key — the real decision-maker is
+                    the roster contact on the linked EmailApproval, always shown here
+                    instead. Never display the service account's name on its own. */}
+                {s.capturedVia === "EMAIL_PROXY" && s.emailApproval ? (
+                  <>
+                    by <span className="font-semibold">{s.emailApproval.contact.name}</span>{" "}
+                    &lt;{s.emailApproval.contact.email}&gt; &middot; {s.createdAt.toLocaleDateString("en-GB")}{" "}
+                    <span className="rounded-full border border-rule px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                      via email
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    by {s.signedOffBy.name} &middot; {s.createdAt.toLocaleDateString("en-GB")}
+                  </>
+                )}
                 {s.reason && <div className="mt-1 text-inkmuted">{s.reason}</div>}
               </div>
             ))}
@@ -1576,17 +1595,41 @@ export async function GateDetail({
             ))}
           </div>
         )}
-        {roleKeys.includes("PM") &&
-          (activeContacts.length > 0 ? (
+        {(() => {
+          // A gate-level request always becomes a Sponsor-tier
+          // GateSignOff, so only a Sponsor-role contact can be asked —
+          // enforced again server-side in requestEmailApproval, this is
+          // just so the PM doesn't hit that error after already picking
+          // someone.
+          const sponsorContacts = activeContacts.filter((c) => c.roleKey === "SPONSOR");
+          if (!roleKeys.includes("PM")) return null;
+          if (activeContacts.length === 0) {
+            return (
+              <p className="text-xs text-inkmuted">
+                No active external contacts on this project yet — add one on the project&rsquo;s Team &amp; scope page.
+              </p>
+            );
+          }
+          if (sponsorContacts.length === 0) {
+            return (
+              <p className="text-xs text-inkmuted">
+                A gate approval can only be requested from a contact with the Sponsor role — none of this project&rsquo;s
+                active contacts have that role set yet. Set one on the Team &amp; scope page.
+              </p>
+            );
+          }
+          return (
             <form
               action={requestEmailApproval.bind(null, gateId, projectNumber)}
               className="flex flex-wrap items-end gap-3 rounded-md border border-dashed border-rule p-3"
             >
               <div>
-                <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Contact</label>
+                <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                  Contact (Sponsor role only)
+                </label>
                 <select name="contactId" required className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
                   <option value="">Select…</option>
-                  {activeContacts.map((c) => (
+                  {sponsorContacts.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} &lt;{c.email}&gt;
                     </option>
@@ -1597,11 +1640,8 @@ export async function GateDetail({
                 Request approval
               </SubmitButton>
             </form>
-          ) : (
-            <p className="text-xs text-inkmuted">
-              No active external contacts on this project yet — add one on the project&rsquo;s Team &amp; scope page.
-            </p>
-          ))}
+          );
+        })()}
       </div>
 
       <div id="lessons-learned" className="mt-6 scroll-mt-16">
