@@ -15,6 +15,15 @@ export type ReleaseNote = {
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
     date: "11 Sep 2026",
+    title: "Email-based gate approval is now live, AI document review, two more spend categories",
+    highlights: [
+      "Gate approval by email — announced as early groundwork a few days ago — is now fully working end-to-end and runs automatically. A Project Manager can ask an external contact who doesn't have a StageForge login (a Sponsor without system access, for example) to approve a gate; the request, the reply, and the resulting decision are all captured automatically, with the same audit trail as a normal in-app sign-off. If the contact doesn't reply, StageForge sends a reminder, then flags it back to the Project Manager to follow up directly — it never assumes silence means yes, and it never approves anything on its own.",
+      "A Project Manager can now ask for an AI-generated review of a piece of submitted evidence — a RAMS document, a Statement of Work, an inspection report, a CDM planning document, or an SFG20 maintenance-gap comparison — directly from the gate. The review appears alongside the evidence it reviewed, clearly marked as an AI-generated review, never mistaken for or replacing the real evidence itself.",
+      "Two more spend approval buckets: Serco Investment and Capital Project, alongside the existing Lifecycle Replacement, Small Works, and Variation.",
+    ],
+  },
+  {
+    date: "11 Sep 2026",
     title: "Undo an accidental bypass, and the first steps toward email-based approvals",
     highlights: [
       "Fixed a real gap: bypassing a deliverable by mistake used to be permanent — there was no way back to add the real evidence instead. An \"Undo bypass\" option now appears wherever a deliverable is bypassed, for the same person who could bypass it in the first place, with the same requirement to give a written reason.",
