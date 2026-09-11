@@ -78,6 +78,7 @@ model User {
   complianceCoSignOffs       ComplianceCoSignOff[]
   createdProjects            Project[]                @relation("ProjectCreatedBy")
   createdWorksPackages       WorksPackage[]           @relation("WorksPackageCreatedBy")
+  createdProjectContacts     ProjectContact[]         @relation("ProjectContactCreatedBy")
   provisioningReviews        ProvisioningReview[]
   resourceAllocations        ResourceAllocation[]
   resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
@@ -196,6 +197,50 @@ model ProjectRoleAssignment {
   createdAt    DateTime   @default(now())
 
   @@unique([projectId, userId, roleId])
+}
+
+// External roster contact for one project -- a named person with an email
+// and an accountability who does NOT have, and is not expected to ever
+// have, a StageForge login. Distinct from ProjectRoleAssignment above,
+// which grants a real logged-in User a Role on a Project: this is the
+// "email approval" project's team roster (see the project_ai_pm_agent
+// planning notes) -- Compliance Manager, Authorised Engineer, Water Group
+// contact, etc., who get emailed for sign-off rather than clicking
+// Approve in the app. Phase 1 of that build: populated and editable, not
+// yet wired into any gate/notification/approval logic (that's Phase 2+
+// -- no EmailApproval/GateSignOff linkage exists yet, deliberately).
+model ProjectContact {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  name        String
+  email       String
+  // Reuses Role.key where this contact's accountability maps to an
+  // existing authority role (e.g. "AUTHORISED_PERSON_WATER",
+  // "FIRE_OFFICER") -- nullable, since some real accountabilities (e.g.
+  // "Water Group contact") don't correspond to any Role StageForge
+  // already models. Deliberately a bare string, not a Role relation --
+  // Role.key already isn't a closed enum (see the "fully dynamic
+  // authority roles" note above), and a contact's accountability
+  // shouldn't require a Role row to exist first.
+  roleKey     String?
+  // Free-text accountability -- always shown alongside roleKey, since a
+  // real registered person's actual remit is often more specific than
+  // one role key covers (e.g. "Reviews only fire-related Deliverables
+  // for Ward 3 works").
+  accountability String?
+  // False once someone leaves/is replaced -- same reversible-archive
+  // pattern as User.archivedAt above, not a hard delete: a contact may be
+  // the real, named recipient/decision-maker a future EmailApproval
+  // record (Phase 3) references, and that history must keep meaning
+  // something.
+  active      Boolean  @default(true)
+  createdById String
+  createdBy   User     @relation("ProjectContactCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
 }
 
 // ── Delivery ─────────────────────────────────────────────────────────
@@ -650,6 +695,7 @@ model Project {
   provisioningMatchReasoning String?
   provisioningReviews        ProvisioningReview[]
   roleAssignments            ProjectRoleAssignment[]
+  contacts                   ProjectContact[]
   resourceAllocations        ResourceAllocation[]
   stages                     Stage[]
   shareLinks                 ShareLink[]

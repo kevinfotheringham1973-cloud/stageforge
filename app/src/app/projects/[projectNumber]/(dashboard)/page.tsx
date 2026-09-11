@@ -2,11 +2,12 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { DELIVERY_FACING_ROLE_KEYS } from "@/lib/permissions";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
-import { reinstateStage, setResourceAllocation } from "@/lib/actions";
+import { reinstateStage, setResourceAllocation, addProjectContact } from "@/lib/actions";
 import { neededDisciplineRoleKeys } from "@/lib/disciplineTeam";
 import { constituentTemplateIds } from "@/lib/projectTemplates";
 import { SubmitButton } from "@/components/SubmitButton";
 import { RemoveRoleAssignmentButton } from "@/components/RemoveRoleAssignmentButton";
+import { ProjectContactRow } from "@/components/ProjectContactRow";
 
 /**
  * The dashboard's default landing panel — everything that isn't about
@@ -31,9 +32,13 @@ export default async function ProjectOverviewPage({
       stages: { orderBy: { order: "asc" } },
       roleAssignments: { include: { role: true, user: true } },
       resourceAllocations: true,
+      contacts: { orderBy: [{ active: "desc" }, { name: "asc" }] },
     },
   });
   if (!project) notFound();
+
+  const allRoles = await db.role.findMany({ orderBy: { name: "asc" } });
+  const roleNameByKey = new Map(allRoles.map((r) => [r.key, r.name]));
 
   // A merged project (see ProjectAdditionalTemplate) is built from more
   // than just its primary template — every "systems covered" / "which
@@ -195,6 +200,89 @@ export default async function ProjectOverviewPage({
               Assign Roles
             </a>
           </div>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-rule bg-surface p-5">
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+          External roster &middot; email approvals
+        </h2>
+        <p className="mb-3 text-xs text-inkmuted">
+          Named people who don&rsquo;t hold a StageForge login — Compliance Manager, Authorised Engineer, Water
+          Group contact, etc. — reached by email rather than an in-app sign-off. Not yet wired into any
+          gate/notification flow; this is just the roster itself.
+        </p>
+        {project.contacts.length === 0 ? (
+          <p className="text-sm text-inkmuted">No external contacts added yet.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {project.contacts.map((c) => (
+              <ProjectContactRow
+                key={c.id}
+                contact={{
+                  id: c.id,
+                  name: c.name,
+                  email: c.email,
+                  roleLabel: c.roleKey ? roleNameByKey.get(c.roleKey) ?? c.roleKey : null,
+                  accountability: c.accountability,
+                  active: c.active,
+                }}
+                projectId={project.id}
+                projectNumber={project.projectNumber}
+                isPM={isPM}
+              />
+            ))}
+          </div>
+        )}
+        {isPM && (
+          <form
+            action={addProjectContact.bind(null, project.id, project.projectNumber)}
+            className="mt-4 flex flex-wrap items-end gap-3 border-t border-dashed border-rule pt-4"
+          >
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Name</label>
+              <input
+                name="name"
+                required
+                className="w-40 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Email</label>
+              <input
+                name="email"
+                type="email"
+                required
+                className="w-56 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                Role (optional)
+              </label>
+              <select name="roleKey" className="w-48 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
+                <option value="">No specific role</option>
+                {allRoles.map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                Accountability (optional)
+              </label>
+              <input
+                name="accountability"
+                placeholder="e.g. Water Group contact"
+                className="w-56 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+              />
+            </div>
+            <SubmitButton pendingText="Adding…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
+              Add contact
+            </SubmitButton>
+          </form>
         )}
       </div>
 

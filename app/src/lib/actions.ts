@@ -1628,6 +1628,154 @@ export async function removeRoleAssignment(
   return {};
 }
 
+// ── External roster (Project Manager Agent, Phase 1) ────────────────────
+// ProjectContact is deliberately NOT a User -- a named external person
+// (Compliance Manager, Authorised Engineer, Water Group contact, etc.)
+// with an email and an accountability, who is not expected to ever hold
+// a StageForge login. Populated/editable here; not yet wired into any
+// gate/notification/approval logic (that's a later phase) -- see the
+// project_ai_pm_agent planning notes for the full build sequence this is
+// phase 1 of.
+
+/**
+ * Same "Project Manager on THIS project" authority as
+ * setResourceAllocation/removeRoleAssignment above -- managing who's on
+ * the external roster is the same boundary as managing who's on the
+ * internal team.
+ */
+async function assertCanManageProjectContacts(projectId: string): Promise<string> {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+  const roleKeys = await getCurrentUserRoleKeysForProject(projectId);
+  if (!roleKeys.includes("PM")) {
+    throw new Error("Only the Project Manager can manage this project's external roster.");
+  }
+  return actorId;
+}
+
+export async function addProjectContact(projectId: string, projectNumber: string, formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const roleKeyRaw = String(formData.get("roleKey") ?? "").trim();
+  const accountability = String(formData.get("accountability") ?? "").trim();
+  if (!name) throw new Error("Name is required.");
+  if (!email || !email.includes("@")) throw new Error("A real email address is required.");
+
+  const actorId = await assertCanManageProjectContacts(projectId);
+
+  const contact = await db.projectContact.create({
+    data: {
+      projectId,
+      name,
+      email,
+      roleKey: roleKeyRaw || null,
+      accountability: accountability || null,
+      createdById: actorId,
+    },
+  });
+
+  await db.auditLogEntry.create({
+    data: {
+      actorId,
+      action: "project_contact.added",
+      entityType: "ProjectContact",
+      entityId: contact.id,
+      reason: `${name} <${email}> added to the external roster`,
+    },
+  });
+
+  revalidatePath(`/projects/${projectNumber}`);
+}
+
+/**
+ * Fixes a contact's details in place -- a typo'd email, a changed
+ * accountability -- distinct from archive/reactivate below, which is
+ * about whether they're active, not what their details say.
+ */
+export async function updateProjectContact(
+  contactId: string,
+  projectId: string,
+  projectNumber: string,
+  formData: FormData
+): Promise<{ error?: string }> {
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const roleKeyRaw = String(formData.get("roleKey") ?? "").trim();
+  const accountability = String(formData.get("accountability") ?? "").trim();
+  if (!name) return { error: "Name is required." };
+  if (!email || !email.includes("@")) return { error: "A real email address is required." };
+
+  const actorId = await assertCanManageProjectContacts(projectId);
+
+  const existing = await db.projectContact.findUnique({ where: { id: contactId } });
+  if (!existing || existing.projectId !== projectId) {
+    return { error: "That contact no longer exists — refresh the page and try again." };
+  }
+
+  await db.projectContact.update({
+    where: { id: contactId },
+    data: { name, email, roleKey: roleKeyRaw || null, accountability: accountability || null },
+  });
+
+  await db.auditLogEntry.create({
+    data: {
+      actorId,
+      action: "project_contact.updated",
+      entityType: "ProjectContact",
+      entityId: contactId,
+      reason: `Details updated for ${name} <${email}>`,
+    },
+  });
+
+  revalidatePath(`/projects/${projectNumber}`);
+  return {};
+}
+
+/**
+ * Reversible, same pattern as archiveUser/reactivateUser -- a contact
+ * may be the real, named recipient/decision-maker a future EmailApproval
+ * record references, so this is never a hard delete.
+ */
+export async function archiveProjectContact(contactId: string, projectId: string, projectNumber: string) {
+  const actorId = await assertCanManageProjectContacts(projectId);
+
+  const contact = await db.projectContact.findUniqueOrThrow({ where: { id: contactId } });
+  if (contact.projectId !== projectId) throw new Error("That contact isn't on this project.");
+
+  await db.projectContact.update({ where: { id: contactId }, data: { active: false } });
+  await db.auditLogEntry.create({
+    data: {
+      actorId,
+      action: "project_contact.archived",
+      entityType: "ProjectContact",
+      entityId: contactId,
+      reason: `${contact.name} removed from the active external roster`,
+    },
+  });
+
+  revalidatePath(`/projects/${projectNumber}`);
+}
+
+export async function reactivateProjectContact(contactId: string, projectId: string, projectNumber: string) {
+  const actorId = await assertCanManageProjectContacts(projectId);
+
+  const contact = await db.projectContact.findUniqueOrThrow({ where: { id: contactId } });
+  if (contact.projectId !== projectId) throw new Error("That contact isn't on this project.");
+
+  await db.projectContact.update({ where: { id: contactId }, data: { active: true } });
+  await db.auditLogEntry.create({
+    data: {
+      actorId,
+      action: "project_contact.reactivated",
+      entityType: "ProjectContact",
+      entityId: contactId,
+      reason: `${contact.name} reinstated on the external roster`,
+    },
+  });
+
+  revalidatePath(`/projects/${projectNumber}`);
+}
+
 // ── Timeline (planned vs. actual) ───────────────────────────────────────
 
 /**
