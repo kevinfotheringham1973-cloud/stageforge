@@ -3,7 +3,7 @@
 import { archiveProjectContact, reactivateProjectContact } from "@/lib/actions";
 
 /**
- * One row on the external roster (Project Manager Agent, Phase 1 — see
+ * One row on the external roster (Project Managed System, Phase 1 — see
  * the project_ai_pm_agent planning notes). Archive/reactivate only —
  * editing a contact's own details (updateProjectContact in actions.ts)
  * is built and ready but not yet wired into this row; add an inline edit

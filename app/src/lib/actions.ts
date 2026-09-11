@@ -1693,7 +1693,7 @@ export async function removeRoleAssignment(
   return {};
 }
 
-// ── External roster (Project Manager Agent, Phase 1) ────────────────────
+// ── External roster (Project Managed System, Phase 1) ────────────────────
 // ProjectContact is deliberately NOT a User -- a named external person
 // (Compliance Manager, Authorised Engineer, Water Group contact, etc.)
 // with an email and an accountability, who is not expected to ever hold
@@ -1842,7 +1842,7 @@ export async function reactivateProjectContact(contactId: string, projectId: str
 }
 
 /**
- * Phase 2 of the Project Manager Agent build (PRD.html §06) — creates a
+ * Phase 2 of the Project Managed System build (PRD.html §06) — creates a
  * PENDING EmailApproval request only. Never sends anything itself (the
  * AI Council mailbox pipeline does that, via the scoped API below) and
  * never records a decision (a later phase's job) — this function's only
