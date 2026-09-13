@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { DELIVERY_FACING_ROLE_KEYS } from "@/lib/permissions";
 import { getCurrentUserRoleKeysForProject } from "@/lib/session";
-import { reinstateStage, setResourceAllocation, addProjectContact } from "@/lib/actions";
+import { reinstateStage, setResourceAllocation, addProjectContact, addApprovalRoutingTier, deleteApprovalRoutingTier } from "@/lib/actions";
 import { neededDisciplineRoleKeys } from "@/lib/disciplineTeam";
 import { constituentTemplateIds } from "@/lib/projectTemplates";
 import { SubmitButton } from "@/components/SubmitButton";
@@ -33,6 +33,10 @@ export default async function ProjectOverviewPage({
       roleAssignments: { include: { role: true, user: true } },
       resourceAllocations: true,
       contacts: { orderBy: [{ active: "desc" }, { name: "asc" }] },
+      approvalRoutingTiers: {
+        orderBy: [{ roleKey: "asc" }, { tier: "asc" }],
+        include: { contacts: { include: { contact: true } } },
+      },
     },
   });
   if (!project) notFound();
@@ -209,8 +213,8 @@ export default async function ProjectOverviewPage({
         </h2>
         <p className="mb-3 text-xs text-inkmuted">
           Named people who don&rsquo;t hold a StageForge login — Compliance Manager, Authorised Engineer, Water
-          Group contact, etc. — reached by email rather than an in-app sign-off. Not yet wired into any
-          gate/notification flow; this is just the roster itself.
+          Group contact, etc. — reached by email rather than an in-app sign-off. Wired into Gate-level Sponsor
+          decisions today (see Approval Routing below for who actually gets asked, and in what order).
         </p>
         {project.contacts.length === 0 ? (
           <p className="text-sm text-inkmuted">No external contacts added yet.</p>
@@ -281,6 +285,139 @@ export default async function ProjectOverviewPage({
             </div>
             <SubmitButton pendingText="Adding…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
               Add contact
+            </SubmitButton>
+          </form>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-rule bg-surface p-5">
+        <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted">Approval routing</h2>
+        <p className="mb-3 text-xs text-inkmuted">
+          Who actually gets asked for each role&rsquo;s email decision, and what happens if nobody replies. Without
+          any config here, a request defaults to every active roster contact holding that role — add a Tier below
+          to curate who&rsquo;s asked first, or add a Tier 2+ to define real escalation (more peers, or hand off to
+          a genuinely more senior role) instead of only ever nagging the original requester. Only Gate-level
+          Sponsor decisions actually use this today (PRD.html §06/§09 Phase 5).
+        </p>
+        {project.approvalRoutingTiers.length === 0 ? (
+          <p className="text-sm text-inkmuted">No routing configured — every request uses the default fallback.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {project.approvalRoutingTiers.map((t) => (
+              <div key={t.id} className="rounded-md border border-rule bg-bg px-4 py-2.5 text-sm">
+                <span className="font-semibold">{t.roleKey}</span>{" "}
+                <span className="rounded-full bg-accentsoft px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+                  Tier {t.tier}
+                </span>
+                <div className="mt-1 text-xs text-inkmuted">
+                  {t.escalateToRoleKey ? (
+                    <>Escalates to {t.escalateToRoleKey}&rsquo;s own Tier 1 contacts</>
+                  ) : (
+                    <>{t.contacts.map((c) => `${c.contact.name} <${c.contact.email}>`).join(", ") || "(no contacts)"}</>
+                  )}
+                  {" "}&middot; waits {t.waitHours}h, {t.maxRemindersBeforeAdvancing} reminder(s) before advancing
+                </div>
+                {isPM && (
+                  <form action={deleteApprovalRoutingTier.bind(null, t.id, project.id, project.projectNumber)} className="mt-1">
+                    <SubmitButton pendingText="Removing…" className="text-xs font-semibold text-red-700 hover:underline">
+                      Remove tier
+                    </SubmitButton>
+                  </form>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {isPM && (
+          <form
+            action={addApprovalRoutingTier.bind(null, project.id, project.projectNumber)}
+            className="mt-4 flex flex-wrap items-end gap-3 border-t border-dashed border-rule pt-4"
+          >
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Role</label>
+              <select name="roleKey" required className="w-48 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
+                <option value="">Select…</option>
+                {allRoles.map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">Tier</label>
+              <input
+                name="tier"
+                type="number"
+                min={1}
+                defaultValue={1}
+                required
+                className="w-20 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                Contacts (peers at this tier)
+              </label>
+              <select
+                name="contactIds"
+                multiple
+                size={Math.min(4, Math.max(2, project.contacts.filter((c) => c.active).length))}
+                className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+              >
+                {project.contacts
+                  .filter((c) => c.active)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} &lt;{c.email}&gt;
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                OR escalate to role
+              </label>
+              <select
+                name="escalateToRoleKey"
+                className="w-48 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+              >
+                <option value="">(none — use contacts instead)</option>
+                {allRoles.map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                Wait (hours)
+              </label>
+              <input
+                name="waitHours"
+                type="number"
+                min={1}
+                defaultValue={72}
+                required
+                className="w-20 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                Reminders before advancing
+              </label>
+              <input
+                name="maxRemindersBeforeAdvancing"
+                type="number"
+                min={0}
+                defaultValue={2}
+                required
+                className="w-20 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+              />
+            </div>
+            <SubmitButton pendingText="Adding…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
+              Add tier
             </SubmitButton>
           </form>
         )}

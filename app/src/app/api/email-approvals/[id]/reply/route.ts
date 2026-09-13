@@ -95,10 +95,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ recorded: false, reason: "ambiguous" });
   }
 
-  // Guard 3: the contact's role must still be Sponsor — re-checked
-  // independently of requestEmailApproval's own check, in case the
-  // role changed between request and reply.
-  if (ea.contact.roleKey !== "SPONSOR") {
+  // Guard 3: the contact's role must still match what THIS attempt was
+  // actually created for (ea.roleKey, set at request time from the
+  // ApprovalRoutingTier that produced it — generalised 12 Sep 2026, was
+  // hardcoded to "SPONSOR" before) — re-checked independently of
+  // requestEmailApproval's own check, in case the role changed between
+  // request and reply.
+  if (ea.contact.roleKey !== ea.roleKey) {
     await db.auditLogEntry.create({
       data: {
         actorId: await getEmailApprovalSystemUserId(),
@@ -106,10 +109,34 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         action: "email_approval.reply_role_no_longer_qualifies",
         entityType: "EmailApproval",
         entityId: ea.id,
-        reason: `${ea.contact.name}'s role is no longer Sponsor (now ${ea.contact.roleKey ?? "unset"}) — decision NOT recorded.`,
+        reason: `${ea.contact.name}'s role is no longer ${ea.roleKey} (now ${ea.contact.roleKey ?? "unset"}) — decision NOT recorded.`,
       },
     });
     return NextResponse.json({ recorded: false, reason: "contact_role_no_longer_qualifies" });
+  }
+
+  // Guard 3.5: a GATE decision can only ever be made by SPONSOR — canDecideGate
+  // (the in-app equivalent) is correctly role-locked to SPONSOR alone, no SRO
+  // apex, no exceptions. Checked independently here, defensively, regardless
+  // of how this attempt's roleKey came to be: requestEmailApproval already
+  // refuses to create a non-SPONSOR Gate request, but /advance-tier's
+  // role-escalation branch (escalateToRoleKey — real machinery for a
+  // genuinely more senior role, e.g. SRO -> REGIONAL_DIRECTOR) is generic
+  // and has no way to know THIS case is Gate-shaped and Sponsor-only. This
+  // is the one place that actually writes a GateSignOff, so it's the right
+  // place to enforce it regardless of which upstream path produced the row.
+  if (ea.roleKey !== "SPONSOR") {
+    await db.auditLogEntry.create({
+      data: {
+        actorId: await getEmailApprovalSystemUserId(),
+        gateId: ea.gateId,
+        action: "email_approval.role_cannot_decide_gate",
+        entityType: "EmailApproval",
+        entityId: ea.id,
+        reason: `This attempt targets role ${ea.roleKey}, which cannot decide a Gate (only SPONSOR can) — decision NOT recorded.`,
+      },
+    });
+    return NextResponse.json({ recorded: false, reason: "role_cannot_decide_gate" });
   }
 
   // Guard 4: same real preconditions decide() (the in-app Sponsor
@@ -129,12 +156,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // All guards passed — record it. Same transaction shape as decide()
   // (approveGate/rejectGate), plus the EmailApproval decision fields
   // and the capturedVia/emailApprovalId link on the new GateSignOff.
+  // Generalised 12 Sep 2026: also SUPERSEDE every other attempt sharing
+  // this case (same caseId) — any one peer's verified reply resolves the
+  // whole multi-contact/multi-tier case, so siblings still PENDING/SENT at
+  // any tier stop being actionable (excluded from /overdue, can never
+  // separately decide the same gate again).
   const systemUserId = await getEmailApprovalSystemUserId();
   const now = new Date();
   await db.$transaction([
     db.emailApproval.update({
       where: { id: ea.id },
       data: { decision: body.decision, decisionEmail: replyExcerpt, verifiedSender: senderEmail, decidedAt: now, status: "DECIDED" },
+    }),
+    db.emailApproval.updateMany({
+      where: { caseId: ea.caseId, id: { not: ea.id }, status: { in: ["PENDING", "SENT"] } },
+      data: { status: "SUPERSEDED" },
     }),
     db.gateSignOff.create({
       data: {
