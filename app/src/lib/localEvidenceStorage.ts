@@ -1,8 +1,10 @@
 /**
  * Local-disk evidence storage — the desktop build's replacement for
- * SharePoint (sharepoint.ts). Only active under STAGEFORGE_LOCAL_MODE;
- * the real deployed app never touches this. Mirrors sharepoint.ts's
- * shape (folder-path builder + upload function) so actions.ts's
+ * SharePoint (sharepoint.ts), and (via STAGEFORGE_ENABLE_LOCAL_EVIDENCE,
+ * see below) also usable as a cloud-deployment fallback for real
+ * end-to-end testing of the evidence-consuming AI Council bridges before
+ * a real SharePoint site exists. Mirrors sharepoint.ts's shape
+ * (folder-path builder + upload function) so actions.ts's
  * resolveEvidenceUploads just gets a third branch, not a rewrite.
  *
  * Layout on disk: one folder per project, one subfolder per gate/stage —
@@ -14,8 +16,18 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { sanitizePathSegment } from "./pathSafety";
 
+/**
+ * Deliberately a SEPARATE flag from STAGEFORGE_LOCAL_MODE, not folded into
+ * it — that flag also silently auto-co-signs compliance items
+ * (autoCoSignForLocalMode, actions.ts) and disables admin view-as
+ * (setViewAsUser, actions.ts), both correct for the single-user desktop
+ * build but a real regression if enabled on the live multi-user cloud
+ * site. This flag turns on ONLY real file storage, nothing else, so it's
+ * safe to set on the cloud deployment for genuine evidence-upload/AI
+ * Council testing without touching either of those behaviors.
+ */
 export function isLocalEvidenceStorageEnabled(): boolean {
-  return process.env.STAGEFORGE_LOCAL_MODE === "1";
+  return process.env.STAGEFORGE_LOCAL_MODE === "1" || process.env.STAGEFORGE_ENABLE_LOCAL_EVIDENCE === "1";
 }
 
 /**
