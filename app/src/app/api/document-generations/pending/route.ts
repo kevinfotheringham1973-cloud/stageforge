@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { checkEmailApprovalApiAuth } from "@/lib/emailApprovalApi";
-import { isBusinessCaseShapedDeliverable } from "@/lib/documentGenerationEvidence";
+import { isBusinessCaseShapedDeliverable, isEnergyRelevantTemplate } from "@/lib/documentGenerationEvidence";
 
 export async function GET(request: Request) {
   const authError = checkEmailApprovalApiAuth(request);
@@ -30,7 +30,24 @@ export async function GET(request: Request) {
         select: {
           key: true,
           label: true,
-          gate: { select: { name: true, key: true, stage: { select: { project: { select: { name: true, projectNumber: true } } } } } },
+          gate: {
+            select: {
+              name: true,
+              key: true,
+              stage: {
+                select: {
+                  project: {
+                    select: {
+                      name: true,
+                      projectNumber: true,
+                      template: { select: { matchKeywords: true } },
+                      additionalTemplates: { select: { template: { select: { matchKeywords: true } } } },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       requestedBy: { select: { name: true } },
@@ -55,6 +72,15 @@ export async function GET(request: Request) {
       // PFI/paymech, lifecycle/handback, IPC/HAI-SCRIBE, net-zero) were ever
       // consulted for their domain view.
       consultOversightPanel: isBusinessCaseShapedDeliverable(r.deliverable.key),
+      // Gates only nhs-scotland-netzero-energy out of the panel -- see
+      // isEnergyRelevantTemplate's own comment for why it alone is narrowed
+      // and the other four aren't. Checks every template this project
+      // actually covers (primary + any bundled additional systems), not
+      // just the primary one.
+      includeNetZeroInPanel: isEnergyRelevantTemplate([
+        ...r.deliverable.gate.stage.project.template.matchKeywords,
+        ...r.deliverable.gate.stage.project.additionalTemplates.flatMap((a) => a.template.matchKeywords),
+      ]),
       gateName: r.deliverable.gate.name,
       gateKey: r.deliverable.gate.key,
       projectName: r.deliverable.gate.stage.project.name,

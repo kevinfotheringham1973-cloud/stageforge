@@ -73,6 +73,49 @@ export function defaultGenerationAgentForDeliverable(key: string): (typeof GENER
   return undefined;
 }
 
+// Relevance gating for the oversight panel (added 13 Sep 2026, same day as
+// the panel itself) -- found live on the very first real test: consulting
+// all five agents on a cold-water-tank project hit a genuine Claude session
+// rate limit (six sequential agent calls for one request), and
+// nhs-scotland-netzero-energy's own real answer confirmed it was low-value
+// for this project ("doesn't apply here... secondary... small candidate").
+// Deterministic, not a smarter picker -- checks the PROJECT's own
+// Template.matchKeywords (the same data provisioning/project-creation
+// already matches against), same idiom as isBusinessCaseShapedDeliverable
+// above. Only net-zero is gated for now: compliance, PFI/paymech, and
+// lifecycle/handback are broadly relevant to any Gate 0 case regardless of
+// system type, and IPC/HAI-SCRIBE's own answer showed excluding it risks
+// missing a genuine clinical-risk flag more often than asking it costs --
+// the wrong tradeoff to make just to save a call. Narrow further only with
+// the same kind of real evidence that justified this first cut.
+const ENERGY_RELEVANT_TEMPLATE_KEYWORDS = [
+  "boiler",
+  "heating plant",
+  "bms",
+  "building management system",
+  "building automation",
+  "chiller",
+  "chilled water",
+  "cooling system",
+  "electrical replacement",
+  "generator",
+  "switchgear",
+  "led",
+  "lighting",
+  "solar",
+  "heat pump",
+  "net zero",
+  "renewable energy",
+  "bess",
+  "ev charging",
+  "steam",
+] as const;
+
+export function isEnergyRelevantTemplate(matchKeywords: string[]): boolean {
+  const haystack = matchKeywords.join(" ").toLowerCase();
+  return ENERGY_RELEVANT_TEMPLATE_KEYWORDS.some((kw) => haystack.includes(kw));
+}
+
 /**
  * Downloads one SUBMITTED source EvidenceFile's real bytes for the AI
  * Council to draft from. Returns null (never throws for this specific case)
