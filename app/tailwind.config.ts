@@ -4,6 +4,20 @@ export default {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      fontFamily: {
+        // Wires the next/font/google variable set on <html> (layout.tsx)
+        // into Tailwind's own default sans stack, so every existing
+        // font-sans usage across the app picks it up with no per-
+        // component changes -- falls back to the standard system stack
+        // if the variable is ever missing (e.g. a test render without
+        // the root layout).
+        sans: [
+          "var(--font-atkinson)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
+      },
       colors: {
         bg: "#EEF0EC",
         surface: "#FFFFFF",

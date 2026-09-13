@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Atkinson_Hyperlegible_Next } from "next/font/google";
 import "./globals.css";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -9,6 +10,20 @@ import { signOut } from "@/lib/auth";
 import { ActingAsSwitcher } from "@/components/ActingAsSwitcher";
 import { Sidebar } from "@/components/Sidebar";
 import { isShareLinkViewerEmail, getActiveShareLinkFromCookie } from "@/lib/shareLinks";
+
+// Accessibility upgrade, not a rebrand (13 Sep 2026) -- no font was ever
+// explicitly set before this (just the browser's default sans-serif), so
+// this is a clean addition, not a replacement of a deliberate choice.
+// Atkinson Hyperlegible Next is purpose-built for low-vision readability
+// (disambiguates similar characters like I/l/1) -- directly serves the
+// over-65s/site-office-glare user base already documented as a target
+// audience. `variable` weight keeps every existing font-weight utility
+// class (font-bold, font-semibold, ...) working unchanged.
+const atkinsonHyperlegible = Atkinson_Hyperlegible_Next({
+  subsets: ["latin"],
+  weight: "variable",
+  variable: "--font-atkinson",
+});
 
 export const metadata: Metadata = {
   title: "StageForge Health",
@@ -67,7 +82,7 @@ export default async function RootLayout({
       redirect("/api/recover-session");
     }
     return (
-      <html lang="en">
+      <html lang="en" className={atkinsonHyperlegible.variable}>
         <body className="flex min-h-screen flex-col font-sans" suppressHydrationWarning>
           <main className="flex-1">{children}</main>
           <CompanyFooter />
@@ -196,7 +211,7 @@ export default async function RootLayout({
     : [];
 
   return (
-    <html lang="en">
+    <html lang="en" className={atkinsonHyperlegible.variable}>
       <body className="flex min-h-screen flex-col font-sans md:flex-row" suppressHydrationWarning>
         <Sidebar
           primaryLinks={[
