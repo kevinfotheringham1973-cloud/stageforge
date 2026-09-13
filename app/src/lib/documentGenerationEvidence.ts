@@ -27,6 +27,9 @@ export const GENERATABLE_AGENT_SLUGS = [
   "nhs-scotland-sow-generator",
   "nhs-scotland-business-case-generator",
   "nhs-scotland-ccn-preparation",
+  "nhs-scotland-project-brief-generator",
+  "nhs-scotland-execution-plan-generator",
+  "nhs-scotland-wsg-sbar-generator",
 ] as const;
 
 // See REVIEWABLE_AGENT_DESCRIPTIONS (documentReviewEvidence.ts) for why
@@ -36,6 +39,9 @@ export const GENERATABLE_AGENT_DESCRIPTIONS: Record<(typeof GENERATABLE_AGENT_SL
   "nhs-scotland-sow-generator": "Draft a Statement of Work from a contractor quote (and email recap, if available)",
   "nhs-scotland-business-case-generator": "Draft the Gate 0 case — Business Case, Strategic Brief, or Clinical/Operational Impact Assessment",
   "nhs-scotland-ccn-preparation": "Prepare a CCB/CCN change-control workbook from an agreed Statement of Work and quote",
+  "nhs-scotland-project-brief-generator": "Draft the Gate 1 Project Brief from the accepted Gate 0 case and any condition survey on file",
+  "nhs-scotland-execution-plan-generator": "Draft the Project Execution Plan & procurement strategy from the accepted Gate 0 case",
+  "nhs-scotland-wsg-sbar-generator": "Draft the formal SBAR submission to the Water Safety Group from the case and condition/risk evidence on file",
 };
 
 /**
@@ -63,14 +69,77 @@ export function isBusinessCaseShapedDeliverable(key: string): boolean {
   return key.includes("business_case") || key.includes("strategic_brief") || key.includes("operational_impact_assessment");
 }
 
+// Widened 13 Sep 2026, fire-testing Gates 0-4: "Detailed Scope of Works" and
+// "Obtain and submit competitive quotations (with PPM documentation)" are
+// both genuinely SOW-shaped (confirmed shared literal keys across every
+// template in seed.ts) but fell through to the manual dropdown because the
+// original two substrings were too narrow -- not a new agent, just an
+// under-matched existing one.
 export function isProcurementShapedDeliverable(key: string): boolean {
-  return key.includes("procurement_package") || key.includes("tender_documentation");
+  return (
+    key.includes("procurement_package") ||
+    key.includes("tender_documentation") ||
+    key.includes("detailed_scope_of_works") ||
+    key.includes("quotations_submission_and_ppm")
+  );
+}
+
+// Every template's Gate 1 Project Brief is "del.<system>_project_brief"
+// (confirmed by grep across all 28 templates in seed.ts) -- translates an
+// accepted Gate 0 case into design scope, same "thin, hedged" posture as
+// business-case-generator, not a new kind of judgment call.
+export function isProjectBriefShapedDeliverable(key: string): boolean {
+  return key.includes("project_brief");
+}
+
+// One shared literal key across every template.
+export function isExecutionPlanShapedDeliverable(key: string): boolean {
+  return key.includes("project_execution_plan");
+}
+
+// SBAR (Situation-Background-Assessment-Recommendation) is a defined SHTM
+// 04-01 Part B document format -- confirmed on both the water and boiler
+// templates (any system with a domestic hot/cold water angle), not water-only.
+export function isWsgSbarShapedDeliverable(key: string): boolean {
+  return key.includes("sbar_submission_to_wsg");
 }
 
 export function defaultGenerationAgentForDeliverable(key: string): (typeof GENERATABLE_AGENT_SLUGS)[number] | undefined {
   if (isBusinessCaseShapedDeliverable(key)) return "nhs-scotland-business-case-generator";
   if (isProcurementShapedDeliverable(key)) return "nhs-scotland-sow-generator";
+  if (isProjectBriefShapedDeliverable(key)) return "nhs-scotland-project-brief-generator";
+  if (isExecutionPlanShapedDeliverable(key)) return "nhs-scotland-execution-plan-generator";
+  if (isWsgSbarShapedDeliverable(key)) return "nhs-scotland-wsg-sbar-generator";
   return undefined;
+}
+
+// The inverse question: deliverables where "Generate draft with AI" should
+// never appear at all, not just lack a default agent. Found live 13 Sep
+// 2026, auditing every water-template deliverable through Gate 4 -- past
+// Gate 1 most remaining items are drawings/engineering coordination
+// (concept design options, schematics, coordinated layout), a deliverable
+// whose evidence genuinely IS the source document rather than something
+// drafted from others (condition surveys), or an external decision the
+// project receives rather than produces (WSG written approval, and any
+// high-stakes item already carrying a bypassAuthority for a signed
+// professional sign-off, e.g. Designer's Risk Assessment, fire
+// compartmentation). Kevin's own framing: the goal was never AI drafting
+// every deliverable -- this list is as much a part of "deliberate coverage"
+// as the positive matchers above, not an afterthought.
+const NEVER_AI_DRAFTABLE_KEY_PATTERNS: RegExp[] = [
+  /coordinated_layout/,
+  /mep_structural_coordination/,
+  /concept_design_report/,
+  /preliminary_schematics/,
+  /outline_system_strategy/,
+  /condition_surveys?/,
+  /written_approval/,
+  /design_risk_assessment_signed/,
+  /fire_compartmentation/,
+];
+
+export function isNeverAiDraftableDeliverable(key: string): boolean {
+  return NEVER_AI_DRAFTABLE_KEY_PATTERNS.some((pattern) => pattern.test(key));
 }
 
 // Relevance gating for the oversight panel (added 13 Sep 2026, same day as

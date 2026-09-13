@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { recordEvidenceStub } from "@/lib/actions";
+import { acknowledgeDeliverableStaleness, recordEvidenceStub } from "@/lib/actions";
 import { getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { canUploadEvidence } from "@/lib/permissions";
+import { computeDeliverableStalenessAction, DEFAULT_STALE_AFTER_DAYS } from "@/lib/deliverableStaleness";
 import { DeliverableEvidenceSummary } from "@/components/DeliverableEvidenceSummary";
 import { SubmitButton } from "@/components/SubmitButton";
 
@@ -77,6 +78,34 @@ export default async function EvidencePage({
   ).length;
   const evidencedPct = totalCount > 0 ? Math.round((evidencedCount / totalCount) * 100) : 0;
 
+  // "Needs attention" — AI Council-style oversight, but sensing time rather
+  // than reviewing documents: has this deliverable gone quiet? Deterministic
+  // (computeDeliverableStalenessAction, lib/deliverableStaleness.ts), no LLM
+  // judgment call, same relay-and-recorder boundary as everything else here.
+  // Kevin's framing, 13 Sep 2026: the AI Council isn't only for drafting —
+  // it should also surface when a human-owned deliverable has stalled.
+  const staleDeliverables = stages.flatMap(({ gate }) => {
+    if (!gate) return [];
+    return gate.deliverables
+      .map((d) => {
+        const timestamps = [
+          d.createdAt,
+          ...d.evidenceFiles.map((f) => f.uploadedAt),
+          ...d.documentReviewRequests.map((r) => r.requestedAt),
+          ...d.documentGenerationRequests.map((r) => r.requestedAt),
+        ];
+        const lastActivityAt = new Date(Math.max(...timestamps.map((t) => t.getTime())));
+        const action = computeDeliverableStalenessAction({
+          status: d.status,
+          targetEndDate: gate.targetEndDate,
+          lastActivityAt,
+          lastStalenessAckAt: d.lastStalenessAckAt,
+        });
+        return action === "STALE" ? { deliverable: d, gate, lastActivityAt } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -91,6 +120,11 @@ export default async function EvidencePage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {staleDeliverables.length > 0 && (
+            <span className="rounded-full bg-red-700 px-2.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wide text-white">
+              {staleDeliverables.length} needs attention
+            </span>
+          )}
           {gapCount > 0 && (
             <span className="rounded-full bg-warn px-2.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wide text-white">
               {gapCount} gap{gapCount === 1 ? "" : "s"} requiring evidence
@@ -116,6 +150,36 @@ export default async function EvidencePage({
           </div>
         </div>
       </div>
+
+      {staleDeliverables.length > 0 && (
+        <div className="rounded-lg border border-red-700 bg-red-50 p-5">
+          <h3 className="mb-3 font-mono text-sm font-bold uppercase tracking-wide text-red-700">Needs attention</h3>
+          <p className="mb-3 text-xs text-inkmuted">
+            Either past its gate&rsquo;s target date, or {DEFAULT_STALE_AFTER_DAYS} days with no activity and no
+            target date set.
+          </p>
+          <div className="flex flex-col gap-3">
+            {staleDeliverables.map(({ deliverable: d, gate, lastActivityAt }) => (
+              <div key={d.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-red-200 pt-3 first:border-t-0 first:pt-0">
+                <div>
+                  <a href={`/projects/${projectNumber}/gates/${gate.id}`} className="text-sm font-semibold text-ink hover:underline">
+                    {d.label}
+                  </a>
+                  <div className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                    {gate.name} &middot; last activity {lastActivityAt.toLocaleDateString("en-GB")}
+                    {gate.targetEndDate ? ` · target end ${gate.targetEndDate.toLocaleDateString("en-GB")}` : ""}
+                  </div>
+                </div>
+                <form action={acknowledgeDeliverableStaleness.bind(null, d.id, projectNumber)}>
+                  <SubmitButton pendingText="…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-inkmuted">
+                    Acknowledge
+                  </SubmitButton>
+                </form>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {stages.map(({ gate }) => {
         if (!gate) return null;

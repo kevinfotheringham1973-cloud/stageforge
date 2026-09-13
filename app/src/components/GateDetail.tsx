@@ -7,6 +7,7 @@ import {
   GENERATABLE_AGENT_DESCRIPTIONS,
   defaultGenerationAgentForDeliverable,
   isBusinessCaseShapedDeliverable,
+  isNeverAiDraftableDeliverable,
 } from "@/lib/documentGenerationEvidence";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
@@ -33,6 +34,7 @@ import {
   bypassDeliverable,
   deleteSpendRecord,
   overrideCompliance,
+  promoteReviewAsEvidence,
   recordComplianceCoSignOff,
   recordComplianceEvidenceStub,
   recordEvidenceStub,
@@ -262,6 +264,18 @@ export async function GateDetail({
       deliverableLabel: f.deliverable.label,
       gateName: f.deliverable.gate.name,
     }));
+
+  // Target picker for "use this review to evidence a different deliverable"
+  // (promoteReviewAsEvidence, actions.ts) — only deliverables in this same
+  // project that don't already have a current SUBMITTED file, so a PM isn't
+  // offered to silently clobber real evidence that's already there.
+  const unevidencedProjectDeliverables = await db.deliverable.findMany({
+    where: { gate: { stage: { projectId: gate.stage.projectId } }, status: { not: "BYPASSED" } },
+    select: { id: true, label: true, gate: { select: { name: true } } },
+  });
+  const promotionTargetOptions = unevidencedProjectDeliverables
+    .filter((d2) => !currentVersionByDeliverable.has(d2.id))
+    .map((d2) => ({ deliverableId: d2.id, label: d2.label, gateName: d2.gate.name }));
 
   const [roleKeys, globalRoleKeys, allRoles, currentUser] = await Promise.all([
     getCurrentUserRoleKeysForProject(gate.stage.projectId),
@@ -772,6 +786,41 @@ export async function GateDetail({
                           AI review summary
                         </span>{" "}
                         ({r.agentSlug}): {r.resultSummary}
+                        {/* Found live 13 Sep 2026: a completed review's own
+                            result can substantively answer a DIFFERENT
+                            deliverable's checklist item (e.g. an inspection
+                            review reads as a "risk assessment and gap
+                            analysis" elsewhere in the same project). Still a
+                            PM confirmation, not an automatic file-anywhere --
+                            promoteReviewAsEvidence, actions.ts. */}
+                        {roleKeys.includes("PM") && r.resultEvidenceFileId && promotionTargetOptions.length > 0 && (
+                          <form
+                            action={promoteReviewAsEvidence.bind(null, r.resultEvidenceFileId, projectNumber)}
+                            className="mt-2 flex flex-wrap items-center gap-2 border-t border-dashed border-rule pt-2"
+                          >
+                            <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                              Use this review to evidence another deliverable
+                            </label>
+                            <select
+                              name="targetDeliverableId"
+                              required
+                              defaultValue=""
+                              className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
+                            >
+                              <option value="" disabled>
+                                Choose a deliverable…
+                              </option>
+                              {promotionTargetOptions.map((opt) => (
+                                <option key={opt.deliverableId} value={opt.deliverableId}>
+                                  {opt.gateName} · {opt.label}
+                                </option>
+                              ))}
+                            </select>
+                            <SubmitButton pendingText="Filing…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                              Use as evidence
+                            </SubmitButton>
+                          </form>
+                        )}
                       </div>
                     ))}
                   {roleKeys.includes("PM") && currentFile && openReviews.length === 0 && (
@@ -818,8 +867,14 @@ export async function GateDetail({
             reviews silently made it impossible to draft into an empty
             deliverable at all, defeating exactly the cross-deliverable
             sourcing this bridge exists for. Still hidden once bypassed —
-            nothing to draft into a deliverable that's been waved through. */}
-        {d.status !== "BYPASSED" && (
+            nothing to draft into a deliverable that's been waved through.
+            Also hidden for deliverables isNeverAiDraftableDeliverable flags
+            (drawings/coordination, condition-survey evidence, external
+            approvals received rather than produced, signed high-stakes
+            sign-offs) — found live 13 Sep 2026 auditing Gates 0-4: the goal
+            was never AI drafting every deliverable, and offering this form
+            there was never a real choice, just noise. */}
+        {d.status !== "BYPASSED" && !isNeverAiDraftableDeliverable(d.key) && (
           <div className="flex flex-col gap-1">
             {d.evidenceFiles.filter((f) => f.kind === "AI_DRAFT").length > 0 && (
               <div className="mt-2 flex flex-col gap-1 border-t border-dashed border-rule pt-2">
