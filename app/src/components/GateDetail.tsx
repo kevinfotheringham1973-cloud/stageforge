@@ -897,21 +897,47 @@ export async function GateDetail({
                         <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                           Generate draft with AI for {d.label}
                         </label>
-                        <select
-                          name="agentSlug"
-                          required
-                          defaultValue={defaultGenerationAgentForDeliverable(d.key) ?? ""}
-                          className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
-                        >
-                          <option value="" disabled>
-                            Choose an agent…
-                          </option>
-                          {GENERATABLE_AGENT_SLUGS.map((slug) => (
-                            <option key={slug} value={slug}>
-                              {GENERATABLE_AGENT_DESCRIPTIONS[slug]}
-                            </option>
-                          ))}
-                        </select>
+                        {(() => {
+                          const defaultAgent = defaultGenerationAgentForDeliverable(d.key);
+                          // No real choice to make once the deliverable's own
+                          // key resolves an unambiguous agent -- showing all
+                          // three anyway just adds noise (found live 13 Sep
+                          // 2026: CCN-preparation doesn't apply until Gate 4,
+                          // sow-generator is Gate 1+ material, neither is ever
+                          // right for a Gate 0 business-case-shaped item, so a
+                          // PM staring at three options was choosing between
+                          // one real answer and two permanently-wrong ones).
+                          // Still a fixed, deterministic rule, not a smarter
+                          // picker -- the dropdown remains, unchanged, for any
+                          // deliverable this key-matching can't yet classify.
+                          if (defaultAgent) {
+                            return (
+                              <>
+                                <input type="hidden" name="agentSlug" value={defaultAgent} />
+                                <div className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs text-inkmuted">
+                                  {GENERATABLE_AGENT_DESCRIPTIONS[defaultAgent]}
+                                </div>
+                              </>
+                            );
+                          }
+                          return (
+                            <select
+                              name="agentSlug"
+                              required
+                              defaultValue=""
+                              className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
+                            >
+                              <option value="" disabled>
+                                Choose an agent…
+                              </option>
+                              {GENERATABLE_AGENT_SLUGS.map((slug) => (
+                                <option key={slug} value={slug}>
+                                  {GENERATABLE_AGENT_DESCRIPTIONS[slug]}
+                                </option>
+                              ))}
+                            </select>
+                          );
+                        })()}
                       </div>
                       <div className="flex flex-col gap-1">
                         <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
