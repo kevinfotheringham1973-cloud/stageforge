@@ -38,6 +38,7 @@ export function GateRail({
   const pathname = usePathname();
   const overviewHref = `/projects/${projectNumber}`;
   const approvalsHref = `/projects/${projectNumber}/approvals`;
+  const evidenceHref = `/projects/${projectNumber}/evidence`;
 
   return (
     <nav className="flex gap-1 overflow-x-auto rounded-lg border border-rule bg-surface p-2 pb-1 md:sticky md:top-6 md:flex-col md:gap-0.5 md:self-start md:overflow-visible md:pb-2">
@@ -64,6 +65,18 @@ export function GateRail({
       >
         <span className="h-2 w-2 shrink-0 rounded-full bg-rule" />
         Approvals
+      </Link>
+      <Link
+        href={evidenceHref}
+        prefetch={false}
+        className={`flex shrink-0 items-center gap-2.5 rounded-md border px-3 py-2.5 text-sm font-semibold md:shrink ${
+          pathname === evidenceHref
+            ? "border-accent bg-accentsoft text-accent"
+            : "border-transparent text-ink hover:bg-accentsoft/50"
+        }`}
+      >
+        <span className="h-2 w-2 shrink-0 rounded-full bg-rule" />
+        Evidence
       </Link>
       <div className="mx-1 my-0 w-px shrink-0 self-stretch bg-rule md:mx-0 md:my-1.5 md:h-px md:w-auto md:self-auto" />
       <div className="hidden shrink-0 px-3 pb-1 font-mono text-[10px] uppercase tracking-wide text-inkmuted md:block">

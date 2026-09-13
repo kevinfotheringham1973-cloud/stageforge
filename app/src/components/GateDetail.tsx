@@ -838,6 +838,18 @@ export async function GateDetail({
             {(() => {
               const openGenerations = d.documentGenerationRequests.filter((r) => r.status === "PENDING" || r.status === "IN_PROGRESS");
               const failedGenerations = d.documentGenerationRequests.filter((r) => r.status === "FAILED");
+              // "Regenerate", not "Generate", once a draft already exists --
+              // requesting another one for an already-drafted deliverable
+              // already worked (proven live, project #30004), the only gap
+              // was that nothing made it obvious this was expected/normal
+              // as later gates add real evidence (see the RIBA note below).
+              const completedGenerations = d.documentGenerationRequests
+                .filter((r) => r.status === "COMPLETE" && r.completedAt)
+                .sort((a, b) => b.completedAt!.getTime() - a.completedAt!.getTime());
+              const lastDraftAt = completedGenerations[0]?.completedAt ?? null;
+              const evidenceSinceLastDraft = lastDraftAt
+                ? allProjectSubmittedEvidence.filter((f) => f.uploadedAt > lastDraftAt).length
+                : 0;
               return (
                 <>
                   {openGenerations.map((r) => (
@@ -870,6 +882,15 @@ export async function GateDetail({
                           If this need came from a failing inspection or a PPM/SFG20 gap, review that evidence first
                           (Inspection review, or SFG20 mapping review for a schedule gap) — a contractor quote is
                           Gate 1+ evidence, not Business Case evidence; use SOW review/SOW generator for that instead.
+                          A thin, hedged draft at this gate is expected, not broken — Strategic Definition only
+                          asks &ldquo;is the problem real?&rdquo;; it firms up as Preparation &amp; Briefing,
+                          Concept Design and later gates add real evidence, the same way every RIBA-based gate here
+                          works.
+                        </p>
+                      )}
+                      {evidenceSinceLastDraft > 0 && (
+                        <p className="w-full text-xs font-semibold text-accent">
+                          {evidenceSinceLastDraft} evidence file(s) added since this draft — worth regenerating.
                         </p>
                       )}
                       <div className="flex flex-col gap-1">
@@ -911,7 +932,7 @@ export async function GateDetail({
                         </select>
                       </div>
                       <SubmitButton pendingText="Requesting…" className="mt-4 rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
-                        Generate draft
+                        {completedGenerations.length > 0 ? "Regenerate draft" : "Generate draft"}
                       </SubmitButton>
                     </form>
                   )}
