@@ -759,6 +759,21 @@ export async function GateDetail({
                       AI review failed ({r.agentSlug}): {r.failureReason ?? "unknown reason"}
                     </div>
                   ))}
+                  {/* The actual narrative (findings, risk table, open issues)
+                      was never shown anywhere -- a PM had to open the
+                      generated file itself to read it. Found live 13 Sep
+                      2026 while checking whether an oversight-panel step's
+                      output would even be visible if built. */}
+                  {d.documentReviewRequests
+                    .filter((r) => r.status === "COMPLETE" && r.resultSummary)
+                    .map((r) => (
+                      <div key={r.id} className="mt-1 whitespace-pre-wrap rounded-md border border-dashed border-rule bg-accentsoft/20 p-2 text-xs text-ink">
+                        <span className="rounded-full bg-accentsoft px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+                          AI review summary
+                        </span>{" "}
+                        ({r.agentSlug}): {r.resultSummary}
+                      </div>
+                    ))}
                   {roleKeys.includes("PM") && currentFile && openReviews.length === 0 && (
                     <form
                       action={requestDocumentReview.bind(null, d.id, currentFile.id, projectNumber)}
@@ -835,6 +850,16 @@ export async function GateDetail({
                       AI draft failed ({r.agentSlug}): {r.failureReason ?? "unknown reason"}
                     </div>
                   ))}
+                  {d.documentGenerationRequests
+                    .filter((r) => r.status === "COMPLETE" && r.resultSummary)
+                    .map((r) => (
+                      <div key={r.id} className="mt-1 whitespace-pre-wrap rounded-md border border-dashed border-rule bg-accentsoft/20 p-2 text-xs text-ink">
+                        <span className="rounded-full bg-accentsoft px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+                          AI draft summary
+                        </span>{" "}
+                        ({r.agentSlug}): {r.resultSummary}
+                      </div>
+                    ))}
                   {roleKeys.includes("PM") && generationSourceOptions.length > 0 && openGenerations.length === 0 && (
                     <form
                       action={requestDocumentGeneration.bind(null, d.id, projectNumber)}
