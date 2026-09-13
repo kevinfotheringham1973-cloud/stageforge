@@ -2359,7 +2359,22 @@ export async function deleteProject(
     return { error: "You have entered the wrong number." };
   }
 
+  // This list is hand-maintained, not cascade-derived -- every new
+  // project-scoped model needs a line here too, or this whole delete
+  // FK-fails. Confirmed to keep breaking in exactly this way (found
+  // live again 13 Sep 2026, deleting project #30004: the Phase 5
+  // extended document-generation/review bridge and the generalised
+  // email-approval routing models, both added earlier this same
+  // session, were never added here). Ordered children-before-parents:
+  // the doc-generation/review bridge before Deliverable/EvidenceFile
+  // (both parent it); EmailApproval after GateSignOff (which points to
+  // it) but before Gate/ProjectContact (which it points to);
+  // ApprovalRoutingTierContact before ApprovalRoutingTier and
+  // ProjectContact (both parent it).
   await db.$transaction([
+    db.documentGenerationSource.deleteMany({ where: { request: { deliverable: { gate: { stage: { projectId } } } } } }),
+    db.documentGenerationRequest.deleteMany({ where: { deliverable: { gate: { stage: { projectId } } } } }),
+    db.documentReviewRequest.deleteMany({ where: { deliverable: { gate: { stage: { projectId } } } } }),
     db.evidenceFile.deleteMany({ where: { deliverable: { gate: { stage: { projectId } } } } }),
     db.deliverableBypass.deleteMany({ where: { deliverable: { gate: { stage: { projectId } } } } }),
     db.deliverable.deleteMany({ where: { gate: { stage: { projectId } } } }),
@@ -2373,8 +2388,13 @@ export async function deleteProject(
     db.gateSignOff.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.lessonLearned.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.auditLogEntry.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.emailApproval.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.approvalRoutingTierContact.deleteMany({ where: { tier: { projectId } } }),
+    db.approvalRoutingTier.deleteMany({ where: { projectId } }),
     db.gate.deleteMany({ where: { stage: { projectId } } }),
     db.stage.deleteMany({ where: { projectId } }),
+    db.projectContact.deleteMany({ where: { projectId } }),
+    db.shareLink.deleteMany({ where: { projectId } }),
     db.projectRoleAssignment.deleteMany({ where: { projectId } }),
     db.resourceAllocation.deleteMany({ where: { projectId } }),
     db.provisioningReview.deleteMany({ where: { projectId } }),
