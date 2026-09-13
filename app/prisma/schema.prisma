@@ -82,6 +82,7 @@ model User {
   createdProjectContacts     ProjectContact[]         @relation("ProjectContactCreatedBy")
   emailApprovalsRequested    EmailApproval[]
   documentReviewsRequested   DocumentReviewRequest[]
+  documentGenerationsRequested DocumentGenerationRequest[]
   provisioningReviews        ProvisioningReview[]
   resourceAllocations        ResourceAllocation[]
   resourceAllocationsUpdated ResourceAllocation[]     @relation("ResourceAllocationUpdatedBy")
@@ -243,6 +244,7 @@ model ProjectContact {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   emailApprovals EmailApproval[]
+  routingTierMemberships ApprovalRoutingTierContact[]
 
   @@index([projectId])
 }
@@ -700,6 +702,7 @@ model Project {
   provisioningReviews        ProvisioningReview[]
   roleAssignments            ProjectRoleAssignment[]
   contacts                   ProjectContact[]
+  approvalRoutingTiers       ApprovalRoutingTier[]
   resourceAllocations        ResourceAllocation[]
   stages                     Stage[]
   shareLinks                 ShareLink[]
@@ -919,6 +922,7 @@ model Deliverable {
   evidenceFiles          EvidenceFile[]
   bypass                 DeliverableBypass?
   documentReviewRequests DocumentReviewRequest[]
+  documentGenerationRequests DocumentGenerationRequest[]
   createdAt              DateTime                @default(now())
 }
 
@@ -930,24 +934,32 @@ model Deliverable {
 // for the PM's convenience, but it is never itself "the evidence": it must
 // stay excluded from every version/current-file computation, or an AI
 // review would wrongly appear to supersede the real thing it reviewed.
+// AI_DRAFT is the same invariant applied to the Phase 5 document-GENERATION
+// bridge (see DocumentGenerationRequest below) — a brand-new draft deliverable
+// (a Statement of Work, a Gate 0 case, a CCN workbook) produced from one or
+// more already-submitted source EvidenceFiles, never itself SUBMITTED, so it
+// can never be mistaken for or supersede real evidence either.
 enum EvidenceFileKind {
   SUBMITTED
   AI_REVIEW
+  AI_DRAFT
 }
 
 model EvidenceFile {
-  id                    String                  @id @default(cuid())
-  deliverableId         String
-  deliverable           Deliverable             @relation(fields: [deliverableId], references: [id])
-  fileName              String
-  fileRef               String // storage path/URL — local disk in dev, object storage later
-  kind                  EvidenceFileKind        @default(SUBMITTED)
-  version               Int                     @default(1)
-  uploadedById          String
-  uploadedBy            User                    @relation(fields: [uploadedById], references: [id])
-  uploadedAt            DateTime                @default(now())
-  reviewedByRequests    DocumentReviewRequest[] @relation("ReviewedEvidenceFile")
-  reviewResultOfRequest DocumentReviewRequest?  @relation("ReviewResultFile")
+  id                        String                       @id @default(cuid())
+  deliverableId             String
+  deliverable               Deliverable                  @relation(fields: [deliverableId], references: [id])
+  fileName                  String
+  fileRef                   String // storage path/URL — local disk in dev, object storage later
+  kind                      EvidenceFileKind             @default(SUBMITTED)
+  version                   Int                          @default(1)
+  uploadedById              String
+  uploadedBy                User                         @relation(fields: [uploadedById], references: [id])
+  uploadedAt                DateTime                     @default(now())
+  reviewedByRequests        DocumentReviewRequest[]      @relation("ReviewedEvidenceFile")
+  reviewResultOfRequest     DocumentReviewRequest?       @relation("ReviewResultFile")
+  generationSources         DocumentGenerationSource[]
+  generationResultOfRequest DocumentGenerationRequest?   @relation("GenerationResultFile")
 }
 
 enum DocumentReviewStatus {
@@ -990,6 +1002,60 @@ model DocumentReviewRequest {
   resultEvidenceFileId String?              @unique
   resultEvidenceFile   EvidenceFile?        @relation("ReviewResultFile", fields: [resultEvidenceFileId], references: [id])
   failureReason        String?
+}
+
+// Phase 5 extended (PRD.html §06/§09) — the StageForge<->AI Council
+// document-GENERATION bridge, sibling to DocumentReviewRequest above but for
+// a structurally different class of agent: one shaped "one document in, one
+// report out" (nhs-scotland-rams-review et al.) fits DocumentReviewRequest's
+// single evidenceFileId; a DRAFTING agent (nhs-scotland-sow-generator,
+// -business-case-generator, -ccn-preparation) takes an arbitrary number of
+// real source documents — a quote, a Copilot email-recap, an inspection
+// report, or any other genuinely relevant supporting document — which is
+// why sources are a separate join table (DocumentGenerationSource) rather
+// than a single FK. Unlike a review, a source file need not belong to the
+// same Deliverable as the target (e.g. an inspection report submitted at an
+// earlier Gate can feed a Gate 0 business case) — only the same Project,
+// enforced in requestDocumentGeneration (actions.ts), not by the schema.
+// The result attaches to the TARGET deliverable as kind: AI_DRAFT (see
+// EvidenceFileKind above), never SUBMITTED.
+model DocumentGenerationRequest {
+  id                   String                     @id @default(cuid())
+  deliverableId        String
+  deliverable          Deliverable                @relation(fields: [deliverableId], references: [id])
+  // One of a fixed, server-enforced whitelist (see GENERATABLE_AGENT_SLUGS
+  // in documentGenerationEvidence.ts) — only the multi-document drafting
+  // agents are eligible here; the single-document reviewers stay on
+  // DocumentReviewRequest above, and the Q&A/guidance agents don't take a
+  // document at all and are out of scope for either bridge.
+  agentSlug            String
+  sources              DocumentGenerationSource[]
+  requestToken         String                     @unique @default(cuid())
+  status               DocumentReviewStatus       @default(PENDING)
+  requestedById        String
+  requestedBy          User                       @relation(fields: [requestedById], references: [id])
+  requestedAt          DateTime                   @default(now())
+  startedAt            DateTime?
+  completedAt          DateTime?
+  resultSummary        String?
+  resultEvidenceFileId String?                    @unique
+  resultEvidenceFile   EvidenceFile?              @relation("GenerationResultFile", fields: [resultEvidenceFileId], references: [id])
+  failureReason        String?
+}
+
+// Join table: one row per source EvidenceFile a given generation request
+// reads from. Order isn't modelled — the agent reads each file's real
+// content and identifies for itself what it is (quote vs. recap vs. other
+// supporting document), same discipline as reviewing a document by its
+// actual content rather than trusting a filename/label.
+model DocumentGenerationSource {
+  id             String                    @id @default(cuid())
+  requestId      String
+  request        DocumentGenerationRequest @relation(fields: [requestId], references: [id])
+  evidenceFileId String
+  evidenceFile   EvidenceFile              @relation(fields: [evidenceFileId], references: [id])
+
+  @@unique([requestId, evidenceFileId])
 }
 
 // Reason is mandatory — confirmed, for traceability. Whoever
@@ -1072,7 +1138,71 @@ model GateSignOff {
 enum EmailApprovalStatus {
   PENDING // created, not yet sent
   SENT // the mailbox pipeline confirmed it emailed the contact
-  DECIDED // reserved for the inbound-capture phase -- unused so far
+  DECIDED // a verified, unambiguous reply was captured against this row
+  // Phase 5 extended (PRD.html §06/§09, 12 Sep 2026) -- this row's own tier
+  // was resolved without it: either a sibling row (same caseId) was DECIDED
+  // first (any one peer's reply resolves the whole case), or this tier's
+  // wait period expired and the case moved on to the next escalation tier.
+  // A SUPERSEDED row is permanently inert -- excluded from /overdue and from
+  // ever being reminded/escalated/decided again.
+  SUPERSEDED
+}
+
+// Phase 5 extended (PRD.html §06/§09, 12 Sep 2026) -- generalises the
+// Phase 2-4 mechanism beyond a single hardcoded Sponsor contact per Gate to
+// ANY role, with real multi-contact peer routing and a configurable
+// escalation tree. Deliberately still scoped to Gate-level decisions this
+// pass (see PRD.html §06's Decided flag) -- DeliverableBypass/
+// ComplianceOverride/ComplianceCoSignOff have no email-proxy path yet and
+// stay real future work, not a small extension. Concretely, only SPONSOR
+// can ever actually decide a Gate (canDecideGate is correctly role-locked,
+// unchanged) -- roleKey here is real, general, config-driven machinery
+// proven end-to-end using the one role that's valid for a Gate decision
+// today, ready for direct reuse once bypass/override extension happens.
+model ApprovalRoutingTier {
+  id                           String                        @id @default(cuid())
+  projectId                    String
+  project                      Project                       @relation(fields: [projectId], references: [id])
+  // Which role this tier-set is FOR -- e.g. "SPONSOR". Not a Role relation,
+  // same reasoning as ProjectContact.roleKey (an open, dynamic string, not
+  // a closed enum -- see the "fully dynamic authority roles" schema note).
+  roleKey                      String
+  // 1, 2, 3... within (projectId, roleKey). Tier 1 is who gets emailed
+  // first; escalation (see emailApprovalEscalation.ts) advances to the next
+  // integer tier once the current one's wait period + reminders are
+  // exhausted with no decision.
+  tier                         Int
+  // The peer contacts emailed simultaneously at this tier -- any ONE of
+  // their replies resolves the whole case (see EmailApproval.caseId). Real,
+  // multi-contact routing: this is what closes the "one absent person
+  // blocks everything" gap. Left empty when this tier is a pure
+  // role-escalation (escalateToRoleKey set instead).
+  contacts                     ApprovalRoutingTierContact[]
+  // If set, reaching this tier means "hand off to a genuinely more senior
+  // role" (e.g. SRO -> REGIONAL_DIRECTOR) rather than more peers at the
+  // same role -- mirrors the real CCN workbook's own Regional Director Gate
+  // sitting above SRO. When set, `contacts` above is expected to be empty;
+  // the next tier's actual contacts are resolved from THAT role's own
+  // tier-1 routing config at escalation time, not fixed here.
+  escalateToRoleKey            String?
+  // How long a tier waits with no decision before a reminder, and how many
+  // reminders before advancing to the next tier -- configurable per role
+  // per the user's explicit "both, configurable per role" decision, rather
+  // than the fixed global constants Phase 4 originally shipped with.
+  waitHours                    Int                           @default(72)
+  maxRemindersBeforeAdvancing  Int                           @default(2)
+
+  @@unique([projectId, roleKey, tier])
+}
+
+model ApprovalRoutingTierContact {
+  id       String              @id @default(cuid())
+  tierId   String
+  tier     ApprovalRoutingTier @relation(fields: [tierId], references: [id])
+  contactId String
+  contact  ProjectContact      @relation(fields: [contactId], references: [id])
+
+  @@unique([tierId, contactId])
 }
 
 model EmailApproval {
@@ -1081,6 +1211,21 @@ model EmailApproval {
   gate                 Gate                @relation(fields: [gateId], references: [id])
   contactId            String
   contact              ProjectContact      @relation(fields: [contactId], references: [id])
+  // Which role this specific attempt targets -- was implicitly always
+  // "SPONSOR" before (hardcoded in requestEmailApproval/the /reply route);
+  // now explicit and set from the ApprovalRoutingTier that produced this
+  // row, so the mechanism is genuinely role-agnostic machinery even though
+  // only SPONSOR can decide a Gate today.
+  roleKey              String
+  // Groups every attempt belonging to one logical approval chase for one
+  // Gate decision -- every peer at every tier this case ever reaches shares
+  // the same caseId (a fresh cuid generated once, at the original PM
+  // request). Any one row in a case reaching DECIDED marks every other row
+  // in that same case SUPERSEDED.
+  caseId               String
+  // Which escalation tier this specific attempt belongs to -- 1 for the
+  // original request, 2+ for each escalation this case has been through.
+  tier                 Int                 @default(1)
   // Opaque, unguessable -- embedded in the outbound email (subject or a
   // custom header) so a future reply can be matched back to this exact
   // request without relying on subject-line text matching alone. Not a

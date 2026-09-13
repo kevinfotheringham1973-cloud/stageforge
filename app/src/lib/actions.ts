@@ -39,6 +39,7 @@ import { sendScheduledReport } from "./scheduledReportSender";
 import { evidenceFolderPath, isSharePointConfigured, uploadEvidenceFile } from "./sharepoint";
 import { isLocalEvidenceStorageEnabled, localEvidenceFolderPath, saveLocalEvidenceFile } from "./localEvidenceStorage";
 import { REVIEWABLE_AGENT_SLUGS } from "./documentReviewEvidence";
+import { GENERATABLE_AGENT_SLUGS } from "./documentGenerationEvidence";
 
 /**
  * Admin-only "view as" -- lets a real, signed-in platform admin preview
@@ -1843,15 +1844,28 @@ export async function reactivateProjectContact(contactId: string, projectId: str
 }
 
 /**
- * Phase 2 of the Project Managed System build (PRD.html §06) — creates a
- * PENDING EmailApproval request only. Never sends anything itself (the
- * AI Council mailbox pipeline does that, via the scoped API below) and
- * never records a decision (a later phase's job) — this function's only
- * job is "a PM asked for this gate to be sent to this contact."
+ * Phase 2 of the Project Managed System build (PRD.html §06), generalised
+ * 12 Sep 2026 (PRD.html §06/§09 Phase 5 extended) beyond a single hardcoded
+ * Sponsor contact per Gate: the PM now requests a decision FOR A ROLE, not
+ * from one hand-picked contact — every active peer contact configured at
+ * that role's Tier 1 (see ApprovalRoutingTier) gets its own EmailApproval
+ * row, all sharing one fresh caseId, so any one of their replies resolves
+ * the case (closes the "one absent person blocks everything" gap). Still
+ * only ever creates PENDING rows — never sends anything itself (the AI
+ * Council mailbox pipeline does that) and never records a decision (the
+ * /reply route's job).
+ *
+ * A Gate decision can still only ever be made by SPONSOR (canDecideGate is
+ * correctly role-locked, unchanged, unrelated to this generalisation) — so
+ * in practice roleKey will only ever validly be "SPONSOR" here today. The
+ * mechanism itself is real, general, config-driven machinery (proven here
+ * against the one role that's valid for a Gate decision), ready for direct
+ * reuse once DeliverableBypass/ComplianceOverride/ComplianceCoSignOff gain
+ * their own email-proxy path — deliberately not built this pass.
  */
 export async function requestEmailApproval(gateId: string, projectNumber: string, formData: FormData) {
-  const contactId = String(formData.get("contactId") ?? "").trim();
-  if (!contactId) throw new Error("Select a contact.");
+  const roleKey = String(formData.get("roleKey") ?? "").trim();
+  if (!roleKey) throw new Error("Choose which role's decision you're requesting.");
 
   const actorId = await getCurrentUserId();
   if (!actorId) throw new Error("Not signed in.");
@@ -1862,39 +1876,153 @@ export async function requestEmailApproval(gateId: string, projectNumber: string
     throw new Error("Only the Project Manager can request an external roster approval.");
   }
 
-  const contact = await db.projectContact.findUniqueOrThrow({ where: { id: contactId } });
-  if (contact.projectId !== gate.stage.projectId || !contact.active) {
-    throw new Error("That contact isn't an active member of this project's external roster.");
-  }
   // A gate-level EmailApproval always ends up as a Sponsor-tier
   // GateSignOff (canDecideGate requires roleKeys.includes("SPONSOR"),
-  // uniformly, not per-gate) — so the contact being asked has to
-  // actually hold that same authority, same as an in-app Sponsor would
-  // need to. Checked again, independently, at reply-capture time too
-  // (defense in depth against the role changing between request and
-  // reply) — see /api/email-approvals/[id]/reply.
-  if (contact.roleKey !== "SPONSOR") {
+  // uniformly, not per-gate) — so only a routing tier configured for
+  // SPONSOR can actually resolve a Gate decision. Checked again,
+  // independently, at reply-capture time too (defense in depth) — see
+  // /api/email-approvals/[id]/reply.
+  if (roleKey !== "SPONSOR") {
+    throw new Error(`Only the Sponsor role can be asked to decide a Gate by email — "${roleKey}" cannot.`);
+  }
+
+  // No routing-config admin UI exists yet (deliberately deferred this pass
+  // — see PRD.html §06/§09 Phase 5). Fall back to "every active contact on
+  // this project holding this role" when no explicit ApprovalRoutingTier
+  // row exists, so a project with zero config keeps exactly today's
+  // behaviour (any Sponsor contact can be asked) while automatically
+  // gaining real multi-contact routing the moment more than one exists —
+  // an explicit Tier 1 row, once configured, overrides this default.
+  const tier1 = await db.approvalRoutingTier.findUnique({
+    where: { projectId_roleKey_tier: { projectId: gate.stage.projectId, roleKey, tier: 1 } },
+    include: { contacts: { include: { contact: true } } },
+  });
+  const activePeers = tier1
+    ? tier1.contacts.map((c) => c.contact).filter((c) => c.active)
+    : await db.projectContact.findMany({ where: { projectId: gate.stage.projectId, roleKey, active: true } });
+  if (activePeers.length === 0) {
     throw new Error(
-      `Only a contact with the Sponsor role can be asked to approve a gate by email — ${contact.name}'s role is ${contact.roleKey ?? "not set"}. Set their role to Sponsor on the Team & scope page first, or ask a different contact.`
+      `No active ${roleKey} contact(s) exist on this project's roster — add at least one on the Team & scope page first.`
     );
   }
 
-  const emailApproval = await db.emailApproval.create({
-    data: { gateId, contactId, requestedById: actorId },
+  const caseId = crypto.randomUUID();
+  await db.$transaction(async (tx) => {
+    const rows = await Promise.all(
+      activePeers.map((contact) =>
+        tx.emailApproval.create({
+          data: { gateId, contactId: contact.id, requestedById: actorId, roleKey, caseId, tier: 1 },
+        })
+      )
+    );
+    await tx.auditLogEntry.create({
+      data: {
+        actorId,
+        gateId,
+        action: "email_approval.requested",
+        entityType: "EmailApproval",
+        entityId: rows[0]!.id,
+        reason: `${roleKey} approval requested from ${activePeers.length} contact(s): ${activePeers.map((c) => `${c.name} <${c.email}>`).join(", ")}`,
+      },
+    });
+  });
+
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
+ * PM/Admin configures a Tier for a given role's approval routing (Phase 5
+ * extended, PRD.html §06/§09) — either a set of real peer contacts (any one
+ * reply resolves the case) or a hand-off to a genuinely more senior role
+ * (escalateToRoleKey), never both on the same tier. Without any config at
+ * all, requestEmailApproval already falls back to "every active contact
+ * holding this role" for Tier 1 — this action is what lets a PM actually
+ * add Tier 2+ (real escalation) or deliberately curate Tier 1 to fewer
+ * people than the full roster, rather than needing a script.
+ */
+export async function addApprovalRoutingTier(projectId: string, projectNumber: string, formData: FormData) {
+  const roleKey = String(formData.get("roleKey") ?? "").trim();
+  const tier = Number(formData.get("tier") ?? "");
+  const waitHours = Number(formData.get("waitHours") ?? "72");
+  const maxRemindersBeforeAdvancing = Number(formData.get("maxRemindersBeforeAdvancing") ?? "2");
+  const escalateToRoleKey = String(formData.get("escalateToRoleKey") ?? "").trim();
+  const contactIds = formData.getAll("contactIds").map(String).filter(Boolean);
+
+  if (!roleKey) throw new Error("Choose a role.");
+  if (!Number.isInteger(tier) || tier < 1) throw new Error("Tier must be a positive whole number.");
+  if (!Number.isFinite(waitHours) || waitHours <= 0) throw new Error("Wait hours must be a positive number.");
+  if (!Number.isInteger(maxRemindersBeforeAdvancing) || maxRemindersBeforeAdvancing < 0) {
+    throw new Error("Max reminders must be a whole number, 0 or more.");
+  }
+  if (!escalateToRoleKey && contactIds.length === 0) {
+    throw new Error("Select at least one contact, or set a role to escalate to.");
+  }
+  if (escalateToRoleKey && contactIds.length > 0) {
+    throw new Error("A tier is either a set of peer contacts OR an escalation to a different role, not both.");
+  }
+
+  const actorId = await assertCanManageProjectContacts(projectId);
+
+  if (contactIds.length > 0) {
+    const contacts = await db.projectContact.findMany({ where: { id: { in: contactIds } } });
+    if (contacts.some((c) => c.projectId !== projectId)) {
+      throw new Error("One or more selected contacts aren't on this project's roster.");
+    }
+  }
+
+  const created = await db.approvalRoutingTier.create({
+    data: {
+      projectId,
+      roleKey,
+      tier,
+      waitHours,
+      maxRemindersBeforeAdvancing,
+      escalateToRoleKey: escalateToRoleKey || null,
+      contacts: contactIds.length > 0 ? { create: contactIds.map((contactId) => ({ contactId })) } : undefined,
+    },
   });
 
   await db.auditLogEntry.create({
     data: {
       actorId,
-      gateId,
-      action: "email_approval.requested",
-      entityType: "EmailApproval",
-      entityId: emailApproval.id,
-      reason: `Approval requested from ${contact.name} <${contact.email}>`,
+      action: "approval_routing_tier.added",
+      entityType: "ApprovalRoutingTier",
+      entityId: created.id,
+      reason:
+        `Tier ${tier} for ${roleKey} added` +
+        (escalateToRoleKey ? ` — escalates to ${escalateToRoleKey}` : ` — ${contactIds.length} contact(s)`),
     },
   });
 
-  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+  revalidatePath(`/projects/${projectNumber}`);
+}
+
+/**
+ * Removes a routing tier entirely — a deliberately simple model (no
+ * "edit contacts in place" flow yet): to change a tier's membership, delete
+ * and recreate it. Fine for how rarely this changes; worth a real edit flow
+ * later if that assumption turns out wrong.
+ */
+export async function deleteApprovalRoutingTier(tierId: string, projectId: string, projectNumber: string) {
+  const actorId = await assertCanManageProjectContacts(projectId);
+  const tier = await db.approvalRoutingTier.findUniqueOrThrow({ where: { id: tierId } });
+  if (tier.projectId !== projectId) throw new Error("That routing tier isn't on this project.");
+
+  await db.$transaction([
+    db.approvalRoutingTierContact.deleteMany({ where: { tierId } }),
+    db.approvalRoutingTier.delete({ where: { id: tierId } }),
+    db.auditLogEntry.create({
+      data: {
+        actorId,
+        action: "approval_routing_tier.deleted",
+        entityType: "ApprovalRoutingTier",
+        entityId: tierId,
+        reason: `Tier ${tier.tier} for ${tier.roleKey} removed`,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
 }
 
 /**
@@ -1954,6 +2082,93 @@ export async function requestDocumentReview(
       entityId: review.id,
       reason: `AI review requested for "${evidenceFile.fileName}" using ${agentSlug}.`,
     },
+  });
+
+  revalidatePath(`/projects/${projectNumber}/gates/${deliverable.gateId}`);
+}
+
+/**
+ * PM requests an AI-drafted document for one target Deliverable, built from
+ * one or more real, already-submitted source evidence files. Unlike
+ * requestDocumentReview above, sources need not belong to the target
+ * Deliverable itself — a generator can draw on evidence submitted against a
+ * different Deliverable, even a different Gate, in the same project (e.g. an
+ * inspection report submitted earlier feeding a Gate 0 business case) — see
+ * DocumentGenerationRequest's own schema comment. Same explicit
+ * agent-selection discipline as requestDocumentReview, same reasoning.
+ */
+export async function requestDocumentGeneration(
+  targetDeliverableId: string,
+  projectNumber: string,
+  formData: FormData
+) {
+  const agentSlug = String(formData.get("agentSlug") ?? "").trim();
+  if (!(GENERATABLE_AGENT_SLUGS as readonly string[]).includes(agentSlug)) {
+    throw new Error("Choose a valid drafting agent.");
+  }
+  // User-selected via the form's multi-select, not a bound arg — these are
+  // only known once the PM actually submits, unlike targetDeliverableId/
+  // projectNumber which are fixed at render time.
+  const sourceEvidenceFileIds = formData.getAll("sourceEvidenceFileIds").map(String).filter(Boolean);
+  if (sourceEvidenceFileIds.length === 0) {
+    throw new Error("Select at least one source document to draft from.");
+  }
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const deliverable = await db.deliverable.findUniqueOrThrow({
+    where: { id: targetDeliverableId },
+    include: { gate: { include: { stage: true } } },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(deliverable.gate.stage.projectId);
+  if (!roleKeys.includes("PM")) {
+    throw new Error("Only the Project Manager can request an AI-drafted document.");
+  }
+
+  const sourceFiles = await db.evidenceFile.findMany({
+    where: { id: { in: sourceEvidenceFileIds } },
+    include: { deliverable: { include: { gate: { include: { stage: true } } } } },
+  });
+  if (sourceFiles.length !== sourceEvidenceFileIds.length) {
+    throw new Error("One or more selected source files could not be found.");
+  }
+  for (const source of sourceFiles) {
+    if (source.deliverable.gate.stage.projectId !== deliverable.gate.stage.projectId) {
+      throw new Error(`"${source.fileName}" belongs to a different project — sources must be in the same project as the target deliverable.`);
+    }
+    if (source.kind !== "SUBMITTED") {
+      throw new Error(`"${source.fileName}" is an AI-generated file, not real submitted evidence — only real evidence can be a source.`);
+    }
+    const currentMaxVersion = await db.evidenceFile.aggregate({
+      where: { deliverableId: source.deliverableId, kind: "SUBMITTED" },
+      _max: { version: true },
+    });
+    if (source.version !== currentMaxVersion._max.version) {
+      throw new Error(`"${source.fileName}" has been superseded by a newer upload — select the current version instead.`);
+    }
+  }
+
+  await db.$transaction(async (tx) => {
+    const created = await tx.documentGenerationRequest.create({
+      data: {
+        deliverableId: targetDeliverableId,
+        agentSlug,
+        requestedById: actorId,
+        sources: { create: sourceEvidenceFileIds.map((evidenceFileId) => ({ evidenceFileId })) },
+      },
+    });
+    await tx.auditLogEntry.create({
+      data: {
+        actorId,
+        gateId: deliverable.gateId,
+        action: "document_generation.requested",
+        entityType: "DocumentGenerationRequest",
+        entityId: created.id,
+        reason: `AI draft requested for "${deliverable.label}" using ${agentSlug}, from ${sourceFiles.length} source file(s): ${sourceFiles.map((f) => f.fileName).join(", ")}.`,
+      },
+    });
+    return created;
   });
 
   revalidatePath(`/projects/${projectNumber}/gates/${deliverable.gateId}`);

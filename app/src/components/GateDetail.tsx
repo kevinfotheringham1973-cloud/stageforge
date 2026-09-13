@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getCurrentUser, getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { evidenceFolderPath } from "@/lib/sharepoint";
 import { REVIEWABLE_AGENT_SLUGS } from "@/lib/documentReviewEvidence";
+import { GENERATABLE_AGENT_SLUGS } from "@/lib/documentGenerationEvidence";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
   canApproveSpend,
@@ -35,6 +36,7 @@ import {
   rejectGate,
   rejectSpend,
   requestDocumentReview,
+  requestDocumentGeneration,
   requestEmailApproval,
   reviseSpend,
   setGateTimeline,
@@ -191,6 +193,7 @@ export async function GateDetail({
           evidenceFiles: { orderBy: { uploadedAt: "desc" } },
           bypass: { include: { bypassedBy: true } },
           documentReviewRequests: { orderBy: { requestedAt: "desc" } },
+          documentGenerationRequests: { orderBy: { requestedAt: "desc" } },
           template: {
             select: { order: true, section: true, gateTemplate: { select: { stageTemplate: { select: { templateId: true } } } } },
           },
@@ -227,6 +230,33 @@ export async function GateDetail({
     where: { projectId: gate.stage.projectId, active: true },
     orderBy: { name: "asc" },
   });
+
+  // Source-file picker for the "Generate draft with AI" form below — unlike
+  // a review (which only ever reviews the current file on its OWN
+  // deliverable), a drafting agent can draw on real evidence submitted
+  // against ANY deliverable in the same project, even a different Gate
+  // (e.g. an inspection report from an earlier Gate feeding a Gate 0
+  // business case) — see DocumentGenerationRequest's own schema comment.
+  // Reduced to each deliverable's current (highest) SUBMITTED version only,
+  // same "current file" semantics used everywhere else in this component.
+  const allProjectSubmittedEvidence = await db.evidenceFile.findMany({
+    where: { kind: "SUBMITTED", deliverable: { gate: { stage: { projectId: gate.stage.projectId } } } },
+    orderBy: { uploadedAt: "desc" },
+    include: { deliverable: { select: { id: true, label: true, gate: { select: { name: true } } } } },
+  });
+  const currentVersionByDeliverable = new Map<string, number>();
+  for (const f of allProjectSubmittedEvidence) {
+    const prev = currentVersionByDeliverable.get(f.deliverableId) ?? 0;
+    if (f.version > prev) currentVersionByDeliverable.set(f.deliverableId, f.version);
+  }
+  const generationSourceOptions = allProjectSubmittedEvidence
+    .filter((f) => f.version === currentVersionByDeliverable.get(f.deliverableId))
+    .map((f) => ({
+      evidenceFileId: f.id,
+      fileName: f.fileName,
+      deliverableLabel: f.deliverable.label,
+      gateName: f.deliverable.gate.name,
+    }));
 
   const [roleKeys, globalRoleKeys, allRoles, currentUser] = await Promise.all([
     getCurrentUserRoleKeysForProject(gate.stage.projectId),
@@ -705,6 +735,25 @@ export async function GateDetail({
                   ))}
               </div>
             )}
+
+            {/* Phase 5 extended — AI-generated drafts for this deliverable
+                (Statement of Work, Gate 0 case, CCN workbook), possibly
+                built from evidence submitted elsewhere in the project.
+                Never SUBMITTED, never competes with real evidence above. */}
+            {d.evidenceFiles.filter((f) => f.kind === "AI_DRAFT").length > 0 && (
+              <div className="mt-2 flex flex-col gap-1 border-t border-dashed border-rule pt-2">
+                {d.evidenceFiles
+                  .filter((f) => f.kind === "AI_DRAFT")
+                  .map((f) => (
+                    <div key={f.id} className="font-mono text-xs text-inkmuted">
+                      <span className="rounded-full bg-accentsoft px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+                        AI draft
+                      </span>{" "}
+                      {f.fileName} &middot; {f.uploadedAt.toLocaleDateString("en-GB")}
+                    </div>
+                  ))}
+              </div>
+            )}
             {(() => {
               const currentSubmitted = d.evidenceFiles.filter((f) => f.kind === "SUBMITTED");
               const currentMaxVersion = currentSubmitted.length > 0 ? Math.max(...currentSubmitted.map((f) => f.version)) : 0;
@@ -748,6 +797,72 @@ export async function GateDetail({
                       </select>
                       <SubmitButton pendingText="Requesting…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
                         Request review
+                      </SubmitButton>
+                    </form>
+                  )}
+                </>
+              );
+            })()}
+            {(() => {
+              const openGenerations = d.documentGenerationRequests.filter((r) => r.status === "PENDING" || r.status === "IN_PROGRESS");
+              const failedGenerations = d.documentGenerationRequests.filter((r) => r.status === "FAILED");
+              return (
+                <>
+                  {openGenerations.map((r) => (
+                    <div key={r.id} className="mt-1 font-mono text-xs text-inkmuted">
+                      AI draft requested ({r.agentSlug}) &middot; {r.status === "IN_PROGRESS" ? "in progress" : "queued"}
+                    </div>
+                  ))}
+                  {failedGenerations.map((r) => (
+                    <div key={r.id} className="mt-1 font-mono text-xs text-red-700">
+                      AI draft failed ({r.agentSlug}): {r.failureReason ?? "unknown reason"}
+                    </div>
+                  ))}
+                  {roleKeys.includes("PM") && generationSourceOptions.length > 0 && openGenerations.length === 0 && (
+                    <form
+                      action={requestDocumentGeneration.bind(null, d.id, projectNumber)}
+                      className="mt-2 flex flex-wrap items-start gap-2 rounded-md border border-dashed border-rule p-2"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                          Generate draft with AI for {d.label}
+                        </label>
+                        <select
+                          name="agentSlug"
+                          required
+                          defaultValue=""
+                          className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
+                        >
+                          <option value="" disabled>
+                            Choose an agent…
+                          </option>
+                          {GENERATABLE_AGENT_SLUGS.map((slug) => (
+                            <option key={slug} value={slug}>
+                              {slug}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                          Source document(s) — anywhere in this project
+                        </label>
+                        <select
+                          name="sourceEvidenceFileIds"
+                          multiple
+                          required
+                          size={Math.min(5, generationSourceOptions.length)}
+                          className="min-w-[16rem] rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
+                        >
+                          {generationSourceOptions.map((o) => (
+                            <option key={o.evidenceFileId} value={o.evidenceFileId}>
+                              {o.gateName} &middot; {o.deliverableLabel} &middot; {o.fileName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <SubmitButton pendingText="Requesting…" className="mt-4 rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                        Generate draft
                       </SubmitButton>
                     </form>
                   )}
@@ -1669,7 +1784,16 @@ export async function GateDetail({
                 >
                   {ea.status}
                 </span>
-                {ea.escalatedAt ? (
+                {ea.tier > 1 && (
+                  <span className="ml-2 rounded-full bg-flag/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-flag">
+                    Tier {ea.tier}
+                  </span>
+                )}
+                {ea.status === "SUPERSEDED" ? (
+                  <span className="ml-2 rounded-full bg-surface2 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                    Superseded
+                  </span>
+                ) : ea.escalatedAt ? (
                   <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-red-700">
                     Escalated
                   </span>
@@ -1681,9 +1805,12 @@ export async function GateDetail({
                   )
                 )}
                 <div className="mt-1 text-xs text-inkmuted">
-                  Requested by {ea.requestedBy.name} &middot; {ea.requestedAt.toLocaleDateString("en-GB")}
+                  {ea.roleKey} &middot; requested by {ea.requestedBy.name} &middot; {ea.requestedAt.toLocaleDateString("en-GB")}
                   {ea.sentAt && <> &middot; sent {ea.sentAt.toLocaleDateString("en-GB")}</>}
                   {ea.lastReminderAt && <> &middot; last reminder {ea.lastReminderAt.toLocaleDateString("en-GB")}</>}
+                  {ea.status === "SUPERSEDED" && !ea.escalatedAt && (
+                    <> &middot; resolved by another contact or tier in this same request</>
+                  )}
                   {ea.escalatedAt && (
                     <>
                       {" "}
@@ -1697,11 +1824,14 @@ export async function GateDetail({
           </div>
         )}
         {(() => {
-          // A gate-level request always becomes a Sponsor-tier
-          // GateSignOff, so only a Sponsor-role contact can be asked —
-          // enforced again server-side in requestEmailApproval, this is
-          // just so the PM doesn't hit that error after already picking
-          // someone.
+          // Generalised 12 Sep 2026 (PRD.html §06/§09 Phase 5 extended): no
+          // more hand-picking one contact — every active Sponsor contact on
+          // the roster gets its own attempt, and any one of their replies
+          // resolves the request (see requestEmailApproval's own fallback:
+          // an explicit ApprovalRoutingTier row, once configurable, will
+          // override this default project-wide contact list). A gate-level
+          // request always becomes a Sponsor-tier GateSignOff — enforced
+          // again server-side, this is just so the PM sees why up front.
           const sponsorContacts = activeContacts.filter((c) => c.roleKey === "SPONSOR");
           if (!roleKeys.includes("PM")) return null;
           if (activeContacts.length === 0) {
@@ -1724,18 +1854,10 @@ export async function GateDetail({
               action={requestEmailApproval.bind(null, gateId, projectNumber)}
               className="flex flex-wrap items-end gap-3 rounded-md border border-dashed border-rule p-3"
             >
-              <div>
-                <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                  Contact (Sponsor role only)
-                </label>
-                <select name="contactId" required className="w-64 rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm">
-                  <option value="">Select…</option>
-                  {sponsorContacts.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} &lt;{c.email}&gt;
-                    </option>
-                  ))}
-                </select>
+              <input type="hidden" name="roleKey" value="SPONSOR" />
+              <div className="text-xs text-inkmuted">
+                Will email every active Sponsor contact ({sponsorContacts.map((c) => c.name).join(", ")}) &mdash; any one
+                reply decides this gate.
               </div>
               <SubmitButton pendingText="Requesting…" className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white">
                 Request approval
