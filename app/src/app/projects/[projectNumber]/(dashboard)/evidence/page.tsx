@@ -24,10 +24,14 @@ import { SubmitButton } from "@/components/SubmitButton";
  */
 export default async function EvidencePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ projectNumber: string }>;
+  searchParams: Promise<{ filter?: string }>;
 }) {
   const { projectNumber } = await params;
+  const { filter } = await searchParams;
+  const missingOnly = filter === "missing";
 
   const project = await db.project.findUnique({
     where: { projectNumber },
@@ -61,18 +65,64 @@ export default async function EvidencePage({
     },
   });
 
+  // A deliverable counts as a genuine gap once it's neither got its own
+  // real SUBMITTED evidence nor been consciously waved through --
+  // BYPASSED is a real decision with its own recorded reason, not an
+  // oversight, so it shouldn't read as "missing" here.
+  const allDeliverables = stages.flatMap((s) => s.gate?.deliverables ?? []);
+  const totalCount = allDeliverables.length;
+  const evidencedCount = allDeliverables.filter((d) => d.evidenceFiles.some((f) => f.kind === "SUBMITTED")).length;
+  const gapCount = allDeliverables.filter(
+    (d) => !d.evidenceFiles.some((f) => f.kind === "SUBMITTED") && d.status !== "BYPASSED"
+  ).length;
+  const evidencedPct = totalCount > 0 ? Math.round((evidencedCount / totalCount) * 100) : 0;
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-lg font-bold text-ink">Evidence</h2>
-        <p className="text-sm text-inkmuted">
-          Every deliverable across every gate in this project — what&rsquo;s been submitted, what AI has
-          reviewed or drafted, and what&rsquo;s still missing.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-ink">Evidence</h2>
+          <p className="text-sm text-inkmuted">
+            Every deliverable across every gate in this project — what&rsquo;s been submitted, what AI has
+            reviewed or drafted, and what&rsquo;s still missing.
+          </p>
+          <p className="mt-1 text-sm font-semibold text-ink">
+            {evidencedCount} of {totalCount} deliverable{totalCount === 1 ? "" : "s"} fully evidenced ({evidencedPct}%)
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {gapCount > 0 && (
+            <span className="rounded-full bg-warn px-2.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wide text-white">
+              {gapCount} gap{gapCount === 1 ? "" : "s"} requiring evidence
+            </span>
+          )}
+          <div className="flex rounded-lg border border-rule bg-surface p-1">
+            <a
+              href={`/projects/${projectNumber}/evidence`}
+              className={`rounded-md px-3 py-2 text-sm font-semibold ${
+                !missingOnly ? "bg-accentsoft text-accent" : "text-inkmuted hover:bg-accentsoft/50"
+              }`}
+            >
+              Show all gates
+            </a>
+            <a
+              href={`/projects/${projectNumber}/evidence?filter=missing`}
+              className={`rounded-md px-3 py-2 text-sm font-semibold ${
+                missingOnly ? "bg-accentsoft text-accent" : "text-inkmuted hover:bg-accentsoft/50"
+              }`}
+            >
+              Only missing evidence
+            </a>
+          </div>
+        </div>
       </div>
 
       {stages.map(({ gate }) => {
-        if (!gate || gate.deliverables.length === 0) return null;
+        if (!gate) return null;
+        const visibleDeliverables = missingOnly
+          ? gate.deliverables.filter((d) => !d.evidenceFiles.some((f) => f.kind === "SUBMITTED") && d.status !== "BYPASSED")
+          : gate.deliverables;
+        if (visibleDeliverables.length === 0) return null;
         return (
           <div key={gate.id} className="rounded-lg border border-rule bg-surface p-5">
             <div className="mb-3 flex items-center justify-between">
@@ -85,7 +135,7 @@ export default async function EvidencePage({
               <span className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">{gate.status}</span>
             </div>
             <div className="flex flex-col gap-4">
-              {gate.deliverables.map((d) => {
+              {visibleDeliverables.map((d) => {
                 const canUpload = canUploadEvidence(roleKeys, d.bypassAuthority, exactMatchAuthorityKeys, globalRoleKeys);
                 const hasSubmitted = d.evidenceFiles.some((f) => f.kind === "SUBMITTED");
                 return (
