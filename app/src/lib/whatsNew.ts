@@ -14,6 +14,14 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: "12 Sep 2026",
+    title: "Email-based approval now works for any role, and AI can draft documents as well as review them",
+    highlights: [
+      "Email-based approval — until now Sponsor-only — now works for any dutyholder role, and can reach more than one contact at once. If several people hold the same role on a project, all of them are asked at the same time, so one person being away no longer blocks the project. If nobody replies in time, it can now automatically hand off to the next tier (for example, a more senior role) rather than just reminding the original requester.",
+      "A Project Manager can now ask AI to draft a document, not just review one — a Statement of Work, a Gate 0 business case, or a CCN change-control workbook — built from several pieces of evidence already submitted to the project (a contractor quote, an inspection report, an email summary of a discussion). Like an AI review, a drafted document is always clearly marked as AI-generated and never counts as the real submitted evidence.",
+    ],
+  },
+  {
     date: "11 Sep 2026",
     title: "Email-based gate approval is now live, AI document review, two more spend categories",
     highlights: [
