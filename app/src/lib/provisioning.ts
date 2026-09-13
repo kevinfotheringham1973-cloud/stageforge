@@ -78,33 +78,47 @@ export async function matchComplianceTags(db: PrismaClient, templateId: string, 
   });
 
   const client = new Anthropic();
-  const response = await client.messages.parse({
-    model: MODEL,
-    max_tokens: 2048,
-    output_config: { effort: "low", format: zodOutputFormat(MatchSchema) },
-    system: [
-      {
-        type: "text",
-        text: [
-          "You propose compliance tags for a Hard FM capital-works project, given its free-text description and the specific project Template it has already been assigned to (the discipline/system is fixed — do not second-guess it).",
-          "Pick zero or more tags from the known tag list below — only ones that genuinely apply to this project's description (e.g. an occupied/live site, a National Treatment Centre, work affecting water systems). Never invent a tag that isn't listed.",
-          "Give a brief reasoning for your picks, for a human reviewer to check.",
-          "",
-          "Assigned template:",
-          `- name: ${template.name}`,
-          `  description: ${template.description ?? "(none)"}`,
-          `  keywords: ${template.matchKeywords.join(", ") || "(none)"}`,
-          "",
-          `Known compliance tags: ${knownTags.join(", ") || "(none defined yet)"}`,
-        ].join("\n"),
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [{ role: "user", content: brief }],
-  });
+  // A configured key is no guarantee the call actually succeeds --
+  // billing/credit exhaustion, a rate limit, or a transient Anthropic
+  // outage all throw here. None of those should 500 the whole draft-
+  // creation flow: degrade exactly like the no-key case above (empty
+  // tags, a reviewer adds them by hand) rather than blocking project
+  // creation on an external API's availability. Found live 13 Sep 2026 --
+  // draft creation hard-failed on a real credit-balance error with no
+  // fallback at all.
+  let response: Awaited<ReturnType<typeof client.messages.parse>>;
+  try {
+    response = await client.messages.parse({
+      model: MODEL,
+      max_tokens: 2048,
+      output_config: { effort: "low", format: zodOutputFormat(MatchSchema) },
+      system: [
+        {
+          type: "text",
+          text: [
+            "You propose compliance tags for a Hard FM capital-works project, given its free-text description and the specific project Template it has already been assigned to (the discipline/system is fixed — do not second-guess it).",
+            "Pick zero or more tags from the known tag list below — only ones that genuinely apply to this project's description (e.g. an occupied/live site, a National Treatment Centre, work affecting water systems). Never invent a tag that isn't listed.",
+            "Give a brief reasoning for your picks, for a human reviewer to check.",
+            "",
+            "Assigned template:",
+            `- name: ${template.name}`,
+            `  description: ${template.description ?? "(none)"}`,
+            `  keywords: ${template.matchKeywords.join(", ") || "(none)"}`,
+            "",
+            `Known compliance tags: ${knownTags.join(", ") || "(none defined yet)"}`,
+          ].join("\n"),
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+      messages: [{ role: "user", content: brief }],
+    });
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    return { tags: [], reasoning: `AI tag suggestion failed (${reason}) — add compliance tags manually on the review page.` };
+  }
 
   if (!response.parsed_output) {
-    throw new Error("The compliance-tag proposal didn't return a valid result — try again or rephrase the description.");
+    return { tags: [], reasoning: "The compliance-tag proposal didn't return a valid result — add compliance tags manually on the review page." };
   }
   return response.parsed_output;
 }
