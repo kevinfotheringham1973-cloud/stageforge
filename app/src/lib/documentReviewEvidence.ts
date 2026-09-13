@@ -33,6 +33,19 @@ export const REVIEWABLE_AGENT_SLUGS = [
   "nhs-scotland-sfg20-mapping-review",
 ] as const;
 
+// A PM choosing an agent from a dropdown has no way to know what these
+// slugs mean -- found live 13 Sep 2026 while walking a real project
+// through the bridge. Plain-language, not a smarter picker: this stays a
+// human decision (see this bridge's "relay and recorder, never a
+// decision-maker" boundary), just an informed one.
+export const REVIEWABLE_AGENT_DESCRIPTIONS: Record<(typeof REVIEWABLE_AGENT_SLUGS)[number], string> = {
+  "nhs-scotland-rams-review": "Review a contractor's Risk Assessment/Method Statement for real hospital-specific awareness",
+  "nhs-scotland-sow-review": "Review a contractor's quotation/Statement of Work for technical, compliance and commercial gaps",
+  "nhs-scotland-inspection-review": "Review an inspection/condition report and prioritise findings by real-world consequence",
+  "nhs-scotland-cdm-review": "Review a CDM 2015 Pre-Construction Information or Construction Phase Plan document",
+  "nhs-scotland-sfg20-mapping-review": "Compare actual PPM/CAFM maintenance records against the SFG20 benchmark schedule",
+};
+
 /**
  * Downloads a SUBMITTED EvidenceFile's real bytes for the AI Council to
  * review. Returns null (never throws for this specific case) when the

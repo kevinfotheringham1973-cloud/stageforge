@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 import { getCurrentUser, getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { evidenceFolderPath } from "@/lib/sharepoint";
-import { REVIEWABLE_AGENT_SLUGS } from "@/lib/documentReviewEvidence";
-import { GENERATABLE_AGENT_SLUGS } from "@/lib/documentGenerationEvidence";
+import { REVIEWABLE_AGENT_SLUGS, REVIEWABLE_AGENT_DESCRIPTIONS } from "@/lib/documentReviewEvidence";
+import { GENERATABLE_AGENT_SLUGS, GENERATABLE_AGENT_DESCRIPTIONS } from "@/lib/documentGenerationEvidence";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
   canApproveSpend,
@@ -736,24 +736,6 @@ export async function GateDetail({
               </div>
             )}
 
-            {/* Phase 5 extended — AI-generated drafts for this deliverable
-                (Statement of Work, Gate 0 case, CCN workbook), possibly
-                built from evidence submitted elsewhere in the project.
-                Never SUBMITTED, never competes with real evidence above. */}
-            {d.evidenceFiles.filter((f) => f.kind === "AI_DRAFT").length > 0 && (
-              <div className="mt-2 flex flex-col gap-1 border-t border-dashed border-rule pt-2">
-                {d.evidenceFiles
-                  .filter((f) => f.kind === "AI_DRAFT")
-                  .map((f) => (
-                    <div key={f.id} className="font-mono text-xs text-inkmuted">
-                      <span className="rounded-full bg-accentsoft px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
-                        AI draft
-                      </span>{" "}
-                      {f.fileName} &middot; {f.uploadedAt.toLocaleDateString("en-GB")}
-                    </div>
-                  ))}
-              </div>
-            )}
             {(() => {
               const currentSubmitted = d.evidenceFiles.filter((f) => f.kind === "SUBMITTED");
               const currentMaxVersion = currentSubmitted.length > 0 ? Math.max(...currentSubmitted.map((f) => f.version)) : 0;
@@ -791,7 +773,7 @@ export async function GateDetail({
                         </option>
                         {REVIEWABLE_AGENT_SLUGS.map((slug) => (
                           <option key={slug} value={slug}>
-                            {slug}
+                            {REVIEWABLE_AGENT_DESCRIPTIONS[slug]}
                           </option>
                         ))}
                       </select>
@@ -803,6 +785,36 @@ export async function GateDetail({
                 </>
               );
             })()}
+          </div>
+        )}
+
+        {/* Phase 5 extended — AI-generated drafts (Statement of Work, Gate 0
+            case, CCN workbook) and the request form for one. Deliberately
+            NOT gated on d.status === "EVIDENCED" like the block above —
+            unlike a review, a draft's source documents can come from any
+            deliverable in the project (see DocumentGenerationRequest's own
+            schema comment), so the TARGET deliverable need not have its own
+            evidence yet. Found live 13 Sep 2026: gating this the same way as
+            reviews silently made it impossible to draft into an empty
+            deliverable at all, defeating exactly the cross-deliverable
+            sourcing this bridge exists for. Still hidden once bypassed —
+            nothing to draft into a deliverable that's been waved through. */}
+        {d.status !== "BYPASSED" && (
+          <div className="flex flex-col gap-1">
+            {d.evidenceFiles.filter((f) => f.kind === "AI_DRAFT").length > 0 && (
+              <div className="mt-2 flex flex-col gap-1 border-t border-dashed border-rule pt-2">
+                {d.evidenceFiles
+                  .filter((f) => f.kind === "AI_DRAFT")
+                  .map((f) => (
+                    <div key={f.id} className="font-mono text-xs text-inkmuted">
+                      <span className="rounded-full bg-accentsoft px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">
+                        AI draft
+                      </span>{" "}
+                      {f.fileName} &middot; {f.uploadedAt.toLocaleDateString("en-GB")}
+                    </div>
+                  ))}
+              </div>
+            )}
             {(() => {
               const openGenerations = d.documentGenerationRequests.filter((r) => r.status === "PENDING" || r.status === "IN_PROGRESS");
               const failedGenerations = d.documentGenerationRequests.filter((r) => r.status === "FAILED");
@@ -838,7 +850,7 @@ export async function GateDetail({
                           </option>
                           {GENERATABLE_AGENT_SLUGS.map((slug) => (
                             <option key={slug} value={slug}>
-                              {slug}
+                              {GENERATABLE_AGENT_DESCRIPTIONS[slug]}
                             </option>
                           ))}
                         </select>

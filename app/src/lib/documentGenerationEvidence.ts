@@ -29,6 +29,21 @@ export const GENERATABLE_AGENT_SLUGS = [
   "nhs-scotland-ccn-preparation",
 ] as const;
 
+// See REVIEWABLE_AGENT_DESCRIPTIONS (documentReviewEvidence.ts) for why
+// this exists: a PM picking a raw agent slug from a dropdown has no way
+// to know what it does. Plain-language only, not a restriction on which
+// deliverable an agent may target -- these three genuinely do overlap
+// (business-case-generator alone covers Business Case, Strategic Brief,
+// AND Clinical/Operational Impact Assessment; sow-generator was proven
+// live against a Business Case deliverable, not just a procurement one)
+// so narrowing the dropdown by deliverable key would wrongly exclude
+// valid choices more often than it would help.
+export const GENERATABLE_AGENT_DESCRIPTIONS: Record<(typeof GENERATABLE_AGENT_SLUGS)[number], string> = {
+  "nhs-scotland-sow-generator": "Draft a Statement of Work from a contractor quote (and email recap, if available)",
+  "nhs-scotland-business-case-generator": "Draft the Gate 0 case — Business Case, Strategic Brief, or Clinical/Operational Impact Assessment",
+  "nhs-scotland-ccn-preparation": "Prepare a CCB/CCN change-control workbook from an agreed Statement of Work and quote",
+};
+
 /**
  * Downloads one SUBMITTED source EvidenceFile's real bytes for the AI
  * Council to draft from. Returns null (never throws for this specific case)
