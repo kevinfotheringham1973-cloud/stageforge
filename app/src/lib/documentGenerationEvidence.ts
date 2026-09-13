@@ -31,18 +31,47 @@ export const GENERATABLE_AGENT_SLUGS = [
 
 // See REVIEWABLE_AGENT_DESCRIPTIONS (documentReviewEvidence.ts) for why
 // this exists: a PM picking a raw agent slug from a dropdown has no way
-// to know what it does. Plain-language only, not a restriction on which
-// deliverable an agent may target -- these three genuinely do overlap
-// (business-case-generator alone covers Business Case, Strategic Brief,
-// AND Clinical/Operational Impact Assessment; sow-generator was proven
-// live against a Business Case deliverable, not just a procurement one)
-// so narrowing the dropdown by deliverable key would wrongly exclude
-// valid choices more often than it would help.
+// to know what it does.
 export const GENERATABLE_AGENT_DESCRIPTIONS: Record<(typeof GENERATABLE_AGENT_SLUGS)[number], string> = {
   "nhs-scotland-sow-generator": "Draft a Statement of Work from a contractor quote (and email recap, if available)",
   "nhs-scotland-business-case-generator": "Draft the Gate 0 case — Business Case, Strategic Brief, or Clinical/Operational Impact Assessment",
   "nhs-scotland-ccn-preparation": "Prepare a CCB/CCN change-control workbook from an agreed Statement of Work and quote",
 };
+
+/**
+ * A deliverable's own key already says what kind of document it is
+ * (business-case-shaped, procurement-shaped, ...) across every template in
+ * the library -- same deterministic key-matching idiom as isPciDeliverable
+ * (GateDetail.tsx) and the CDM/HAI-SCRIBE tag logic (lib/cdm.ts). Used to
+ * PRE-SELECT the right agent as this dropdown's default, not to remove the
+ * other options -- a PM can still override. Not a smarter/LLM picker: this
+ * stays a deterministic rule, same boundary as every other "relay and
+ * recorder, never a decision-maker" choice in this bridge.
+ *
+ * Found live 13 Sep 2026, fire-testing project #30004: sow-generator
+ * DID run successfully against a Business Case deliverable fed only a
+ * contractor quote -- but business-case-generator's own output on the
+ * same evidence rated its justification strength "Weak/Mixed" and named
+ * the quote as the wrong evidence type for a Gate 0 case, recommending
+ * sow-review/sow-generator instead. A quote is genuinely Gate 1+
+ * (pre-contract) evidence; defaulting business-case-shaped deliverables
+ * to business-case-generator (sourced from inspection/PPM/condition
+ * evidence, not a quote) and procurement-shaped ones to sow-generator
+ * is what that finding actually implies.
+ */
+export function isBusinessCaseShapedDeliverable(key: string): boolean {
+  return key.includes("business_case") || key.includes("strategic_brief") || key.includes("operational_impact_assessment");
+}
+
+export function isProcurementShapedDeliverable(key: string): boolean {
+  return key.includes("procurement_package") || key.includes("tender_documentation");
+}
+
+export function defaultGenerationAgentForDeliverable(key: string): (typeof GENERATABLE_AGENT_SLUGS)[number] | undefined {
+  if (isBusinessCaseShapedDeliverable(key)) return "nhs-scotland-business-case-generator";
+  if (isProcurementShapedDeliverable(key)) return "nhs-scotland-sow-generator";
+  return undefined;
+}
 
 /**
  * Downloads one SUBMITTED source EvidenceFile's real bytes for the AI

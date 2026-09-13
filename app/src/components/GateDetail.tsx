@@ -2,7 +2,12 @@ import { db } from "@/lib/db";
 import { getCurrentUser, getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { evidenceFolderPath } from "@/lib/sharepoint";
 import { REVIEWABLE_AGENT_SLUGS, REVIEWABLE_AGENT_DESCRIPTIONS } from "@/lib/documentReviewEvidence";
-import { GENERATABLE_AGENT_SLUGS, GENERATABLE_AGENT_DESCRIPTIONS } from "@/lib/documentGenerationEvidence";
+import {
+  GENERATABLE_AGENT_SLUGS,
+  GENERATABLE_AGENT_DESCRIPTIONS,
+  defaultGenerationAgentForDeliverable,
+  isBusinessCaseShapedDeliverable,
+} from "@/lib/documentGenerationEvidence";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
   canApproveSpend,
@@ -835,6 +840,13 @@ export async function GateDetail({
                       action={requestDocumentGeneration.bind(null, d.id, projectNumber)}
                       className="mt-2 flex flex-wrap items-start gap-2 rounded-md border border-dashed border-rule p-2"
                     >
+                      {isBusinessCaseShapedDeliverable(d.key) && (
+                        <p className="w-full text-xs text-inkmuted">
+                          If this need came from a failing inspection or a PPM/SFG20 gap, review that evidence first
+                          (Inspection review, or SFG20 mapping review for a schedule gap) — a contractor quote is
+                          Gate 1+ evidence, not Business Case evidence; use SOW review/SOW generator for that instead.
+                        </p>
+                      )}
                       <div className="flex flex-col gap-1">
                         <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                           Generate draft with AI for {d.label}
@@ -842,7 +854,7 @@ export async function GateDetail({
                         <select
                           name="agentSlug"
                           required
-                          defaultValue=""
+                          defaultValue={defaultGenerationAgentForDeliverable(d.key) ?? ""}
                           className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
                         >
                           <option value="" disabled>
