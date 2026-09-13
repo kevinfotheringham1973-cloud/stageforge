@@ -2088,6 +2088,124 @@ export async function requestDocumentReview(
 }
 
 /**
+ * Found live 13 Sep 2026, fire-testing Gate 1 on #30005: a completed AI
+ * review of a condition survey substantively answered a DIFFERENT
+ * deliverable's own checklist item ("Water risk assessment review and gap
+ * analysis") — the review agent produced a graded, prioritised gap analysis
+ * that already was that document. Rather than building a whole new
+ * generation agent for something an existing review already covers, this
+ * lets a PM confirm that a completed review's own result file also counts
+ * as real evidence on a second deliverable in the same project. Copies the
+ * file reference (same fileRef, same physical file — local disk or
+ * SharePoint, whichever this deployment uses), not the bytes; still a real
+ * new EvidenceFile row and a real PM confirmation, same "relay and
+ * recorder, never a decision-maker" boundary as everything else here — the
+ * review never auto-files itself anywhere.
+ */
+export async function promoteReviewAsEvidence(reviewEvidenceFileId: string, projectNumber: string, formData: FormData) {
+  // Only known once the PM actually picks one in the form's <select>, not
+  // at render time — same reason requestDocumentReview/requestDocumentGeneration
+  // read agentSlug from formData rather than a bound argument.
+  const targetDeliverableId = String(formData.get("targetDeliverableId") ?? "").trim();
+  if (!targetDeliverableId) throw new Error("Choose which deliverable this review should evidence.");
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const reviewFile = await db.evidenceFile.findUniqueOrThrow({
+    where: { id: reviewEvidenceFileId },
+    include: {
+      reviewResultOfRequest: true,
+      deliverable: { include: { gate: { include: { stage: true } } } },
+    },
+  });
+  if (reviewFile.kind !== "AI_REVIEW" || !reviewFile.reviewResultOfRequest || reviewFile.reviewResultOfRequest.status !== "COMPLETE") {
+    throw new Error("Only the result file of a completed AI review can be promoted as evidence.");
+  }
+
+  const target = await db.deliverable.findUniqueOrThrow({
+    where: { id: targetDeliverableId },
+    include: { gate: { include: { stage: true } } },
+  });
+  if (target.gate.stage.projectId !== reviewFile.deliverable.gate.stage.projectId) {
+    throw new Error("The target deliverable must be in the same project as the review.");
+  }
+  if (target.gate.status === "SIGNED_OFF") {
+    throw new Error("This gate is already signed off — evidence can't be added after the fact.");
+  }
+
+  const existingFiles = await db.evidenceFile.findMany({
+    where: { deliverableId: targetDeliverableId },
+    orderBy: { version: "desc" },
+    take: 1,
+  });
+  const nextVersion = (existingFiles[0]?.version ?? 0) + 1;
+  const isReplacement = existingFiles.length > 0;
+
+  await db.$transaction([
+    db.evidenceFile.create({
+      data: {
+        deliverableId: targetDeliverableId,
+        fileName: reviewFile.fileName,
+        fileRef: reviewFile.fileRef,
+        kind: "SUBMITTED",
+        version: nextVersion,
+        uploadedById: actorId,
+      },
+    }),
+    db.deliverable.update({
+      where: { id: targetDeliverableId },
+      data: { status: "EVIDENCED" },
+    }),
+    db.auditLogEntry.create({
+      data: {
+        actorId,
+        action: isReplacement ? "evidence.replaced" : "evidence.promoted_from_review",
+        gateId: target.gateId,
+        entityType: "Deliverable",
+        entityId: targetDeliverableId,
+        reason: `"${reviewFile.fileName}" (${reviewFile.reviewResultOfRequest.agentSlug} review of "${reviewFile.deliverable.label}") used to evidence "${target.label}".`,
+      },
+    }),
+    ...startGateUpdate(target.gateId, target.gate.status),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${target.gateId}`);
+}
+
+/**
+ * Lets a PM dismiss a "Needs attention" staleness flag (see
+ * computeDeliverableStalenessAction, lib/deliverableStaleness.ts) without
+ * needing to add real evidence yet -- e.g. work genuinely is underway, it
+ * just hasn't produced a file. Deliberately doesn't touch deliverable
+ * status or evidence at all: purely a timestamp so the staleness check
+ * knows a human has seen and accepted the current state. New activity
+ * after this ack starts a fresh staleness clock rather than suppressing
+ * the flag forever (see computeDeliverableStalenessAction's own comment).
+ */
+export async function acknowledgeDeliverableStaleness(deliverableId: string, projectNumber: string) {
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const deliverable = await db.deliverable.findUniqueOrThrow({
+    where: { id: deliverableId },
+    include: { gate: { include: { stage: true } } },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(deliverable.gate.stage.projectId);
+  if (!roleKeys.includes("PM")) {
+    throw new Error("Only the Project Manager can acknowledge a staleness flag.");
+  }
+
+  await db.deliverable.update({
+    where: { id: deliverableId },
+    data: { lastStalenessAckAt: new Date() },
+  });
+
+  revalidatePath(`/projects/${projectNumber}/evidence`);
+}
+
+/**
  * PM requests an AI-drafted document for one target Deliverable, built from
  * one or more real, already-submitted source evidence files. Unlike
  * requestDocumentReview above, sources need not belong to the target

@@ -924,6 +924,14 @@ model Deliverable {
   documentReviewRequests DocumentReviewRequest[]
   documentGenerationRequests DocumentGenerationRequest[]
   createdAt              DateTime                @default(now())
+  // Deliberately a column on this existing model, not a new
+  // DeliverableReminder-style table -- deleteProject's hand-maintained FK
+  // cleanup transaction has broken 3 times this session from exactly this
+  // shape of change (a new project-scoped model, forgotten in the delete
+  // list). Lets a PM acknowledge/dismiss a staleness flag without needing
+  // real evidence yet (see computeDeliverableStalenessAction,
+  // lib/deliverableStaleness.ts) without reopening that failure mode.
+  lastStalenessAckAt     DateTime?
 }
 
 // SUBMITTED is real evidence a person uploaded against this deliverable's
