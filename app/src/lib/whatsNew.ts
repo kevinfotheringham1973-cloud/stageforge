@@ -15,6 +15,13 @@ export type ReleaseNote = {
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
     date: "16 Sep 2026",
+    title: "Patched a critical security vulnerability in the underlying framework",
+    highlights: [
+      "Upgraded Next.js to close a publicly-disclosed critical vulnerability affecting Windows-hosted servers, plus two related high-severity fixes. Applies to both the live site and the desktop app.",
+    ],
+  },
+  {
+    date: "16 Sep 2026",
     title: "Closed a network exposure in the desktop app's local server",
     highlights: [
       "The desktop app's local server was listening on every network interface instead of just this machine — meaning, in principle, another device on the same WiFi/network could have reached it. It now only ever listens on this machine (127.0.0.1), with no change to how the app itself behaves.",
