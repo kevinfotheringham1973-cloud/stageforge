@@ -15,6 +15,7 @@
     "sharepoint:check": "tsx scripts/sharepoint-check.ts",
     "england:generate": "tsx scripts/generate-england-variant.ts",
     "sync:2026-09-10-compliance": "tsx scripts/sync-scotland-compliance-updates.ts",
+    "sync:2026-09-16-water-isolation-flushing": "tsx scripts/sync-2026-09-16-water-isolation-flushing.ts",
     "england:demo": "tsx scripts/seed-england-demo.ts",
     "test:desktop": "playwright test"
   },
