@@ -1,6 +1,6 @@
 {
   "name": "stageforge",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "description": "StageForge Phase 1 MVP scaffold — Stage-Gate Engine, Deliverable/Evidence, tiered bypass authority, Sponsor sign-off, audit trail, multi-tenancy.",
   "scripts": {
