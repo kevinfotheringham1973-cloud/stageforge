@@ -76,6 +76,15 @@ function runtimeEnv(databaseUrl, evidenceDir, authSecret, logDir) {
     // cookies Secure-only and Electron's Chromium silently refuses to
     // store them over plain http://localhost, breaking login.
     AUTH_URL: URL,
+    // Next's standalone server.js defaults HOSTNAME to '0.0.0.0' (every
+    // network interface) when unset — found live 16 Sep 2026: combined
+    // with STAGEFORGE_LOCAL_MODE's zero-credential auto-admin-login
+    // below, that meant anyone else on the same WiFi/LAN as this
+    // machine could browse straight to this port and get unauthenticated
+    // admin access to real project data. The Electron window only ever
+    // talks to its own machine regardless, so binding loopback-only has
+    // no functional downside.
+    HOSTNAME: "127.0.0.1",
     // See localAuthSecret.js — a fresh secret generated and persisted
     // per install, never Kevin's real one from the shared .env.
     AUTH_SECRET: authSecret,
@@ -231,7 +240,11 @@ function startServer(env) {
       env: { ...env, ELECTRON_RUN_AS_NODE: "1", PORT: String(PORT) },
     });
   } else {
-    serverProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT)], {
+    // -H, not the HOSTNAME env var -- next-start.js reads it from the
+    // CLI flag only (the standalone server.js above is the one that
+    // reads process.env.HOSTNAME); same 127.0.0.1-only intent as that
+    // branch's HOSTNAME override in runtimeEnv.
+    serverProcess = spawn(process.execPath, [NEXT_BIN, "start", "-p", String(PORT), "-H", "127.0.0.1"], {
       cwd: APP_DIR,
       stdio: ["ignore", logFd, logFd],
       env: { ...env, ELECTRON_RUN_AS_NODE: "1" },
