@@ -367,8 +367,27 @@ async function ensureWritablePgRuntime(pgSourceDir, pgRuntimeDir) {
 // (written by prepare-resources.js from the same lockfile-derived
 // closure CLI_ONLY_PACKAGES uses) is the "what to copy" list, so this
 // can't drift out of sync with what prepare-resources.js actually staged.
+// The staged copy includes prisma/migrations -- if this app version has
+// added new migrations since cliRuntimeDir was last staged (userData
+// persists across an upgrade the same way pgdata does), a stale copy
+// silently runs `prisma migrate deploy` against last version's migration
+// set, missing every column/table any newer migration added. Found live
+// 16 Sep 2026: an install staged on 11 Sep never re-staged through
+// 0.3.0/0.3.1/0.3.2, so its embedded database never got 13 Sep's
+// add_deliverable_staleness_ack migration -- every Deliverable-touching
+// page crashed with "column does not exist" until this stamp file was
+// added and the stale runtime deleted by hand. The stamp records the
+// app version the runtime was staged FROM, so any version change (not
+// just a missing folder) forces a re-stage.
+function cliRuntimeVersionStampPath(cliRuntimeDir) {
+  return path.join(cliRuntimeDir, "stageforge-cli-runtime-version.txt");
+}
+
 function cliRuntimeReady(cliRuntimeDir) {
-  return fs.existsSync(path.join(cliRuntimeDir, "node_modules", "prisma", "build", "index.js"));
+  if (!fs.existsSync(path.join(cliRuntimeDir, "node_modules", "prisma", "build", "index.js"))) return false;
+  const stampPath = cliRuntimeVersionStampPath(cliRuntimeDir);
+  if (!fs.existsSync(stampPath)) return false;
+  return fs.readFileSync(stampPath, "utf8").trim() === app.getVersion();
 }
 
 async function ensureWritableCliRuntime(cliSourceDir, cliRuntimeDir) {
@@ -384,6 +403,7 @@ async function ensureWritableCliRuntime(cliSourceDir, cliRuntimeDir) {
     fs.mkdirSync(path.dirname(destPath), { recursive: true });
     fs.cpSync(path.join(cliSourceDir, "node_modules", pkg), destPath, { recursive: true });
   }
+  fs.writeFileSync(cliRuntimeVersionStampPath(cliRuntimeDir), app.getVersion());
 }
 
 // Postgres itself refuses to run under an Administrator/elevated account

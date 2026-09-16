@@ -15,6 +15,13 @@ export type ReleaseNote = {
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
     date: "16 Sep 2026",
+    title: "Fixed the desktop app running outdated database migrations after an update",
+    highlights: [
+      "The desktop app keeps a local copy of its update/database tooling and only refreshed it on a brand-new install, never when updating an existing one — so an install upgraded in place could silently keep running an old version's database migrations forever, missing anything newer versions added. It now checks the installed version on every launch and refreshes that copy whenever it's changed, so updates always bring the database fully up to date.",
+    ],
+  },
+  {
+    date: "16 Sep 2026",
     title: "Water isolation and flushing now a real checklist item, not just after-the-fact records",
     highlights: [
       "Five templates that disturb potable water pipework — Domestic Hot & Cold Water Systems, Room or Ward Refresh, Mental Health Unit Ligature & Room Refresh, Theatre Refresh, and Water Treatment Plant Replacement — now ask for a Water Isolation Plan and a Flushing Plan (daily vs scheduled regime) up front, plus a point-of-use filter strategy and installation records where outlets need interim protection while the system settles after works. Previously this was only captured as records after the work was already done, or not asked for at all on the ward/theatre refresh templates.",
