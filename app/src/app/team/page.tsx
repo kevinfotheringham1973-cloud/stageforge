@@ -17,12 +17,18 @@ import { ROLE_CATEGORY_LABEL, ROLE_CATEGORY_ORDER, groupRolesByCategory } from "
 export default async function TeamPage() {
   const currentUser = await getCurrentUser();
   if (!currentUser?.isPlatformAdmin) forbidden();
-  // Desktop build only (28 Aug 2026) -- there's only one real person
-  // using it, so there's no team to assign names/roles to. See
-  // layout.tsx's admin-nav block for the same guard on the other admin
-  // pages, and session.ts's getCurrentUserId for why "view as" no
-  // longer offers a way around this either.
-  if (process.env.STAGEFORGE_LOCAL_MODE === "1") forbidden();
+  // Unlike the other admin pages (see layout.tsx's admin-nav block),
+  // /team stays reachable in the desktop build. Reversed 17 Sep 2026 --
+  // the original "there's only one real person using it, so there's no
+  // team to assign names/roles to" reasoning missed that a project can
+  // need a role (Principal Contractor, Authorising Engineer) with no
+  // seeded default candidate in disciplineTeam.ts's CANDIDATES maps,
+  // left deliberately for "a human reviewing the roster" to fill in --
+  // but the project dashboard's own "Still needs assignment" panel
+  // only ever offers one path to do that: this page's "Assign Roles"
+  // link. Blocking it here made that CTA a permanent dead end, found
+  // live when a desktop project actually hit a role with no
+  // auto-candidate.
 
   const [usersRaw, departments, companies, projects, roles] = await Promise.all([
     db.user.findMany({
