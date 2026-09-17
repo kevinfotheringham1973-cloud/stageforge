@@ -828,7 +828,7 @@ export async function GateDetail({
                       showing wide open next to it reads as unfinished work
                       rather than an optional extra action) — still one
                       click away, never removed. */}
-                  {roleKeys.includes("PM") && currentFile && openReviews.length === 0 && (
+                  {roleKeys.includes("PM") && currentFile && openReviews.length === 0 && gate.status !== "SIGNED_OFF" && (
                     <details className="mt-2 rounded-md border border-dashed border-rule">
                       <summary className="cursor-pointer select-none px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                         Request AI review of {currentFile.fileName}
@@ -944,7 +944,7 @@ export async function GateDetail({
                         ({r.agentSlug}): {r.resultSummary}
                       </div>
                     ))}
-                  {roleKeys.includes("PM") && generationSourceOptions.length > 0 && openGenerations.length === 0 && (
+                  {roleKeys.includes("PM") && generationSourceOptions.length > 0 && openGenerations.length === 0 && gate.status !== "SIGNED_OFF" && (
                     <details
                       className="mt-2 rounded-md border border-dashed border-rule"
                       open={!hasAcceptedEvidence}
