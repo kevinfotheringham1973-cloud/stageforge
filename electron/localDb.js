@@ -169,6 +169,25 @@ async function migrateAndSeed(appDir, databaseUrl, needsSeed, seedMarkerPath) {
     }
   }
   if (lastErr) throw lastErr;
+  // Content-sync scripts (scripts/sync-*.ts) apply seed.ts content
+  // additions — new deliverables, new templates — to a database that
+  // was already seeded before that content existed. Found live 16 Sep
+  // 2026: the water isolation/flushing/POU deliverables were synced by
+  // hand to the live tunnel DB but nobody remembered the desktop app
+  // has its own separate local database, so every existing desktop
+  // install stayed silently behind. Run unconditionally, every launch,
+  // not gated by needsSeed — each script only appends a key if it's
+  // missing (see their own headers), so re-running an already-applied
+  // one is a cheap no-op, and a brand-new install ends up in the exact
+  // same state as an old one just caught up.
+  const contentMigrationsDir = path.join(appDir, "scripts");
+  const contentMigrations = fs
+    .readdirSync(contentMigrationsDir)
+    .filter((f) => f.startsWith("sync-") && f.endsWith(".ts"))
+    .sort();
+  for (const file of contentMigrations) {
+    await runNode(appDir, "tsx/dist/cli.mjs", [path.join("scripts", file)], env);
+  }
   // needsSeed is main.js's own marker-file check, deliberately NOT the
   // same thing as "is the Postgres cluster new" -- see its comment for
   // why conflating the two used to leave real installs permanently
