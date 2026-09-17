@@ -823,33 +823,40 @@ export async function GateDetail({
                         )}
                       </div>
                     ))}
+                  {/* Collapsed by default (17 Sep 2026 feedback: once a
+                      deliverable already has accepted evidence, this form
+                      showing wide open next to it reads as unfinished work
+                      rather than an optional extra action) — still one
+                      click away, never removed. */}
                   {roleKeys.includes("PM") && currentFile && openReviews.length === 0 && (
-                    <form
-                      action={requestDocumentReview.bind(null, d.id, currentFile.id, projectNumber)}
-                      className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-dashed border-rule p-2"
-                    >
-                      <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                    <details className="mt-2 rounded-md border border-dashed border-rule">
+                      <summary className="cursor-pointer select-none px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                         Request AI review of {currentFile.fileName}
-                      </label>
-                      <select
-                        name="agentSlug"
-                        required
-                        defaultValue=""
-                        className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
+                      </summary>
+                      <form
+                        action={requestDocumentReview.bind(null, d.id, currentFile.id, projectNumber)}
+                        className="flex flex-wrap items-center gap-2 p-2 pt-0"
                       >
-                        <option value="" disabled>
-                          Choose an agent…
-                        </option>
-                        {REVIEWABLE_AGENT_SLUGS.map((slug) => (
-                          <option key={slug} value={slug}>
-                            {REVIEWABLE_AGENT_DESCRIPTIONS[slug]}
+                        <select
+                          name="agentSlug"
+                          required
+                          defaultValue=""
+                          className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
+                        >
+                          <option value="" disabled>
+                            Choose an agent…
                           </option>
-                        ))}
-                      </select>
-                      <SubmitButton pendingText="Requesting…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
-                        Request review
-                      </SubmitButton>
-                    </form>
+                          {REVIEWABLE_AGENT_SLUGS.map((slug) => (
+                            <option key={slug} value={slug}>
+                              {REVIEWABLE_AGENT_DESCRIPTIONS[slug]}
+                            </option>
+                          ))}
+                        </select>
+                        <SubmitButton pendingText="Requesting…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                          Request review
+                        </SubmitButton>
+                      </form>
+                    </details>
                   )}
                 </>
               );
@@ -905,6 +912,16 @@ export async function GateDetail({
               const evidenceSinceLastDraft = lastDraftAt
                 ? allProjectSubmittedEvidence.filter((f) => f.uploadedAt > lastDraftAt).length
                 : 0;
+              // 17 Sep 2026 feedback: once a deliverable already has real
+              // accepted evidence, the guidance paragraph below (written for
+              // "how do I decide what to draft this from") and the full
+              // generate form both just read as noise/unfinished-looking —
+              // collapse the form and drop the guidance text once there's
+              // something real to show instead of it.
+              const hasAcceptedEvidence = d.evidenceFiles.some((f) => f.kind === "SUBMITTED");
+              const generateSummaryLabel = evidenceSinceLastDraft > 0
+                ? `${completedGenerations.length > 0 ? "Regenerate" : "Generate"} AI draft for ${d.label} — ${evidenceSinceLastDraft} new evidence file(s) since last draft`
+                : `${completedGenerations.length > 0 ? "Regenerate" : "Generate"} AI draft for ${d.label}`;
               return (
                 <>
                   {openGenerations.map((r) => (
@@ -928,11 +945,18 @@ export async function GateDetail({
                       </div>
                     ))}
                   {roleKeys.includes("PM") && generationSourceOptions.length > 0 && openGenerations.length === 0 && (
-                    <form
-                      action={requestDocumentGeneration.bind(null, d.id, projectNumber)}
-                      className="mt-2 flex flex-wrap items-start gap-2 rounded-md border border-dashed border-rule p-2"
+                    <details
+                      className="mt-2 rounded-md border border-dashed border-rule"
+                      open={!hasAcceptedEvidence}
                     >
-                      {isBusinessCaseShapedDeliverable(d.key) && (
+                      <summary className="cursor-pointer select-none px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        {generateSummaryLabel}
+                      </summary>
+                      <form
+                        action={requestDocumentGeneration.bind(null, d.id, projectNumber)}
+                        className="flex flex-wrap items-start gap-2 p-2 pt-0"
+                      >
+                      {isBusinessCaseShapedDeliverable(d.key) && !hasAcceptedEvidence && (
                         <p className="w-full text-xs text-inkmuted">
                           If this need came from a failing inspection or a PPM/SFG20 gap, review that evidence first
                           (Inspection review, or SFG20 mapping review for a schedule gap) — a contractor quote is
@@ -943,14 +967,9 @@ export async function GateDetail({
                           works.
                         </p>
                       )}
-                      {evidenceSinceLastDraft > 0 && (
-                        <p className="w-full text-xs font-semibold text-accent">
-                          {evidenceSinceLastDraft} evidence file(s) added since this draft — worth regenerating.
-                        </p>
-                      )}
                       <div className="flex flex-col gap-1">
                         <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                          Generate draft with AI for {d.label}
+                          Agent
                         </label>
                         {(() => {
                           const defaultAgent = defaultGenerationAgentForDeliverable(d.key);
@@ -1015,7 +1034,8 @@ export async function GateDetail({
                       <SubmitButton pendingText="Requesting…" className="mt-4 rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
                         {completedGenerations.length > 0 ? "Regenerate draft" : "Generate draft"}
                       </SubmitButton>
-                    </form>
+                      </form>
+                    </details>
                   )}
                 </>
               );
