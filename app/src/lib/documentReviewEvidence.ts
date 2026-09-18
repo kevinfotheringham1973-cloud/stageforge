@@ -47,6 +47,57 @@ export const REVIEWABLE_AGENT_DESCRIPTIONS: Record<(typeof REVIEWABLE_AGENT_SLUG
 };
 
 /**
+ * Same deterministic key-matching idiom as defaultGenerationAgentForDeliverable
+ * (documentGenerationEvidence.ts) -- found live 18 Sep 2026, same audit that
+ * flagged the generation dropdown: every deliverable with real evidence showed
+ * all 5 review agents unconditionally, most of which could never match what
+ * was actually uploaded there (an inspection review reviewing a competitive
+ * quote makes no sense). A PM already knows what kind of file they uploaded,
+ * so this is lower-stakes than the generation case was, but the fix is the
+ * same -- let the deliverable's own key resolve it deterministically where
+ * it genuinely can, rather than always asking.
+ */
+export function isRamsShapedDeliverable(key: string): boolean {
+  return key.includes("method_statement");
+}
+
+export function isSowReviewShapedDeliverable(key: string): boolean {
+  return (
+    key.includes("procurement_package") ||
+    key.includes("tender_documentation") ||
+    key.includes("detailed_scope_of_works") ||
+    key.includes("quotations_submission_and_ppm")
+  );
+}
+
+export function isConditionSurveyShapedDeliverable(key: string): boolean {
+  return key.includes("condition_survey");
+}
+
+export function isCdmReviewShapedDeliverable(key: string): boolean {
+  return key.endsWith("_pre_construction_information") || key.endsWith("_construction_phase_plan");
+}
+
+// Only 3 templates (drainage, cold-water-storage, lighting) carry a
+// dedicated "Updated PPM schedules" deliverable this agent could review
+// against SFG20 -- confirmed by grep across the whole library, not an
+// oversight. Every other discipline's PPM position lives folded into
+// del.common_quotations_submission_and_ppm, which is SOW-review-shaped
+// (a quote/PPM submission bundle), not this agent's real subject.
+export function isSfg20MappingShapedDeliverable(key: string): boolean {
+  return key.includes("ppm_schedule");
+}
+
+export function defaultReviewAgentForDeliverable(key: string): (typeof REVIEWABLE_AGENT_SLUGS)[number] | undefined {
+  if (isConditionSurveyShapedDeliverable(key)) return "nhs-scotland-inspection-review";
+  if (isCdmReviewShapedDeliverable(key)) return "nhs-scotland-cdm-review";
+  if (isRamsShapedDeliverable(key)) return "nhs-scotland-rams-review";
+  if (isSfg20MappingShapedDeliverable(key)) return "nhs-scotland-sfg20-mapping-review";
+  if (isSowReviewShapedDeliverable(key)) return "nhs-scotland-sow-review";
+  return undefined;
+}
+
+/**
  * Downloads a SUBMITTED EvidenceFile's real bytes for the AI Council to
  * review. Returns null (never throws for this specific case) when the
  * record is the inert dev-upload stub — there is genuinely no real file

@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { getCurrentUser, getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { evidenceFolderPath } from "@/lib/sharepoint";
-import { REVIEWABLE_AGENT_SLUGS, REVIEWABLE_AGENT_DESCRIPTIONS } from "@/lib/documentReviewEvidence";
+import { REVIEWABLE_AGENT_DESCRIPTIONS, defaultReviewAgentForDeliverable } from "@/lib/documentReviewEvidence";
 import {
   GENERATABLE_AGENT_DESCRIPTIONS,
   defaultGenerationAgentForDeliverable,
@@ -896,37 +896,40 @@ export async function GateDetail({
                       deliverable already has accepted evidence, this form
                       showing wide open next to it reads as unfinished work
                       rather than an optional extra action) — still one
-                      click away, never removed. */}
-                  {roleKeys.includes("PM") && currentFile && openReviews.length === 0 && gate.status !== "SIGNED_OFF" && (
-                    <details className="mt-2 rounded-md border border-dashed border-rule">
-                      <summary className="cursor-pointer select-none px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                        Request AI review of {currentFile.fileName}
-                      </summary>
-                      <form
-                        action={requestDocumentReview.bind(null, d.id, currentFile.id, projectNumber)}
-                        className="flex flex-wrap items-center gap-2 p-2 pt-0"
-                      >
-                        <select
-                          name="agentSlug"
-                          required
-                          defaultValue=""
-                          className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
-                        >
-                          <option value="" disabled>
-                            Choose an agent…
-                          </option>
-                          {REVIEWABLE_AGENT_SLUGS.map((slug) => (
-                            <option key={slug} value={slug}>
-                              {REVIEWABLE_AGENT_DESCRIPTIONS[slug]}
-                            </option>
-                          ))}
-                        </select>
-                        <SubmitButton pendingText="Requesting…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
-                          Request review
-                        </SubmitButton>
-                      </form>
-                    </details>
-                  )}
+                      click away, never removed. 18 Sep 2026: also only
+                      shown when the deliverable's own key resolves a real
+                      review agent (defaultReviewAgentForDeliverable) — no
+                      dropdown of all 5 agents when nothing here plausibly
+                      matches what was actually uploaded, same fix already
+                      applied to the generate side. */}
+                  {(() => {
+                    const defaultReviewAgent = currentFile ? defaultReviewAgentForDeliverable(d.key) : undefined;
+                    return (
+                      roleKeys.includes("PM") &&
+                      currentFile &&
+                      defaultReviewAgent &&
+                      openReviews.length === 0 &&
+                      gate.status !== "SIGNED_OFF" && (
+                        <details className="mt-2 rounded-md border border-dashed border-rule">
+                          <summary className="cursor-pointer select-none px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                            Request AI review of {currentFile.fileName}
+                          </summary>
+                          <form
+                            action={requestDocumentReview.bind(null, d.id, currentFile.id, projectNumber)}
+                            className="flex flex-wrap items-center gap-2 p-2 pt-0"
+                          >
+                            <input type="hidden" name="agentSlug" value={defaultReviewAgent} />
+                            <div className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs text-inkmuted">
+                              {REVIEWABLE_AGENT_DESCRIPTIONS[defaultReviewAgent]}
+                            </div>
+                            <SubmitButton pendingText="Requesting…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                              Request review
+                            </SubmitButton>
+                          </form>
+                        </details>
+                      )
+                    );
+                  })()}
                 </>
               );
             })()}
