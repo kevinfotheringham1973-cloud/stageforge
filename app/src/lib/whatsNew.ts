@@ -15,6 +15,15 @@ export type ReleaseNote = {
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
     date: "18 Sep 2026",
+    title: "CDM appointment forms, a real SBAR template, and a new Programme of Works requirement at Gate 4",
+    highlights: [
+      "Both CDM 2015 appointment forms — Principal Designer and Principal Contractor — can now be generated as a ready-to-sign draft directly from the compliance checklist, filled in from the project's own real team and FM Contractor, never a hardcoded company name. It's always blank where it has to be: the actual sign-off only ever comes from a real person actually signing it.",
+      "The Water Safety Group SBAR submission at Gate 4 can now also be generated as a blank template (alongside its AI-drafted option), built from the real structure of two independent past SBAR submissions to the same governance body — one water, one ventilation — so it asks for the same things a real submission needs, not a generic form.",
+      "Added \"Programme of Works\" as a standard Gate 4 requirement across every project type, timed to land alongside the SBAR/safety-group submission and ahead of the Pre-Contract Hold Point — the same moment a contractor's programme genuinely needs to be on record before appointment can proceed.",
+    ],
+  },
+  {
+    date: "18 Sep 2026",
     title: "Moving a gate's dates once a plan is set now needs Sponsor approval, and AI can draft a real Risk Register",
     highlights: [
       "Closed a real gap: once a gate's target dates were first set, a Project Manager could quietly change them at any time with no record of the original date and no one else involved — so a slipping deadline could just disappear instead of ever showing up as late. Now, any change after that first baseline is a \"gate move\": the PM proposes new dates with a written reason, and only the Sponsor can approve or reject it, also with a written reason. The date only actually changes once the Sponsor approves it, and the full history — old dates, new dates, both reasons, who decided — stays on record.",
