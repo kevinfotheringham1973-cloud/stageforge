@@ -14,6 +14,15 @@ export type ReleaseNote = {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    date: "18 Sep 2026",
+    title: "Moving a gate's dates once a plan is set now needs Sponsor approval, and AI can draft a real Risk Register",
+    highlights: [
+      "Closed a real gap: once a gate's target dates were first set, a Project Manager could quietly change them at any time with no record of the original date and no one else involved — so a slipping deadline could just disappear instead of ever showing up as late. Now, any change after that first baseline is a \"gate move\": the PM proposes new dates with a written reason, and only the Sponsor can approve or reject it, also with a written reason. The date only actually changes once the Sponsor approves it, and the full history — old dates, new dates, both reasons, who decided — stays on record.",
+      "AI can now draft a project's Expanded Risk Register from the real evidence already gathered for it (the business case, condition survey, and any AI review on file), instead of only offering a generic construction-hazard template. It also assigns each risk to the person actually holding the relevant role on the project's own team list — and says plainly when a role needed for a risk hasn't been filled yet, rather than guessing a name. Risk scoring and status are always left for a person to complete.",
+      "Tidied up how AI drafts and reviews appear on a gate: once a deliverable already has a real, accepted document, the controls for generating another draft or requesting a review now tuck away behind a single line instead of sitting permanently open next to it — and a failed AI attempt no longer keeps showing once real evidence exists for that item.",
+    ],
+  },
+  {
     date: "16 Sep 2026",
     title: "Patched a critical security vulnerability in the underlying framework",
     highlights: [
