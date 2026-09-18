@@ -169,25 +169,6 @@ async function migrateAndSeed(appDir, databaseUrl, needsSeed, seedMarkerPath) {
     }
   }
   if (lastErr) throw lastErr;
-  // Content-sync scripts (scripts/sync-*.ts) apply seed.ts content
-  // additions — new deliverables, new templates — to a database that
-  // was already seeded before that content existed. Found live 16 Sep
-  // 2026: the water isolation/flushing/POU deliverables were synced by
-  // hand to the live tunnel DB but nobody remembered the desktop app
-  // has its own separate local database, so every existing desktop
-  // install stayed silently behind. Run unconditionally, every launch,
-  // not gated by needsSeed — each script only appends a key if it's
-  // missing (see their own headers), so re-running an already-applied
-  // one is a cheap no-op, and a brand-new install ends up in the exact
-  // same state as an old one just caught up.
-  const contentMigrationsDir = path.join(appDir, "scripts");
-  const contentMigrations = fs
-    .readdirSync(contentMigrationsDir)
-    .filter((f) => f.startsWith("sync-") && f.endsWith(".ts"))
-    .sort();
-  for (const file of contentMigrations) {
-    await runNode(appDir, "tsx/dist/cli.mjs", [path.join("scripts", file)], env);
-  }
   // needsSeed is main.js's own marker-file check, deliberately NOT the
   // same thing as "is the Postgres cluster new" -- see its comment for
   // why conflating the two used to leave real installs permanently
@@ -196,6 +177,19 @@ async function migrateAndSeed(appDir, databaseUrl, needsSeed, seedMarkerPath) {
   // interrupted attempt here always leaves the database exactly as
   // empty as it found it -- safe to unconditionally retry whenever
   // needsSeed is true, never a partial-data conflict.
+  //
+  // Must run BEFORE the content-sync scripts below, not after. Found
+  // live, 18 Sep 2026, testing a genuinely first-ever launch (every
+  // earlier "fresh install" test had actually reused an already-seeded
+  // userData dir): scripts/sync-scotland-compliance-updates.ts (and any
+  // other sync-*.ts written the same way) does findFirstOrThrow /
+  // findUniqueOrThrow lookups against baseline rows -- e.g. the
+  // "health" SectorVariant, the "compliance.health.scotland_core"
+  // ComplianceRuleSet -- that only seed.ts creates. Run in the old
+  // order (content-sync before seed), a real first launch hit that
+  // throw immediately and never got past migrateAndSeed at all, so the
+  // app never started. Seeding first means a brand-new install already
+  // has every one of those baseline rows before any sync script runs.
   if (needsSeed) {
     await runNode(appDir, "tsx/dist/cli.mjs", ["prisma/seed.ts"], env);
     // Desktop-build-only, see that script's header — replaces seed.ts's
@@ -207,6 +201,26 @@ async function migrateAndSeed(appDir, databaseUrl, needsSeed, seedMarkerPath) {
     // launch to mean "don't seed again", so it must never be written
     // any earlier than this.
     fs.writeFileSync(seedMarkerPath, new Date().toISOString());
+  }
+  // Content-sync scripts (scripts/sync-*.ts) apply seed.ts content
+  // additions — new deliverables, new templates — to a database that
+  // was already seeded before that content existed. Found live 16 Sep
+  // 2026: the water isolation/flushing/POU deliverables were synced by
+  // hand to the live tunnel DB but nobody remembered the desktop app
+  // has its own separate local database, so every existing desktop
+  // install stayed silently behind. Run unconditionally, every launch,
+  // not gated by needsSeed — each script only appends a key if it's
+  // missing (see their own headers), so re-running an already-applied
+  // one is a cheap no-op, and (now that seeding above always runs
+  // first on a brand-new install) a fresh install ends up in the exact
+  // same state as an old one just caught up.
+  const contentMigrationsDir = path.join(appDir, "scripts");
+  const contentMigrations = fs
+    .readdirSync(contentMigrationsDir)
+    .filter((f) => f.startsWith("sync-") && f.endsWith(".ts"))
+    .sort();
+  for (const file of contentMigrations) {
+    await runNode(appDir, "tsx/dist/cli.mjs", [path.join("scripts", file)], env);
   }
 }
 
