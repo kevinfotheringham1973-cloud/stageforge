@@ -187,11 +187,13 @@ export default async function RootLayout({
   // would be a named specialist's call in real use.
   const isLocalMode = process.env.STAGEFORGE_LOCAL_MODE === "1";
 
-  // Desktop build: the whole admin surface stays hidden, not just
-  // /team -- see each page's own STAGEFORGE_LOCAL_MODE forbidden()
-  // guard. This build is scoped to a PM creating a project from the
-  // template library and working through its gates/deliverables,
-  // nothing administrative.
+  // Desktop build: most of the admin surface stays hidden -- see each
+  // page's own STAGEFORGE_LOCAL_MODE forbidden() guard. /team is the
+  // one exception (17 Sep 2026, see its own page.tsx comment) -- a
+  // project's "Still needs assignment" panel can only ever be resolved
+  // there, so it has to stay reachable even though this build is
+  // otherwise scoped to a PM creating a project and working through its
+  // gates/deliverables, nothing administrative.
   const adminLinks =
     currentUser?.isPlatformAdmin && !isLocalMode
       ? [
@@ -202,7 +204,9 @@ export default async function RootLayout({
           { href: "/about", label: "About" },
           { href: "/share-links", label: "Share links" },
         ]
-      : [];
+      : currentUser?.isPlatformAdmin && isLocalMode
+        ? [{ href: "/team", label: "Team" }]
+        : [];
   const demoViewerLinks = isDemoViewer
     ? [
         { href: "/compliance-rules", label: "Compliance rules" },

@@ -170,6 +170,18 @@ fs.cpSync(
   path.join(nextappSrc, "scripts", "anonymize-local-demo-names.ts"),
   path.join(nextappDest, "scripts", "anonymize-local-demo-names.ts")
 );
+// localDb.js's migrateAndSeed runs every scripts/sync-*.ts it finds on
+// every launch (see its own comment) -- those files have to actually be
+// staged here for that to do anything. run-content-syncs.ts (filename
+// doesn't match "sync-*") is the dev/live-deploy convenience wrapper
+// around the same scripts -- localDb.js doesn't shell out to it (see its
+// own header comment), so it's not needed here.
+fs.mkdirSync(path.join(nextappDest, "scripts"), { recursive: true });
+for (const file of fs.readdirSync(path.join(nextappSrc, "scripts"))) {
+  if (file.startsWith("sync-") && file.endsWith(".ts")) {
+    fs.cpSync(path.join(nextappSrc, "scripts", file), path.join(nextappDest, "scripts", file));
+  }
+}
 // tsx transpiles prisma/seed.ts and anonymize-local-demo-names.ts directly
 // from source at runtime (not from the compiled .next output) -- they and
 // their own imports (src/lib/compliance, src/lib/instantiation,

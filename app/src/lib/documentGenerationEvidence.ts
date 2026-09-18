@@ -30,6 +30,7 @@ export const GENERATABLE_AGENT_SLUGS = [
   "nhs-scotland-project-brief-generator",
   "nhs-scotland-execution-plan-generator",
   "nhs-scotland-wsg-sbar-generator",
+  "nhs-scotland-risk-register-generator",
 ] as const;
 
 // See REVIEWABLE_AGENT_DESCRIPTIONS (documentReviewEvidence.ts) for why
@@ -42,6 +43,7 @@ export const GENERATABLE_AGENT_DESCRIPTIONS: Record<(typeof GENERATABLE_AGENT_SL
   "nhs-scotland-project-brief-generator": "Draft the Gate 1 Project Brief from the accepted Gate 0 case and any condition survey on file",
   "nhs-scotland-execution-plan-generator": "Draft the Project Execution Plan & procurement strategy from the accepted Gate 0 case",
   "nhs-scotland-wsg-sbar-generator": "Draft the formal SBAR submission to the Water Safety Group from the case and condition/risk evidence on file",
+  "nhs-scotland-risk-register-generator": "Draft the Expanded Risk Register from the accepted Gate 0 case, condition evidence, and the project's real Team & Scope roster",
 };
 
 /**
@@ -104,12 +106,24 @@ export function isWsgSbarShapedDeliverable(key: string): boolean {
   return key.includes("sbar_submission_to_wsg");
 }
 
+// Every template's own risk-register deliverable key ends
+// "_expanded_risk_register" (see riskRegisterDraft.ts's own header comment
+// -- it never got canonicalized to a shared key because the standard risk
+// *categories* genuinely differ by discipline). 17 Sep 2026: added
+// alongside nhs-scotland-risk-register-generator so this deliverable stops
+// defaulting to the bare "Choose an agent..." dropdown, same reasoning as
+// every other positive matcher above.
+export function isRiskRegisterShapedDeliverable(key: string): boolean {
+  return key.endsWith("expanded_risk_register");
+}
+
 export function defaultGenerationAgentForDeliverable(key: string): (typeof GENERATABLE_AGENT_SLUGS)[number] | undefined {
   if (isBusinessCaseShapedDeliverable(key)) return "nhs-scotland-business-case-generator";
   if (isProcurementShapedDeliverable(key)) return "nhs-scotland-sow-generator";
   if (isProjectBriefShapedDeliverable(key)) return "nhs-scotland-project-brief-generator";
   if (isExecutionPlanShapedDeliverable(key)) return "nhs-scotland-execution-plan-generator";
   if (isWsgSbarShapedDeliverable(key)) return "nhs-scotland-wsg-sbar-generator";
+  if (isRiskRegisterShapedDeliverable(key)) return "nhs-scotland-risk-register-generator";
   return undefined;
 }
 

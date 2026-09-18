@@ -1,9 +1,8 @@
 import { db } from "@/lib/db";
 import { getCurrentUser, getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysForProject } from "@/lib/session";
 import { evidenceFolderPath } from "@/lib/sharepoint";
-import { REVIEWABLE_AGENT_SLUGS, REVIEWABLE_AGENT_DESCRIPTIONS } from "@/lib/documentReviewEvidence";
+import { REVIEWABLE_AGENT_DESCRIPTIONS, defaultReviewAgentForDeliverable } from "@/lib/documentReviewEvidence";
 import {
-  GENERATABLE_AGENT_SLUGS,
   GENERATABLE_AGENT_DESCRIPTIONS,
   defaultGenerationAgentForDeliverable,
   isBusinessCaseShapedDeliverable,
@@ -47,6 +46,9 @@ import {
   requestEmailApproval,
   reviseSpend,
   setGateTimeline,
+  requestGateMove,
+  decideGateMove,
+  recordLateCompletionNote,
   submitForApproval,
   undoDeliverableBypass,
   uploadSpendInvoice,
@@ -93,6 +95,26 @@ const GATE_PM_FOCUS: Record<string, string> = {
 // hand-maintained list kept in sync with seed.ts.
 function isPciDeliverable(key: string): boolean {
   return key.endsWith("_pre_construction_information");
+}
+
+// A failureReason is either a reasoned decline a drafting/reviewing agent
+// wrote for itself (e.g. "no real Gate 0 case exists yet") -- genuinely
+// useful to a PM as-is -- or a raw system/process error (a CLI crash dump,
+// a JSON API error body) that leaked into the same field. Found live 17
+// Sep 2026: a separate automated poller process racing this session's own
+// manual agent runs left one of the latter verbatim in the UI, the same
+// "raw internals shown to a non-technical PM" problem already fixed once
+// for the tag-suggestion feature (provisioning.ts). Distinguish by shape,
+// not by owning a list of every possible system error string.
+function isRawSystemFailure(reason: string): boolean {
+  return /CLI exited|Command failed:|^\s*\{"type":"error"|stack trace|ENOENT|EACCES/i.test(reason);
+}
+
+function friendlyFailureReason(reason: string): { headline: string; detail: string | null } {
+  if (isRawSystemFailure(reason)) {
+    return { headline: "Something went wrong running this automatically — try again.", detail: reason };
+  }
+  return { headline: reason, detail: null };
 }
 
 function toDateInputValue(d: Date | null): string {
@@ -226,6 +248,11 @@ export async function GateDetail({
         orderBy: { createdAt: "desc" },
         include: { signedOffBy: true, emailApproval: { include: { contact: true } } },
       },
+      moveRequests: {
+        orderBy: { requestedAt: "desc" },
+        include: { requestedBy: true, decidedBy: true },
+      },
+      lateCompletionNoteBy: true,
       emailApprovals: { orderBy: { requestedAt: "desc" }, include: { contact: true, requestedBy: true } },
       auditEntries: { orderBy: { createdAt: "desc" }, include: { actor: true } },
       lessonsLearned: { orderBy: { createdAt: "desc" }, include: { recordedBy: true } },
@@ -686,6 +713,31 @@ export async function GateDetail({
           </a>
         )}
 
+        {d.key.endsWith("sbar_submission_to_wsg") && canReplaceEvidence && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            <a
+              href={`/api/projects/${projectNumber}/sbar-draft?doc=sbar`}
+              className="flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
+            >
+              <span aria-hidden="true">⬇</span>
+              <span>
+                Generate blank SBAR template (.docx)
+                <span className="block text-xs font-normal">Structural prompts only — complete from real evidence before submission</span>
+              </span>
+            </a>
+            <a
+              href={`/api/projects/${projectNumber}/sbar-draft?doc=supporting-detail`}
+              className="flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
+            >
+              <span aria-hidden="true">⬇</span>
+              <span>
+                Generate Supporting Detail template (.docx)
+                <span className="block text-xs font-normal">Companion document — delete any section that doesn&rsquo;t apply</span>
+              </span>
+            </a>
+          </div>
+        )}
+
         {d.status === "EVIDENCED" && (
           <div className="flex flex-col gap-1">
             {(() => {
@@ -768,11 +820,28 @@ export async function GateDetail({
                       AI review requested ({r.agentSlug}) &middot; {r.status === "IN_PROGRESS" ? "in progress" : "queued"}
                     </div>
                   ))}
-                  {failedReviews.map((r) => (
-                    <div key={r.id} className="mt-1 font-mono text-xs text-red-700">
-                      AI review failed ({r.agentSlug}): {r.failureReason ?? "unknown reason"}
-                    </div>
-                  ))}
+                  {/* Once real evidence exists, a stale failed attempt from
+                      before that evidence was accepted is no longer
+                      actionable -- same "done means done" reasoning as
+                      hiding the generate/review forms below. Found live 18
+                      Sep 2026: a deliverable with accepted evidence was
+                      still showing a failure from a full day earlier. */}
+                  {!currentFile && failedReviews.map((r) => {
+                    const { headline, detail } = friendlyFailureReason(r.failureReason ?? "unknown reason");
+                    return (
+                      <div key={r.id} className="mt-1 text-xs text-red-700">
+                        <span className="font-mono">AI review failed ({r.agentSlug}):</span> {headline}
+                        {detail && (
+                          <details className="mt-1">
+                            <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                              Technical detail
+                            </summary>
+                            <div className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-inkmuted">{detail}</div>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
                   {/* The actual narrative (findings, risk table, open issues)
                       was never shown anywhere -- a PM had to open the
                       generated file itself to read it. Found live 13 Sep
@@ -823,34 +892,44 @@ export async function GateDetail({
                         )}
                       </div>
                     ))}
-                  {roleKeys.includes("PM") && currentFile && openReviews.length === 0 && (
-                    <form
-                      action={requestDocumentReview.bind(null, d.id, currentFile.id, projectNumber)}
-                      className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-dashed border-rule p-2"
-                    >
-                      <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                        Request AI review of {currentFile.fileName}
-                      </label>
-                      <select
-                        name="agentSlug"
-                        required
-                        defaultValue=""
-                        className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
-                      >
-                        <option value="" disabled>
-                          Choose an agent…
-                        </option>
-                        {REVIEWABLE_AGENT_SLUGS.map((slug) => (
-                          <option key={slug} value={slug}>
-                            {REVIEWABLE_AGENT_DESCRIPTIONS[slug]}
-                          </option>
-                        ))}
-                      </select>
-                      <SubmitButton pendingText="Requesting…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
-                        Request review
-                      </SubmitButton>
-                    </form>
-                  )}
+                  {/* Collapsed by default (17 Sep 2026 feedback: once a
+                      deliverable already has accepted evidence, this form
+                      showing wide open next to it reads as unfinished work
+                      rather than an optional extra action) — still one
+                      click away, never removed. 18 Sep 2026: also only
+                      shown when the deliverable's own key resolves a real
+                      review agent (defaultReviewAgentForDeliverable) — no
+                      dropdown of all 5 agents when nothing here plausibly
+                      matches what was actually uploaded, same fix already
+                      applied to the generate side. */}
+                  {(() => {
+                    const defaultReviewAgent = currentFile ? defaultReviewAgentForDeliverable(d.key) : undefined;
+                    return (
+                      roleKeys.includes("PM") &&
+                      currentFile &&
+                      defaultReviewAgent &&
+                      openReviews.length === 0 &&
+                      gate.status !== "SIGNED_OFF" && (
+                        <details className="mt-2 rounded-md border border-dashed border-rule">
+                          <summary className="cursor-pointer select-none px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                            Request AI review of {currentFile.fileName}
+                          </summary>
+                          <form
+                            action={requestDocumentReview.bind(null, d.id, currentFile.id, projectNumber)}
+                            className="flex flex-wrap items-center gap-2 p-2 pt-0"
+                          >
+                            <input type="hidden" name="agentSlug" value={defaultReviewAgent} />
+                            <div className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs text-inkmuted">
+                              {REVIEWABLE_AGENT_DESCRIPTIONS[defaultReviewAgent]}
+                            </div>
+                            <SubmitButton pendingText="Requesting…" className="rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
+                              Request review
+                            </SubmitButton>
+                          </form>
+                        </details>
+                      )
+                    );
+                  })()}
                 </>
               );
             })()}
@@ -905,6 +984,27 @@ export async function GateDetail({
               const evidenceSinceLastDraft = lastDraftAt
                 ? allProjectSubmittedEvidence.filter((f) => f.uploadedAt > lastDraftAt).length
                 : 0;
+              // 17 Sep 2026 feedback: once a deliverable already has real
+              // accepted evidence, the guidance paragraph below (written for
+              // "how do I decide what to draft this from") and the full
+              // generate form both just read as noise/unfinished-looking —
+              // collapse the form and drop the guidance text once there's
+              // something real to show instead of it.
+              const hasAcceptedEvidence = d.evidenceFiles.some((f) => f.kind === "SUBMITTED");
+              // 18 Sep 2026 feedback: a PM has no way to judge which of 7
+              // narrowly-scoped agents (if any) actually fits a deliverable
+              // the key-matching below can't classify -- confirmed live,
+              // auditing the whole library, that 76% of all deliverables fell
+              // through to that raw dropdown, most with zero agents that
+              // could plausibly help. The system already knows, deterministically,
+              // whether a real match exists (defaultGenerationAgentForDeliverable) --
+              // so this whole AI section now only ever appears when it does.
+              // No dropdown, no menu of mostly-wrong options: either the
+              // system found a real fit, or nothing shows at all.
+              const defaultAgent = defaultGenerationAgentForDeliverable(d.key);
+              const generateSummaryLabel = evidenceSinceLastDraft > 0
+                ? `${completedGenerations.length > 0 ? "Regenerate" : "Generate"} AI draft for ${d.label} — ${evidenceSinceLastDraft} new evidence file(s) since last draft`
+                : `${completedGenerations.length > 0 ? "Regenerate" : "Generate"} AI draft for ${d.label}`;
               return (
                 <>
                   {openGenerations.map((r) => (
@@ -912,11 +1012,26 @@ export async function GateDetail({
                       AI draft requested ({r.agentSlug}) &middot; {r.status === "IN_PROGRESS" ? "in progress" : "queued"}
                     </div>
                   ))}
-                  {failedGenerations.map((r) => (
-                    <div key={r.id} className="mt-1 font-mono text-xs text-red-700">
-                      AI draft failed ({r.agentSlug}): {r.failureReason ?? "unknown reason"}
-                    </div>
-                  ))}
+                  {/* Once real evidence exists, a stale failed attempt from
+                      before that evidence was accepted is no longer
+                      actionable -- same "done means done" reasoning as
+                      hiding the generate/review forms below. */}
+                  {!hasAcceptedEvidence && failedGenerations.map((r) => {
+                    const { headline, detail } = friendlyFailureReason(r.failureReason ?? "unknown reason");
+                    return (
+                      <div key={r.id} className="mt-1 text-xs text-red-700">
+                        <span className="font-mono">AI draft failed ({r.agentSlug}):</span> {headline}
+                        {detail && (
+                          <details className="mt-1">
+                            <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                              Technical detail
+                            </summary>
+                            <div className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-inkmuted">{detail}</div>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
                   {d.documentGenerationRequests
                     .filter((r) => r.status === "COMPLETE" && r.resultSummary)
                     .map((r) => (
@@ -927,12 +1042,19 @@ export async function GateDetail({
                         ({r.agentSlug}): {r.resultSummary}
                       </div>
                     ))}
-                  {roleKeys.includes("PM") && generationSourceOptions.length > 0 && openGenerations.length === 0 && (
-                    <form
-                      action={requestDocumentGeneration.bind(null, d.id, projectNumber)}
-                      className="mt-2 flex flex-wrap items-start gap-2 rounded-md border border-dashed border-rule p-2"
+                  {roleKeys.includes("PM") && defaultAgent && generationSourceOptions.length > 0 && openGenerations.length === 0 && gate.status !== "SIGNED_OFF" && (
+                    <details
+                      className="mt-2 rounded-md border border-dashed border-rule"
+                      open={!hasAcceptedEvidence}
                     >
-                      {isBusinessCaseShapedDeliverable(d.key) && (
+                      <summary className="cursor-pointer select-none px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        {generateSummaryLabel}
+                      </summary>
+                      <form
+                        action={requestDocumentGeneration.bind(null, d.id, projectNumber)}
+                        className="flex flex-wrap items-start gap-2 p-2 pt-0"
+                      >
+                      {isBusinessCaseShapedDeliverable(d.key) && !hasAcceptedEvidence && (
                         <p className="w-full text-xs text-inkmuted">
                           If this need came from a failing inspection or a PPM/SFG20 gap, review that evidence first
                           (Inspection review, or SFG20 mapping review for a schedule gap) — a contractor quote is
@@ -943,56 +1065,19 @@ export async function GateDetail({
                           works.
                         </p>
                       )}
-                      {evidenceSinceLastDraft > 0 && (
-                        <p className="w-full text-xs font-semibold text-accent">
-                          {evidenceSinceLastDraft} evidence file(s) added since this draft — worth regenerating.
-                        </p>
-                      )}
                       <div className="flex flex-col gap-1">
                         <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                          Generate draft with AI for {d.label}
+                          Agent
                         </label>
-                        {(() => {
-                          const defaultAgent = defaultGenerationAgentForDeliverable(d.key);
-                          // No real choice to make once the deliverable's own
-                          // key resolves an unambiguous agent -- showing all
-                          // three anyway just adds noise (found live 13 Sep
-                          // 2026: CCN-preparation doesn't apply until Gate 4,
-                          // sow-generator is Gate 1+ material, neither is ever
-                          // right for a Gate 0 business-case-shaped item, so a
-                          // PM staring at three options was choosing between
-                          // one real answer and two permanently-wrong ones).
-                          // Still a fixed, deterministic rule, not a smarter
-                          // picker -- the dropdown remains, unchanged, for any
-                          // deliverable this key-matching can't yet classify.
-                          if (defaultAgent) {
-                            return (
-                              <>
-                                <input type="hidden" name="agentSlug" value={defaultAgent} />
-                                <div className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs text-inkmuted">
-                                  {GENERATABLE_AGENT_DESCRIPTIONS[defaultAgent]}
-                                </div>
-                              </>
-                            );
-                          }
-                          return (
-                            <select
-                              name="agentSlug"
-                              required
-                              defaultValue=""
-                              className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
-                            >
-                              <option value="" disabled>
-                                Choose an agent…
-                              </option>
-                              {GENERATABLE_AGENT_SLUGS.map((slug) => (
-                                <option key={slug} value={slug}>
-                                  {GENERATABLE_AGENT_DESCRIPTIONS[slug]}
-                                </option>
-                              ))}
-                            </select>
-                          );
-                        })()}
+                        {/* defaultAgent is guaranteed non-null here -- the
+                            outer condition above already requires it, so
+                            there is never a real choice to make: no dropdown,
+                            just the one real agent the system already
+                            resolved deterministically. */}
+                        <input type="hidden" name="agentSlug" value={defaultAgent} />
+                        <div className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs text-inkmuted">
+                          {GENERATABLE_AGENT_DESCRIPTIONS[defaultAgent]}
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1">
                         <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
@@ -1015,7 +1100,8 @@ export async function GateDetail({
                       <SubmitButton pendingText="Requesting…" className="mt-4 rounded-md border border-rule px-2.5 py-1 text-xs font-semibold text-accent">
                         {completedGenerations.length > 0 ? "Regenerate draft" : "Generate draft"}
                       </SubmitButton>
-                    </form>
+                      </form>
+                    </details>
                   )}
                 </>
               );
@@ -1186,45 +1272,213 @@ export async function GateDetail({
           </div>
         </div>
 
-        {canSetTimeline && (
-          <form
-            action={setGateTimeline.bind(null, gateId, projectNumber)}
-            className="mt-4 flex flex-wrap items-end gap-2 border-t border-rule pt-4"
-          >
-            <div>
-              <label htmlFor="target-start-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                Target start
-              </label>
-              <input
-                id="target-start-date"
-                type="date"
-                name="targetStartDate"
-                defaultValue={toDateInputValue(gate.targetStartDate)}
-                className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="target-end-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                Target end
-              </label>
-              <input
-                id="target-end-date"
-                type="date"
-                name="targetEndDate"
-                defaultValue={toDateInputValue(gate.targetEndDate)}
-                className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
-              />
-            </div>
-            <SubmitButton pendingText="Setting…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
-              Set dates
-            </SubmitButton>
-          </form>
+        {/* Additive context for a COMPLETED_LATE gate only — never a way
+            to change the badge or the underlying dates above, which stay
+            exactly as stamped either way. */}
+        {timelineStatus === "COMPLETED_LATE" && (
+          <div className="mt-4 border-t border-rule pt-4">
+            {gate.lateCompletionNote ? (
+              <p className="text-sm text-inkmuted">
+                <span className="font-mono text-[10px] uppercase tracking-wide text-warn">Why it&rsquo;s marked late: </span>
+                &ldquo;{gate.lateCompletionNote}&rdquo; — {gate.lateCompletionNoteBy?.name}
+                {gate.lateCompletionNoteAt && <> &middot; {gate.lateCompletionNoteAt.toLocaleDateString("en-GB")}</>}
+              </p>
+            ) : (
+              canSetTimeline && (
+                <form
+                  action={recordLateCompletionNote.bind(null, gateId, projectNumber)}
+                  className="flex flex-wrap items-end gap-2"
+                >
+                  <div className="flex-1">
+                    <label htmlFor="late-completion-note" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                      Why is this marked late? (doesn&rsquo;t change the dates above — just explains them)
+                    </label>
+                    <input
+                      id="late-completion-note"
+                      name="note"
+                      required
+                      placeholder="e.g. real work finished on time; this only reflects when it was recorded in StageForge"
+                      className="w-full min-w-[16rem] rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                    />
+                  </div>
+                  <SubmitButton pendingText="Saving…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+                    Add explanation
+                  </SubmitButton>
+                </form>
+              )
+            )}
+          </div>
         )}
-        {!canSetTimeline && (
-          <p className="mt-3 border-t border-rule pt-3 text-xs text-inkmuted">
-            Only the PM sets target dates on this project.
-          </p>
-        )}
+
+        {(() => {
+          const hasBaseline = Boolean(gate.targetStartDate || gate.targetEndDate);
+          const pendingMove = gate.moveRequests.find((r) => r.status === "PENDING");
+          const lastDecidedMove = gate.moveRequests.find((r) => r.status !== "PENDING");
+
+          if (!hasBaseline) {
+            return (
+              <>
+                {canSetTimeline && (
+                  <form
+                    action={setGateTimeline.bind(null, gateId, projectNumber)}
+                    className="mt-4 flex flex-wrap items-end gap-2 border-t border-rule pt-4"
+                  >
+                    <div>
+                      <label htmlFor="target-start-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Target start
+                      </label>
+                      <input
+                        id="target-start-date"
+                        type="date"
+                        name="targetStartDate"
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="target-end-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Target end
+                      </label>
+                      <input
+                        id="target-end-date"
+                        type="date"
+                        name="targetEndDate"
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <SubmitButton pendingText="Setting…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+                      Set dates
+                    </SubmitButton>
+                  </form>
+                )}
+                {!canSetTimeline && (
+                  <p className="mt-3 border-t border-rule pt-3 text-xs text-inkmuted">
+                    Only the PM sets target dates on this project.
+                  </p>
+                )}
+              </>
+            );
+          }
+
+          return (
+            <div className="mt-4 border-t border-rule pt-4">
+              {lastDecidedMove && !pendingMove && (
+                <p className="mb-3 text-xs text-inkmuted">
+                  Last gate move {lastDecidedMove.status === "APPROVED" ? "approved" : "rejected"} by{" "}
+                  {lastDecidedMove.decidedBy?.name} &middot; {lastDecidedMove.decidedAt?.toLocaleDateString("en-GB")}:{" "}
+                  &ldquo;{lastDecidedMove.decisionReason}&rdquo;
+                </p>
+              )}
+
+              {pendingMove ? (
+                <div className="rounded-md border border-dashed border-warn bg-accentsoft/20 p-3 text-sm">
+                  <div className="font-mono text-[10px] uppercase tracking-wide text-warn">
+                    Gate move proposed &middot; awaiting Sponsor decision
+                  </div>
+                  <div className="mt-1">
+                    {pendingMove.previousTargetStartDate ? pendingMove.previousTargetStartDate.toLocaleDateString("en-GB") : "Not set"}
+                    {" – "}
+                    {pendingMove.previousTargetEndDate ? pendingMove.previousTargetEndDate.toLocaleDateString("en-GB") : "Not set"}
+                    {" → "}
+                    {pendingMove.proposedTargetStartDate ? pendingMove.proposedTargetStartDate.toLocaleDateString("en-GB") : "Not set"}
+                    {" – "}
+                    {pendingMove.proposedTargetEndDate ? pendingMove.proposedTargetEndDate.toLocaleDateString("en-GB") : "Not set"}
+                  </div>
+                  <div className="mt-1 text-inkmuted">
+                    Proposed by {pendingMove.requestedBy.name} &middot; {pendingMove.requestedAt.toLocaleDateString("en-GB")}: &ldquo;
+                    {pendingMove.reason}&rdquo;
+                  </div>
+                  {canDecideGate(roleKeys) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-rule pt-3">
+                      <form
+                        action={decideGateMove.bind(null, pendingMove.id, projectNumber)}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <input type="hidden" name="decision" value="APPROVED" />
+                        <input
+                          name="decisionReason"
+                          required
+                          placeholder="Reason for approving (required)"
+                          className="min-w-[14rem] rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                        />
+                        <SubmitButton pendingText="Approving…" className="rounded-md border border-ok px-3 py-1.5 text-sm font-semibold text-ok">
+                          Approve move
+                        </SubmitButton>
+                      </form>
+                      <form
+                        action={decideGateMove.bind(null, pendingMove.id, projectNumber)}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <input type="hidden" name="decision" value="REJECTED" />
+                        <input
+                          name="decisionReason"
+                          required
+                          placeholder="Reason for rejecting (required)"
+                          className="min-w-[14rem] rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                        />
+                        <SubmitButton pendingText="Rejecting…" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
+                          Reject move
+                        </SubmitButton>
+                      </form>
+                    </div>
+                  )}
+                  {!canDecideGate(roleKeys) && (
+                    <p className="mt-2 text-xs text-inkmuted">Only the Project Sponsor can decide a gate move.</p>
+                  )}
+                </div>
+              ) : (
+                canSetTimeline && (
+                  <form
+                    action={requestGateMove.bind(null, gateId, projectNumber)}
+                    className="flex flex-wrap items-end gap-2"
+                  >
+                    <div>
+                      <label htmlFor="move-target-start-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Propose target start
+                      </label>
+                      <input
+                        id="move-target-start-date"
+                        type="date"
+                        name="targetStartDate"
+                        defaultValue={toDateInputValue(gate.targetStartDate)}
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="move-target-end-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Propose target end
+                      </label>
+                      <input
+                        id="move-target-end-date"
+                        type="date"
+                        name="targetEndDate"
+                        defaultValue={toDateInputValue(gate.targetEndDate)}
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label htmlFor="move-reason" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Reason (required)
+                      </label>
+                      <input
+                        id="move-reason"
+                        name="reason"
+                        required
+                        placeholder="Why is this date moving?"
+                        className="w-full min-w-[14rem] rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <SubmitButton pendingText="Proposing…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+                      Propose gate move
+                    </SubmitButton>
+                  </form>
+                )
+              )}
+              {!canSetTimeline && !pendingMove && (
+                <p className="text-xs text-inkmuted">This gate already has a baseline — only the PM can propose moving it.</p>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {(gate.deliverables.length > 0 ||
@@ -1446,6 +1700,23 @@ export async function GateDetail({
                           })}
                         </div>
                       </div>
+                    )}
+
+                  {c.status === "PENDING" &&
+                    (c.key === "comp.cdm_principal_designer_appointed" || c.key === "comp.cdm_principal_contractor_appointed") &&
+                    canReplaceEvidence && (
+                      <a
+                        href={`/api/projects/${projectNumber}/cdm-appointment-draft?role=${
+                          c.key === "comp.cdm_principal_designer_appointed" ? "PRINCIPAL_DESIGNER" : "PRINCIPAL_CONTRACTOR"
+                        }`}
+                        className="mb-3 flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
+                      >
+                        <span aria-hidden="true">⬇</span>
+                        <span>
+                          Generate appointment form draft (.docx)
+                          <span className="block text-xs font-normal">Blank, unsigned — get it signed by the Client lead and appointee before uploading</span>
+                        </span>
+                      </a>
                     )}
 
                   {c.status === "PENDING" && (
