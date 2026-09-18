@@ -92,6 +92,7 @@ model User {
   lessonsLearned             LessonLearned[]
   gateMovesRequested         GateMoveRequest[]        @relation("GateMoveRequestedBy")
   gateMovesDecided           GateMoveRequest[]        @relation("GateMoveDecidedBy")
+  gateLateCompletionNotes    Gate[]                   @relation("GateLateCompletionNoteBy")
   scheduledReports           ScheduledReport[]
   createdShareLinks          ShareLink[]
   successfulSignIn           SuccessfulSignIn?
@@ -891,6 +892,19 @@ model Gate {
   targetEndDate          DateTime?
   actualStartDate        DateTime?
   actualEndDate          DateTime?
+  // 18 Sep 2026 — additive context for a COMPLETED_LATE gate (see
+  // gateTimelineStatus, permissions.ts), never a way to change the
+  // underlying dates or the badge itself: target/actual stay exactly as
+  // stamped, honest and untouched, same reasoning as the comment above.
+  // A PM can attach why (a real slip, or just an artifact of when the
+  // software was actually used vs when the real-world work happened) —
+  // visible alongside "Completed late", not instead of it. Plain columns
+  // on this existing model, not a new child table — same "avoid another
+  // deleteProject cleanup line" reasoning as Deliverable.lastStalenessAckAt.
+  lateCompletionNote     String?
+  lateCompletionNoteById String?
+  lateCompletionNoteBy   User?                   @relation("GateLateCompletionNoteBy", fields: [lateCompletionNoteById], references: [id])
+  lateCompletionNoteAt   DateTime?
   deliverables           Deliverable[]
   complianceRequirements ComplianceRequirement[]
   complianceOverrides    ComplianceOverride[]

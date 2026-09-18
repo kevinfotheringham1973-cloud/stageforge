@@ -48,6 +48,7 @@ import {
   setGateTimeline,
   requestGateMove,
   decideGateMove,
+  recordLateCompletionNote,
   submitForApproval,
   undoDeliverableBypass,
   uploadSpendInvoice,
@@ -251,6 +252,7 @@ export async function GateDetail({
         orderBy: { requestedAt: "desc" },
         include: { requestedBy: true, decidedBy: true },
       },
+      lateCompletionNoteBy: true,
       emailApprovals: { orderBy: { requestedAt: "desc" }, include: { contact: true, requestedBy: true } },
       auditEntries: { orderBy: { createdAt: "desc" }, include: { actor: true } },
       lessonsLearned: { orderBy: { createdAt: "desc" }, include: { recordedBy: true } },
@@ -1266,6 +1268,44 @@ export async function GateDetail({
             </div>
           </div>
         </div>
+
+        {/* Additive context for a COMPLETED_LATE gate only — never a way
+            to change the badge or the underlying dates above, which stay
+            exactly as stamped either way. */}
+        {timelineStatus === "COMPLETED_LATE" && (
+          <div className="mt-4 border-t border-rule pt-4">
+            {gate.lateCompletionNote ? (
+              <p className="text-sm text-inkmuted">
+                <span className="font-mono text-[10px] uppercase tracking-wide text-warn">Why it&rsquo;s marked late: </span>
+                &ldquo;{gate.lateCompletionNote}&rdquo; — {gate.lateCompletionNoteBy?.name}
+                {gate.lateCompletionNoteAt && <> &middot; {gate.lateCompletionNoteAt.toLocaleDateString("en-GB")}</>}
+              </p>
+            ) : (
+              canSetTimeline && (
+                <form
+                  action={recordLateCompletionNote.bind(null, gateId, projectNumber)}
+                  className="flex flex-wrap items-end gap-2"
+                >
+                  <div className="flex-1">
+                    <label htmlFor="late-completion-note" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                      Why is this marked late? (doesn&rsquo;t change the dates above — just explains them)
+                    </label>
+                    <input
+                      id="late-completion-note"
+                      name="note"
+                      required
+                      placeholder="e.g. real work finished on time; this only reflects when it was recorded in StageForge"
+                      className="w-full min-w-[16rem] rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                    />
+                  </div>
+                  <SubmitButton pendingText="Saving…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+                    Add explanation
+                  </SubmitButton>
+                </form>
+              )
+            )}
+          </div>
+        )}
 
         {(() => {
           const hasBaseline = Boolean(gate.targetStartDate || gate.targetEndDate);

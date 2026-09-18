@@ -25,6 +25,7 @@ import {
   canRecordLessonLearned,
   canRecordSpend,
   canSetGateTimeline,
+  gateTimelineStatus,
   isGateReadyForSponsor,
 } from "./permissions";
 import { instantiateStage } from "./instantiation";
@@ -2459,6 +2460,49 @@ export async function decideGateMove(requestId: string, projectNumber: string, f
 
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${request.gateId}`);
+}
+
+/**
+ * PM attaches a written explanation to a gate that finished after its
+ * target date — additive context only, same boundary as the schema
+ * comment on Gate.lateCompletionNote: this never touches targetEndDate or
+ * actualEndDate, and never changes the COMPLETED_LATE badge itself. Only
+ * usable on a gate whose real, computed timeline status actually is
+ * COMPLETED_LATE (recomputed server-side, not trusted from the client) —
+ * there's nothing to explain otherwise. One note per gate: a second call
+ * overwrites the first, same "PM owns their own record" latitude
+ * setGateTimeline already has for an unbaselined target date.
+ */
+export async function recordLateCompletionNote(gateId: string, projectNumber: string, formData: FormData) {
+  const note = String(formData.get("note") ?? "").trim();
+  if (!note) {
+    throw new Error("Explaining a late completion requires a written note.");
+  }
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
+  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  if (!canSetGateTimeline(roleKeys)) {
+    throw new Error("Only the Project Manager can explain a late completion.");
+  }
+  if (gateTimelineStatus(gate) !== "COMPLETED_LATE") {
+    throw new Error("This gate isn't flagged as completed late — there's nothing to explain.");
+  }
+
+  await db.$transaction([
+    db.gate.update({
+      where: { id: gateId },
+      data: { lateCompletionNote: note, lateCompletionNoteById: actorId, lateCompletionNoteAt: new Date() },
+    }),
+    db.auditLogEntry.create({
+      data: { actorId, action: "timeline.late_completion_noted", gateId, entityType: "Gate", entityId: gateId, reason: note },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
 }
 
 // ── Lessons learned ──────────────────────────────────────────────────
