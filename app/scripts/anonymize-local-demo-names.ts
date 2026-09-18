@@ -18,6 +18,19 @@
  * the display name next to it read "Compliance Officer"). Kevin's own
  * call, 29 Aug 2026: the desktop build should be "absolutely nameless".
  *
+ * Company names were left alone by this script for three weeks after
+ * that call — found live 18 Sep 2026: with `User.name`/`email`
+ * anonymized but `Company.name` untouched, the real branding
+ * ("Serco Health : FVRH Scotland" as FM_CONTRACTOR, "FVRH NHS" as
+ * CLIENT_AUTHORITY) was still fully visible everywhere a deliverable's
+ * home department or the /team roster shows "<department> (<company>)"
+ * — the exact same "absolutely nameless" problem this script exists to
+ * solve, just on the company axis instead of the person axis. Every
+ * Company now gets the same type-based genericisation as a user gets a
+ * role-based one, since a project's own standing-team auto-assignment
+ * (standardTeam.ts) keeps pulling these same companies onto every new
+ * project regardless of who creates it.
+ *
  * Never run by `npm run db:seed` itself and never touches the cloud
  * instance's demo data (project #20777 etc.) — localDb.js is the only
  * caller, scoped to this build's own bundled local database.
@@ -31,6 +44,18 @@ import { db } from "../src/lib/db";
 // nor "Demo Viewer" is a real person's name or address, so both are
 // left untouched.
 const SKIP_EMAILS = ["local-admin@stageforge.local", "demo-viewer@stageforge.example"];
+
+// auth.ts's own local-mode Credentials.authorize() find-or-creates this
+// exact company as Local Admin's own home — already generic/non-
+// identifying (it names the desktop build itself, not a real
+// organisation), so re-anonymizing it on every launch would just be
+// pointless churn.
+const SKIP_COMPANY_NAMES = ["Desktop Trial"];
+
+const COMPANY_TYPE_LABEL: Record<string, string> = {
+  FM_CONTRACTOR: "FM Contractor",
+  CLIENT_AUTHORITY: "Client Authority",
+};
 
 function slugify(text: string): string {
   return text
@@ -78,6 +103,29 @@ async function main() {
   }
 
   console.log(`[anonymize] renamed ${renamed} of ${users.length} seeded users' name and email to role-based, non-identifying values.`);
+
+  // Same treatment, one level up: a real organisation's name
+  // (Serco Health : FVRH Scotland, FVRH NHS) is exactly as identifying
+  // as a real person's, and standardTeam.ts keeps re-surfacing these
+  // same companies on every new project regardless of who creates it —
+  // so it's the company record itself that has to stop carrying real
+  // branding, not just the people homed under it.
+  const companies = await db.company.findMany({ where: { name: { notIn: SKIP_COMPANY_NAMES } } });
+  const companySlugCounts = new Map<string, number>();
+  let companiesRenamed = 0;
+  for (const company of companies) {
+    const baseLabel = COMPANY_TYPE_LABEL[company.type] ?? "Organisation";
+    const slug = slugify(baseLabel);
+    const seen = companySlugCounts.get(slug) ?? 0;
+    companySlugCounts.set(slug, seen + 1);
+    const displayName = seen > 0 ? `${baseLabel} ${seen + 1}` : baseLabel;
+    if (displayName !== company.name) {
+      await db.company.update({ where: { id: company.id }, data: { name: displayName } });
+      companiesRenamed += 1;
+    }
+  }
+
+  console.log(`[anonymize] renamed ${companiesRenamed} of ${companies.length} seeded companies' name to type-based, non-identifying values.`);
 }
 
 main()
