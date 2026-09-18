@@ -2295,10 +2295,15 @@ export async function requestDocumentGeneration(
 // ── Timeline (planned vs. actual) ───────────────────────────────────────
 
 /**
- * PM sets or revises a gate's planned start/end dates — pure planning
- * input, straight overwrite, no approval workflow (unlike everything
- * else on a gate, this doesn't gate the gate). Actual dates are never
- * user-settable — they're stamped automatically by startGateUpdate and
+ * PM sets a gate's INITIAL planned start/end dates — pure planning input,
+ * straight overwrite, no approval workflow. Only usable while the gate has
+ * no baseline yet (both target dates null): there's nothing to protect
+ * before a baseline exists. Once a baseline is set, any further change is
+ * a "gate move" (requestGateMove/decideGateMove below) — found live 18 Sep
+ * 2026: this function let a PM silently push a slipping date out at any
+ * time with no history and no second party, which could quietly erase a
+ * real "completed late"/"overdue" signal. Actual dates stay untouched by
+ * either path — they're stamped automatically by startGateUpdate and
  * decide() above, the moment the real thing happens.
  */
 export async function setGateTimeline(gateId: string, projectNumber: string, formData: FormData) {
@@ -2318,6 +2323,9 @@ export async function setGateTimeline(gateId: string, projectNumber: string, for
   if (!canSetGateTimeline(roleKeys)) {
     throw new Error("Only the Project Manager can set a gate's target dates.");
   }
+  if (gate.targetStartDate || gate.targetEndDate) {
+    throw new Error("This gate already has a target baseline — propose a gate move instead, it needs Sponsor approval.");
+  }
 
   await db.$transaction([
     db.gate.update({ where: { id: gateId }, data: { targetStartDate, targetEndDate } }),
@@ -2328,6 +2336,129 @@ export async function setGateTimeline(gateId: string, projectNumber: string, for
 
   revalidatePath(`/projects/${projectNumber}`);
   revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
+ * PM proposes new target dates for a gate that already has a baseline —
+ * does NOT change the gate's dates itself, only records the proposal for
+ * decideGateMove (Sponsor authority, same as canDecideGate) to approve or
+ * reject. A written reason is required, same discipline as rejectGate's
+ * own reason requirement — "the date moved" is only a trustworthy signal
+ * if moving it costs a written justification and a second party's say-so.
+ */
+export async function requestGateMove(gateId: string, projectNumber: string, formData: FormData) {
+  const targetStartRaw = String(formData.get("targetStartDate") ?? "").trim();
+  const targetEndRaw = String(formData.get("targetEndDate") ?? "").trim();
+  const proposedTargetStartDate = targetStartRaw ? new Date(targetStartRaw) : null;
+  const proposedTargetEndDate = targetEndRaw ? new Date(targetEndRaw) : null;
+  if (proposedTargetStartDate && proposedTargetEndDate && proposedTargetStartDate > proposedTargetEndDate) {
+    throw new Error("Target start date must be on or before the target end date.");
+  }
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!reason) {
+    throw new Error("Proposing a gate move requires a written reason.");
+  }
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const gate = await db.gate.findUniqueOrThrow({ where: { id: gateId }, include: { stage: true } });
+  const roleKeys = await getCurrentUserRoleKeysForProject(gate.stage.projectId);
+  if (!canSetGateTimeline(roleKeys)) {
+    throw new Error("Only the Project Manager can propose a gate move.");
+  }
+
+  await db.$transaction([
+    db.gateMoveRequest.create({
+      data: {
+        gateId,
+        previousTargetStartDate: gate.targetStartDate,
+        previousTargetEndDate: gate.targetEndDate,
+        proposedTargetStartDate,
+        proposedTargetEndDate,
+        reason,
+        requestedById: actorId,
+      },
+    }),
+    db.auditLogEntry.create({
+      data: {
+        actorId,
+        action: "timeline.move_requested",
+        gateId,
+        entityType: "Gate",
+        entityId: gateId,
+        reason,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${gateId}`);
+}
+
+/**
+ * Sponsor approves or rejects a pending gate move — same hard-locked
+ * authority as canDecideGate (the gate-level decision itself), not a new
+ * role. Approval is the only path that actually changes the gate's target
+ * dates; rejection leaves them untouched. Either way requires a written
+ * decision reason, so "why was this allowed to move" is answerable later
+ * from the request row alone, not just "it moved."
+ */
+export async function decideGateMove(requestId: string, projectNumber: string, formData: FormData) {
+  const decisionRaw = String(formData.get("decision") ?? "");
+  if (decisionRaw !== "APPROVED" && decisionRaw !== "REJECTED") {
+    throw new Error("Choose Approve or Reject.");
+  }
+  const decisionReason = String(formData.get("decisionReason") ?? "").trim();
+  if (!decisionReason) {
+    throw new Error("Deciding a gate move requires a written reason.");
+  }
+
+  const actorId = await getCurrentUserId();
+  if (!actorId) throw new Error("Not signed in.");
+
+  const request = await db.gateMoveRequest.findUniqueOrThrow({
+    where: { id: requestId },
+    include: { gate: { include: { stage: true } } },
+  });
+  const roleKeys = await getCurrentUserRoleKeysForProject(request.gate.stage.projectId);
+  if (!canDecideGate(roleKeys)) {
+    throw new Error("Only the Project Sponsor can decide a gate move.");
+  }
+  if (request.status !== "PENDING") {
+    throw new Error(`This gate move was already ${request.status.toLowerCase()} — it can't be decided again.`);
+  }
+
+  await db.$transaction([
+    db.gateMoveRequest.update({
+      where: { id: requestId },
+      data: { status: decisionRaw, decidedById: actorId, decidedAt: new Date(), decisionReason },
+    }),
+    ...(decisionRaw === "APPROVED"
+      ? [
+          db.gate.update({
+            where: { id: request.gateId },
+            data: {
+              targetStartDate: request.proposedTargetStartDate,
+              targetEndDate: request.proposedTargetEndDate,
+            },
+          }),
+        ]
+      : []),
+    db.auditLogEntry.create({
+      data: {
+        actorId,
+        action: decisionRaw === "APPROVED" ? "timeline.move_approved" : "timeline.move_rejected",
+        gateId: request.gateId,
+        entityType: "GateMoveRequest",
+        entityId: requestId,
+        reason: decisionReason,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/projects/${projectNumber}`);
+  revalidatePath(`/projects/${projectNumber}/gates/${request.gateId}`);
 }
 
 // ── Lessons learned ──────────────────────────────────────────────────
@@ -2504,6 +2635,7 @@ export async function deleteProject(
     db.spendInvoiceFile.deleteMany({ where: { spendRecord: { gate: { stage: { projectId } } } } }),
     db.spendRecord.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.gateSignOff.deleteMany({ where: { gate: { stage: { projectId } } } }),
+    db.gateMoveRequest.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.lessonLearned.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.auditLogEntry.deleteMany({ where: { gate: { stage: { projectId } } } }),
     db.emailApproval.deleteMany({ where: { gate: { stage: { projectId } } } }),

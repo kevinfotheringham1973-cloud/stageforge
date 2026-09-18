@@ -90,6 +90,8 @@ model User {
   spendApprovals             SpendApproval[]          @relation("SpendApprovedBy")
   spendInvoiceUploads        SpendInvoiceFile[]
   lessonsLearned             LessonLearned[]
+  gateMovesRequested         GateMoveRequest[]        @relation("GateMoveRequestedBy")
+  gateMovesDecided           GateMoveRequest[]        @relation("GateMoveDecidedBy")
   scheduledReports           ScheduledReport[]
   createdShareLinks          ShareLink[]
   successfulSignIn           SuccessfulSignIn?
@@ -897,7 +899,47 @@ model Gate {
   emailApprovals         EmailApproval[]
   auditEntries           AuditLogEntry[]
   lessonsLearned         LessonLearned[]
+  moveRequests           GateMoveRequest[]
   createdAt              DateTime                @default(now())
+}
+
+enum GateMoveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// 18 Sep 2026 — closes a real gap: setGateTimeline let a PM silently
+// overwrite targetStartDate/targetEndDate at any time, with no history of
+// what the date used to be and no second party involved, which let a
+// slipping date quietly disappear instead of showing up as "completed
+// late"/"overdue". The FIRST time a gate's target dates are ever set is
+// still plain PM planning input (setGateTimeline, unchanged) — there's no
+// prior baseline to protect yet. Every REVISION after that baseline exists
+// goes through this model instead: a proposal, with a reason, that only
+// canDecideGate's own authority (Sponsor) can approve or reject — same
+// authority that already owns the gate-level decision, not a new role.
+// Deliberately one row per request, decided in place (PENDING ->
+// APPROVED/REJECTED), same shape as DocumentGenerationRequest, rather than
+// SpendApproval's separate decision-log-per-record — a gate move is a
+// single proposal/resolution, not a record that can be re-approved.
+model GateMoveRequest {
+  id                      String         @id @default(cuid())
+  gateId                  String
+  gate                    Gate           @relation(fields: [gateId], references: [id])
+  previousTargetStartDate DateTime?
+  previousTargetEndDate   DateTime?
+  proposedTargetStartDate DateTime?
+  proposedTargetEndDate   DateTime?
+  reason                  String
+  status                  GateMoveStatus @default(PENDING)
+  requestedById           String
+  requestedBy             User           @relation("GateMoveRequestedBy", fields: [requestedById], references: [id])
+  requestedAt             DateTime       @default(now())
+  decidedById             String?
+  decidedBy               User?          @relation("GateMoveDecidedBy", fields: [decidedById], references: [id])
+  decidedAt               DateTime?
+  decisionReason          String?
 }
 
 enum DeliverableStatus {

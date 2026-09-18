@@ -47,6 +47,8 @@ import {
   requestEmailApproval,
   reviseSpend,
   setGateTimeline,
+  requestGateMove,
+  decideGateMove,
   submitForApproval,
   undoDeliverableBypass,
   uploadSpendInvoice,
@@ -93,6 +95,26 @@ const GATE_PM_FOCUS: Record<string, string> = {
 // hand-maintained list kept in sync with seed.ts.
 function isPciDeliverable(key: string): boolean {
   return key.endsWith("_pre_construction_information");
+}
+
+// A failureReason is either a reasoned decline a drafting/reviewing agent
+// wrote for itself (e.g. "no real Gate 0 case exists yet") -- genuinely
+// useful to a PM as-is -- or a raw system/process error (a CLI crash dump,
+// a JSON API error body) that leaked into the same field. Found live 17
+// Sep 2026: a separate automated poller process racing this session's own
+// manual agent runs left one of the latter verbatim in the UI, the same
+// "raw internals shown to a non-technical PM" problem already fixed once
+// for the tag-suggestion feature (provisioning.ts). Distinguish by shape,
+// not by owning a list of every possible system error string.
+function isRawSystemFailure(reason: string): boolean {
+  return /CLI exited|Command failed:|^\s*\{"type":"error"|stack trace|ENOENT|EACCES/i.test(reason);
+}
+
+function friendlyFailureReason(reason: string): { headline: string; detail: string | null } {
+  if (isRawSystemFailure(reason)) {
+    return { headline: "Something went wrong running this automatically — try again.", detail: reason };
+  }
+  return { headline: reason, detail: null };
 }
 
 function toDateInputValue(d: Date | null): string {
@@ -225,6 +247,10 @@ export async function GateDetail({
       signOffs: {
         orderBy: { createdAt: "desc" },
         include: { signedOffBy: true, emailApproval: { include: { contact: true } } },
+      },
+      moveRequests: {
+        orderBy: { requestedAt: "desc" },
+        include: { requestedBy: true, decidedBy: true },
       },
       emailApprovals: { orderBy: { requestedAt: "desc" }, include: { contact: true, requestedBy: true } },
       auditEntries: { orderBy: { createdAt: "desc" }, include: { actor: true } },
@@ -768,11 +794,28 @@ export async function GateDetail({
                       AI review requested ({r.agentSlug}) &middot; {r.status === "IN_PROGRESS" ? "in progress" : "queued"}
                     </div>
                   ))}
-                  {failedReviews.map((r) => (
-                    <div key={r.id} className="mt-1 font-mono text-xs text-red-700">
-                      AI review failed ({r.agentSlug}): {r.failureReason ?? "unknown reason"}
-                    </div>
-                  ))}
+                  {/* Once real evidence exists, a stale failed attempt from
+                      before that evidence was accepted is no longer
+                      actionable -- same "done means done" reasoning as
+                      hiding the generate/review forms below. Found live 18
+                      Sep 2026: a deliverable with accepted evidence was
+                      still showing a failure from a full day earlier. */}
+                  {!currentFile && failedReviews.map((r) => {
+                    const { headline, detail } = friendlyFailureReason(r.failureReason ?? "unknown reason");
+                    return (
+                      <div key={r.id} className="mt-1 text-xs text-red-700">
+                        <span className="font-mono">AI review failed ({r.agentSlug}):</span> {headline}
+                        {detail && (
+                          <details className="mt-1">
+                            <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                              Technical detail
+                            </summary>
+                            <div className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-inkmuted">{detail}</div>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
                   {/* The actual narrative (findings, risk table, open issues)
                       was never shown anywhere -- a PM had to open the
                       generated file itself to read it. Found live 13 Sep
@@ -929,11 +972,26 @@ export async function GateDetail({
                       AI draft requested ({r.agentSlug}) &middot; {r.status === "IN_PROGRESS" ? "in progress" : "queued"}
                     </div>
                   ))}
-                  {failedGenerations.map((r) => (
-                    <div key={r.id} className="mt-1 font-mono text-xs text-red-700">
-                      AI draft failed ({r.agentSlug}): {r.failureReason ?? "unknown reason"}
-                    </div>
-                  ))}
+                  {/* Once real evidence exists, a stale failed attempt from
+                      before that evidence was accepted is no longer
+                      actionable -- same "done means done" reasoning as
+                      hiding the generate/review forms below. */}
+                  {!hasAcceptedEvidence && failedGenerations.map((r) => {
+                    const { headline, detail } = friendlyFailureReason(r.failureReason ?? "unknown reason");
+                    return (
+                      <div key={r.id} className="mt-1 text-xs text-red-700">
+                        <span className="font-mono">AI draft failed ({r.agentSlug}):</span> {headline}
+                        {detail && (
+                          <details className="mt-1">
+                            <summary className="cursor-pointer select-none font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                              Technical detail
+                            </summary>
+                            <div className="mt-1 whitespace-pre-wrap font-mono text-[11px] text-inkmuted">{detail}</div>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
                   {d.documentGenerationRequests
                     .filter((r) => r.status === "COMPLETE" && r.resultSummary)
                     .map((r) => (
@@ -1206,45 +1264,175 @@ export async function GateDetail({
           </div>
         </div>
 
-        {canSetTimeline && (
-          <form
-            action={setGateTimeline.bind(null, gateId, projectNumber)}
-            className="mt-4 flex flex-wrap items-end gap-2 border-t border-rule pt-4"
-          >
-            <div>
-              <label htmlFor="target-start-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                Target start
-              </label>
-              <input
-                id="target-start-date"
-                type="date"
-                name="targetStartDate"
-                defaultValue={toDateInputValue(gate.targetStartDate)}
-                className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
-              />
+        {(() => {
+          const hasBaseline = Boolean(gate.targetStartDate || gate.targetEndDate);
+          const pendingMove = gate.moveRequests.find((r) => r.status === "PENDING");
+          const lastDecidedMove = gate.moveRequests.find((r) => r.status !== "PENDING");
+
+          if (!hasBaseline) {
+            return (
+              <>
+                {canSetTimeline && (
+                  <form
+                    action={setGateTimeline.bind(null, gateId, projectNumber)}
+                    className="mt-4 flex flex-wrap items-end gap-2 border-t border-rule pt-4"
+                  >
+                    <div>
+                      <label htmlFor="target-start-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Target start
+                      </label>
+                      <input
+                        id="target-start-date"
+                        type="date"
+                        name="targetStartDate"
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="target-end-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Target end
+                      </label>
+                      <input
+                        id="target-end-date"
+                        type="date"
+                        name="targetEndDate"
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <SubmitButton pendingText="Setting…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+                      Set dates
+                    </SubmitButton>
+                  </form>
+                )}
+                {!canSetTimeline && (
+                  <p className="mt-3 border-t border-rule pt-3 text-xs text-inkmuted">
+                    Only the PM sets target dates on this project.
+                  </p>
+                )}
+              </>
+            );
+          }
+
+          return (
+            <div className="mt-4 border-t border-rule pt-4">
+              {lastDecidedMove && !pendingMove && (
+                <p className="mb-3 text-xs text-inkmuted">
+                  Last gate move {lastDecidedMove.status === "APPROVED" ? "approved" : "rejected"} by{" "}
+                  {lastDecidedMove.decidedBy?.name} &middot; {lastDecidedMove.decidedAt?.toLocaleDateString("en-GB")}:{" "}
+                  &ldquo;{lastDecidedMove.decisionReason}&rdquo;
+                </p>
+              )}
+
+              {pendingMove ? (
+                <div className="rounded-md border border-dashed border-warn bg-accentsoft/20 p-3 text-sm">
+                  <div className="font-mono text-[10px] uppercase tracking-wide text-warn">
+                    Gate move proposed &middot; awaiting Sponsor decision
+                  </div>
+                  <div className="mt-1">
+                    {pendingMove.previousTargetStartDate ? pendingMove.previousTargetStartDate.toLocaleDateString("en-GB") : "Not set"}
+                    {" – "}
+                    {pendingMove.previousTargetEndDate ? pendingMove.previousTargetEndDate.toLocaleDateString("en-GB") : "Not set"}
+                    {" → "}
+                    {pendingMove.proposedTargetStartDate ? pendingMove.proposedTargetStartDate.toLocaleDateString("en-GB") : "Not set"}
+                    {" – "}
+                    {pendingMove.proposedTargetEndDate ? pendingMove.proposedTargetEndDate.toLocaleDateString("en-GB") : "Not set"}
+                  </div>
+                  <div className="mt-1 text-inkmuted">
+                    Proposed by {pendingMove.requestedBy.name} &middot; {pendingMove.requestedAt.toLocaleDateString("en-GB")}: &ldquo;
+                    {pendingMove.reason}&rdquo;
+                  </div>
+                  {canDecideGate(roleKeys) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-rule pt-3">
+                      <form
+                        action={decideGateMove.bind(null, pendingMove.id, projectNumber)}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <input type="hidden" name="decision" value="APPROVED" />
+                        <input
+                          name="decisionReason"
+                          required
+                          placeholder="Reason for approving (required)"
+                          className="min-w-[14rem] rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                        />
+                        <SubmitButton pendingText="Approving…" className="rounded-md border border-ok px-3 py-1.5 text-sm font-semibold text-ok">
+                          Approve move
+                        </SubmitButton>
+                      </form>
+                      <form
+                        action={decideGateMove.bind(null, pendingMove.id, projectNumber)}
+                        className="flex flex-wrap items-center gap-2"
+                      >
+                        <input type="hidden" name="decision" value="REJECTED" />
+                        <input
+                          name="decisionReason"
+                          required
+                          placeholder="Reason for rejecting (required)"
+                          className="min-w-[14rem] rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                        />
+                        <SubmitButton pendingText="Rejecting…" className="rounded-md border border-risk px-3 py-1.5 text-sm font-semibold text-risk">
+                          Reject move
+                        </SubmitButton>
+                      </form>
+                    </div>
+                  )}
+                  {!canDecideGate(roleKeys) && (
+                    <p className="mt-2 text-xs text-inkmuted">Only the Project Sponsor can decide a gate move.</p>
+                  )}
+                </div>
+              ) : (
+                canSetTimeline && (
+                  <form
+                    action={requestGateMove.bind(null, gateId, projectNumber)}
+                    className="flex flex-wrap items-end gap-2"
+                  >
+                    <div>
+                      <label htmlFor="move-target-start-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Propose target start
+                      </label>
+                      <input
+                        id="move-target-start-date"
+                        type="date"
+                        name="targetStartDate"
+                        defaultValue={toDateInputValue(gate.targetStartDate)}
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="move-target-end-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Propose target end
+                      </label>
+                      <input
+                        id="move-target-end-date"
+                        type="date"
+                        name="targetEndDate"
+                        defaultValue={toDateInputValue(gate.targetEndDate)}
+                        className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label htmlFor="move-reason" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
+                        Reason (required)
+                      </label>
+                      <input
+                        id="move-reason"
+                        name="reason"
+                        required
+                        placeholder="Why is this date moving?"
+                        className="w-full min-w-[14rem] rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
+                      />
+                    </div>
+                    <SubmitButton pendingText="Proposing…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
+                      Propose gate move
+                    </SubmitButton>
+                  </form>
+                )
+              )}
+              {!canSetTimeline && !pendingMove && (
+                <p className="text-xs text-inkmuted">This gate already has a baseline — only the PM can propose moving it.</p>
+              )}
             </div>
-            <div>
-              <label htmlFor="target-end-date" className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-inkmuted">
-                Target end
-              </label>
-              <input
-                id="target-end-date"
-                type="date"
-                name="targetEndDate"
-                defaultValue={toDateInputValue(gate.targetEndDate)}
-                className="rounded border border-inkmuted bg-bg px-2.5 py-1.5 text-sm"
-              />
-            </div>
-            <SubmitButton pendingText="Setting…" className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold text-accent">
-              Set dates
-            </SubmitButton>
-          </form>
-        )}
-        {!canSetTimeline && (
-          <p className="mt-3 border-t border-rule pt-3 text-xs text-inkmuted">
-            Only the PM sets target dates on this project.
-          </p>
-        )}
+          );
+        })()}
       </div>
 
       {(gate.deliverables.length > 0 ||
