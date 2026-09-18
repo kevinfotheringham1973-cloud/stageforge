@@ -3,7 +3,6 @@ import { getCurrentUser, getCurrentUserGlobalRoleKeys, getCurrentUserRoleKeysFor
 import { evidenceFolderPath } from "@/lib/sharepoint";
 import { REVIEWABLE_AGENT_SLUGS, REVIEWABLE_AGENT_DESCRIPTIONS } from "@/lib/documentReviewEvidence";
 import {
-  GENERATABLE_AGENT_SLUGS,
   GENERATABLE_AGENT_DESCRIPTIONS,
   defaultGenerationAgentForDeliverable,
   isBusinessCaseShapedDeliverable,
@@ -987,6 +986,17 @@ export async function GateDetail({
               // collapse the form and drop the guidance text once there's
               // something real to show instead of it.
               const hasAcceptedEvidence = d.evidenceFiles.some((f) => f.kind === "SUBMITTED");
+              // 18 Sep 2026 feedback: a PM has no way to judge which of 7
+              // narrowly-scoped agents (if any) actually fits a deliverable
+              // the key-matching below can't classify -- confirmed live,
+              // auditing the whole library, that 76% of all deliverables fell
+              // through to that raw dropdown, most with zero agents that
+              // could plausibly help. The system already knows, deterministically,
+              // whether a real match exists (defaultGenerationAgentForDeliverable) --
+              // so this whole AI section now only ever appears when it does.
+              // No dropdown, no menu of mostly-wrong options: either the
+              // system found a real fit, or nothing shows at all.
+              const defaultAgent = defaultGenerationAgentForDeliverable(d.key);
               const generateSummaryLabel = evidenceSinceLastDraft > 0
                 ? `${completedGenerations.length > 0 ? "Regenerate" : "Generate"} AI draft for ${d.label} — ${evidenceSinceLastDraft} new evidence file(s) since last draft`
                 : `${completedGenerations.length > 0 ? "Regenerate" : "Generate"} AI draft for ${d.label}`;
@@ -1027,7 +1037,7 @@ export async function GateDetail({
                         ({r.agentSlug}): {r.resultSummary}
                       </div>
                     ))}
-                  {roleKeys.includes("PM") && generationSourceOptions.length > 0 && openGenerations.length === 0 && gate.status !== "SIGNED_OFF" && (
+                  {roleKeys.includes("PM") && defaultAgent && generationSourceOptions.length > 0 && openGenerations.length === 0 && gate.status !== "SIGNED_OFF" && (
                     <details
                       className="mt-2 rounded-md border border-dashed border-rule"
                       open={!hasAcceptedEvidence}
@@ -1054,47 +1064,15 @@ export async function GateDetail({
                         <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
                           Agent
                         </label>
-                        {(() => {
-                          const defaultAgent = defaultGenerationAgentForDeliverable(d.key);
-                          // No real choice to make once the deliverable's own
-                          // key resolves an unambiguous agent -- showing all
-                          // three anyway just adds noise (found live 13 Sep
-                          // 2026: CCN-preparation doesn't apply until Gate 4,
-                          // sow-generator is Gate 1+ material, neither is ever
-                          // right for a Gate 0 business-case-shaped item, so a
-                          // PM staring at three options was choosing between
-                          // one real answer and two permanently-wrong ones).
-                          // Still a fixed, deterministic rule, not a smarter
-                          // picker -- the dropdown remains, unchanged, for any
-                          // deliverable this key-matching can't yet classify.
-                          if (defaultAgent) {
-                            return (
-                              <>
-                                <input type="hidden" name="agentSlug" value={defaultAgent} />
-                                <div className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs text-inkmuted">
-                                  {GENERATABLE_AGENT_DESCRIPTIONS[defaultAgent]}
-                                </div>
-                              </>
-                            );
-                          }
-                          return (
-                            <select
-                              name="agentSlug"
-                              required
-                              defaultValue=""
-                              className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs"
-                            >
-                              <option value="" disabled>
-                                Choose an agent…
-                              </option>
-                              {GENERATABLE_AGENT_SLUGS.map((slug) => (
-                                <option key={slug} value={slug}>
-                                  {GENERATABLE_AGENT_DESCRIPTIONS[slug]}
-                                </option>
-                              ))}
-                            </select>
-                          );
-                        })()}
+                        {/* defaultAgent is guaranteed non-null here -- the
+                            outer condition above already requires it, so
+                            there is never a real choice to make: no dropdown,
+                            just the one real agent the system already
+                            resolved deterministically. */}
+                        <input type="hidden" name="agentSlug" value={defaultAgent} />
+                        <div className="rounded border border-inkmuted bg-bg px-2 py-1 text-xs text-inkmuted">
+                          {GENERATABLE_AGENT_DESCRIPTIONS[defaultAgent]}
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1">
                         <label className="font-mono text-[10px] uppercase tracking-wide text-inkmuted">
