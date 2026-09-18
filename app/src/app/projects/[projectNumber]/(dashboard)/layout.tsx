@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { db } from "@/lib/db";
 import type { GateStatus } from "@prisma/client";
 import {
@@ -453,6 +454,10 @@ export default async function ProjectDashboardLayout({
                   {completedLate.length > 0 && (
                     <div>
                       <span className="font-semibold text-warn">{completedLate.length}</span> completed late
+                      {(() => {
+                        const explainedCount = completedLate.filter((g) => g.gate.lateCompletionNote).length;
+                        return explainedCount > 0 ? ` (${explainedCount} explained)` : "";
+                      })()}
                     </div>
                   )}
                 </div>
@@ -483,9 +488,13 @@ export default async function ProjectDashboardLayout({
                   : 0;
                 return (
                   <div key={gate.id} className="flex items-center gap-3">
-                    <div className="w-44 shrink-0 truncate text-sm font-medium" title={gate.name}>
+                    <Link
+                      href={`/projects/${projectNumber}/gates/${gate.id}`}
+                      className="w-44 shrink-0 truncate text-sm font-medium hover:underline"
+                      title={gate.name}
+                    >
                       {gate.name}
-                    </div>
+                    </Link>
                     <div
                       className={`relative h-6 flex-1 rounded ${
                         hasTarget ? "bg-surface2" : "border border-dashed border-rule bg-transparent"
@@ -509,9 +518,20 @@ export default async function ProjectDashboardLayout({
                         />
                       )}
                     </div>
-                    <span className={`w-36 shrink-0 text-right text-xs font-semibold ${GATE_TIMELINE_TEXT_CLASS[status]}`}>
+                    <Link
+                      href={`/projects/${projectNumber}/gates/${gate.id}`}
+                      className={`w-44 shrink-0 text-right text-xs font-semibold hover:underline ${GATE_TIMELINE_TEXT_CLASS[status]}`}
+                      title={
+                        status === "COMPLETED_LATE"
+                          ? gate.lateCompletionNote
+                            ? `Explained: "${gate.lateCompletionNote}"`
+                            : "Click through to explain why, without changing the dates"
+                          : undefined
+                      }
+                    >
                       {GATE_TIMELINE_LABELS[status]}
-                    </span>
+                      {status === "COMPLETED_LATE" && (gate.lateCompletionNote ? " · explained" : " · why?")}
+                    </Link>
                   </div>
                 );
               })}
