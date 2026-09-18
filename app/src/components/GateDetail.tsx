@@ -712,6 +712,31 @@ export async function GateDetail({
           </a>
         )}
 
+        {d.key.endsWith("sbar_submission_to_wsg") && canReplaceEvidence && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            <a
+              href={`/api/projects/${projectNumber}/sbar-draft?doc=sbar`}
+              className="flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
+            >
+              <span aria-hidden="true">⬇</span>
+              <span>
+                Generate blank SBAR template (.docx)
+                <span className="block text-xs font-normal">Structural prompts only — complete from real evidence before submission</span>
+              </span>
+            </a>
+            <a
+              href={`/api/projects/${projectNumber}/sbar-draft?doc=supporting-detail`}
+              className="flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
+            >
+              <span aria-hidden="true">⬇</span>
+              <span>
+                Generate Supporting Detail template (.docx)
+                <span className="block text-xs font-normal">Companion document — delete any section that doesn&rsquo;t apply</span>
+              </span>
+            </a>
+          </div>
+        )}
+
         {d.status === "EVIDENCED" && (
           <div className="flex flex-col gap-1">
             {(() => {
