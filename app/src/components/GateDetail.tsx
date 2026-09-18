@@ -1656,6 +1656,23 @@ export async function GateDetail({
                       </div>
                     )}
 
+                  {c.status === "PENDING" &&
+                    (c.key === "comp.cdm_principal_designer_appointed" || c.key === "comp.cdm_principal_contractor_appointed") &&
+                    canReplaceEvidence && (
+                      <a
+                        href={`/api/projects/${projectNumber}/cdm-appointment-draft?role=${
+                          c.key === "comp.cdm_principal_designer_appointed" ? "PRINCIPAL_DESIGNER" : "PRINCIPAL_CONTRACTOR"
+                        }`}
+                        className="mb-3 flex items-center gap-2 rounded-md border-2 border-accent bg-accentsoft px-3 py-2 text-sm font-bold text-accent hover:bg-accent hover:text-white"
+                      >
+                        <span aria-hidden="true">⬇</span>
+                        <span>
+                          Generate appointment form draft (.docx)
+                          <span className="block text-xs font-normal">Blank, unsigned — get it signed by the Client lead and appointee before uploading</span>
+                        </span>
+                      </a>
+                    )}
+
                   {c.status === "PENDING" && (
                     <div className="mt-3 flex flex-wrap items-center gap-3">
                       {canUpload ? (
